@@ -17,9 +17,62 @@
 	<properties>
 		<java.version>1.8</java.version>
 		<vaadin.version>13.0.11</vaadin.version>
+		<vaadin.version>13.0.9</vaadin.version>
+		<vaadin.plugin.version>13.0.9</vaadin.plugin.version>
+		<vaadin-spring-boot-starter.version>13.0.9</vaadin-spring-boot-starter.version>
+		<vaadin-server.version>8.8.5</vaadin-server.version>
+		<vaadin-push.version>8.8.5</vaadin-push.version>
+		<vaadin-client-compiled.version>8.8.5</vaadin-client-compiled.version>
+		<vaadin-themes.version>8.8.5</vaadin-themes.version>
+		<jetty.plugin.version>9.3.9.v20160517</jetty.plugin.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<vaadin.widgetset.mode>local</vaadin.widgetset.mode>
+		<vaadin.theme>mytheme</vaadin.theme>
+		<maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
 	</properties>
 
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.vaadin</groupId>
+				<artifactId>vaadin-bom</artifactId>
+				<version>${vaadin.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+
 	<dependencies>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin-server</artifactId>
+			<version>${vaadin-server.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin-push</artifactId>
+			<version>${vaadin-push.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin-client-compiled</artifactId>
+			<version>${vaadin-client-compiled.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin-themes</artifactId>
+			<version>${vaadin-themes.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -31,6 +84,7 @@
 		<dependency>
 			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin-spring-boot-starter</artifactId>
+			<version>${vaadin-spring-boot-starter.version}</version>
 		</dependency>
 
 		<dependency>
@@ -49,19 +103,13 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-	</dependencies>
 
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>com.vaadin</groupId>
-				<artifactId>vaadin-bom</artifactId>
-				<version>${vaadin.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+		</dependency>
+
+	</dependencies>
 
 	<build>
 		<plugins>
