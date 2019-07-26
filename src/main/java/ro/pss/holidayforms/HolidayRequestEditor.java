@@ -46,6 +46,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	public HolidayRequestEditor(HolidayRequestRepository repository) {
 		this.repository = repository;
 
+		type.setItems(HolidayType.values());
 		add(requester, replacer, dateFrom, dateTo, type, creationDate, actions);
 
 		binder.bindInstanceFields(this);

@@ -7,12 +7,13 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.spring.annotation.SpringComponent;
+import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.util.StringUtils;
 import ro.pss.holidayforms.domain.HolidayRequest;
 
-//@Route("/concedii")
-@Route
+@SpringComponent
+@UIScope
 public class HolidayRequestView extends VerticalLayout {
 	private final HolidayRequestRepository requestRepository;
 
@@ -30,6 +31,7 @@ public class HolidayRequestView extends VerticalLayout {
 		this.grid = new Grid<>(HolidayRequest.class);
 		this.filter = new TextField();
 		this.addNewBtn = new Button("New HolidayRequest", VaadinIcon.PLUS.create());
+//		this.setWidth("75");
 
 		HorizontalLayout actions = new HorizontalLayout(filter, addNewBtn);
 		add(actions, grid, editor);
