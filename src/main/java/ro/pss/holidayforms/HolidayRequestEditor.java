@@ -13,6 +13,8 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
+import ro.pss.holidayforms.domain.Approval;
+import ro.pss.holidayforms.domain.ApprovalStatus;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.HolidayType;
 
@@ -73,8 +75,8 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		Binder.BindingBuilder<HolidayRequest, LocalDate> returnBindingBuilder = binder
 				.forField(dateTo)
-				.withValidator(r -> r != null, "Pana cand vrei sa pleci in concediu?")
-				.withValidator(r -> r == null || !r.isBefore(dateFrom.getValue()),"Nu poti sa pleci inainte sa te intorci!");
+				.withValidator(r -> !(r == null), "Pana cand vrei sa pleci in concediu?")
+				.withValidator(r -> !r.isBefore(dateFrom.getValue()),"Nu poti sa pleci inainte sa te intorci!");
 		Binder.Binding<HolidayRequest, LocalDate> returnBinder = returnBindingBuilder
 				.bind(HolidayRequest::getDateTo, HolidayRequest::setDateTo);
 
@@ -94,6 +96,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 	void save() {
 		if (binder.validate().isOk()) {
+			holidayRequest.addApproval(new Approval("Luminita", ApprovalStatus.NEW));
 			repository.save(holidayRequest);
 			changeHandler.onChange();
 		}

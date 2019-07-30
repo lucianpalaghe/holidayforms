@@ -1,9 +1,10 @@
 package ro.pss.holidayforms.domain;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import lombok.NoArgsConstructor;
 
+import javax.persistence.*;
+
+@NoArgsConstructor
 @Entity
 public class Approval {
 	@Id
@@ -12,5 +13,11 @@ public class Approval {
 
 	private String approver; //User
 
+	@Enumerated(EnumType.STRING)
 	private ApprovalStatus status;
+
+	public Approval(String approver, ApprovalStatus status) {
+		this.approver = approver;
+		this.status = status;
+	}
 }
