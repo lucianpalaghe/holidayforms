@@ -1,17 +1,16 @@
 package ro.pss.holidayforms;
 
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+
 //@Route("/concedii")
-@Route
-public class MainView extends VerticalLayout{
+@Route(layout = MainLayout.class)
+public class MainView extends Div {
 	private final HolidayRequestView holidayRequestView;
 
 	public MainView(HolidayRequestView holidayRequestView) {
 		this.holidayRequestView = holidayRequestView;
-		this.setWidth("75%");
-		setHorizontalComponentAlignment(Alignment.CENTER);
-		setJustifyContentMode(JustifyContentMode.CENTER);
-		add(this.holidayRequestView);
+		this.add(this.holidayRequestView);
 	}
 }
+
