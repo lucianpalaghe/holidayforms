@@ -1,6 +1,7 @@
 package ro.pss.holidayforms;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -23,6 +24,7 @@ public class HolidayRequestView extends VerticalLayout {
 	private final HolidayRequestRepository requestRepository;
 	private final HolidayRequestEditor editor;
 	private final Button addNewBtn;
+	private final Dialog dialog;
 //	@Autowired
 //	private DefaultNotificationHolder notifications;
 
@@ -32,6 +34,10 @@ public class HolidayRequestView extends VerticalLayout {
 		this.grid = new Grid<>(HolidayRequest.class);
 		this.filter = new TextField();
 		this.addNewBtn = new Button("New HolidayRequest", VaadinIcon.PLUS.create());
+		this.dialog = new Dialog(editor);
+		this.dialog.setWidth("300px");
+		this.dialog.setHeight("600px");
+		this.dialog.setCloseOnOutsideClick(false);
 
 		HorizontalLayout actions = new HorizontalLayout(filter, addNewBtn);
 		add(actions, grid, this.editor);
@@ -47,16 +53,19 @@ public class HolidayRequestView extends VerticalLayout {
 
 		grid.asSingleSelect().addValueChangeListener(e -> {
 			editor.editHolidayRequest(e.getValue());
+			mountEditorInDialog(true);
 		});
 
 		addNewBtn.addClickListener(e -> {
 //			notifications.addNotification(new DefaultNotification("Test", "This is a test"));
-			editor.editHolidayRequest(new HolidayRequest());
+//			editor.editHolidayRequest(new HolidayRequest());
+			 editor.editHolidayRequest(new HolidayRequest()); mountEditorInDialog(true);
 		});
 
 		editor.setChangeHandler(() -> {
 			editor.setVisible(false);
 			listHolidayRequests(filter.getValue());
+			mountEditorInDialog(false);
 		});
 
 		listHolidayRequests(null);
@@ -69,5 +78,15 @@ public class HolidayRequestView extends VerticalLayout {
 //		else {
 //			grid.setItems(requestRepository.findByLastNameStartsWithIgnoreCase(filterText));
 //		}
+	}
+	void mountEditorInDialog(boolean mount) {
+		if(mount && editor.isVisible()) {
+			dialog.removeAll();
+			dialog.addComponentAsFirst(this.editor);
+			dialog.open();
+		}else {
+			dialog.close();
+			dialog.removeAll();
+		}
 	}
 }

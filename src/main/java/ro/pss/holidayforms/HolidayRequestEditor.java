@@ -59,7 +59,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		save.addClickListener(e -> save());
 		delete.addClickListener(e -> delete());
-		cancel.addClickListener(e -> editHolidayRequest(holidayRequest));
+		cancel.addClickListener(e -> cancelEdit());
 		setVisible(false);
 	}
 
@@ -119,6 +119,10 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		binder.setBean(holidayRequest);
 		setVisible(true);
 		requester.focus();
+	}
+
+	void cancelEdit() {
+		changeHandler.onChange();
 	}
 
 	public void setChangeHandler(ChangeHandler h) {

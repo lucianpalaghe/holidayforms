@@ -35,7 +35,7 @@ public class HolidayRequest {
 	@Getter
 	@Setter
 	private String replacer; //User
-	@OneToMany(cascade = CascadeType.ALL)
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private List<Approval> approvals = new ArrayList<>();
 
 	public void addApproval(Approval approval) {
