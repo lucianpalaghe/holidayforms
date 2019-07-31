@@ -13,7 +13,12 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>holidayforms</name>
 	<description>Holiday forms</description>
-
+	<repositories>
+		<repository>
+			<id>vaadin-addons</id>
+			<url>http://maven.vaadin.com/vaadin-addons</url>
+		</repository>
+	</repositories>
 	<properties>
 		<java.version>1.8</java.version>
 		<vaadin.version>13.0.11</vaadin.version>
@@ -71,6 +76,11 @@
 			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin-themes</artifactId>
 			<version>${vaadin-themes.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.appreciated</groupId>
+			<artifactId>app-layout-addon</artifactId>
+			<version>LATEST</version>
 		</dependency>
 
 		<dependency>

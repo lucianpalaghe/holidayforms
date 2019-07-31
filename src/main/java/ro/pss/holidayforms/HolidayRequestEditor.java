@@ -75,8 +75,8 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		Binder.BindingBuilder<HolidayRequest, LocalDate> returnBindingBuilder = binder
 				.forField(dateTo)
-				.withValidator(r -> !(r == null), "Pana cand vrei sa pleci in concediu?")
-				.withValidator(r -> !r.isBefore(dateFrom.getValue()),"Nu poti sa pleci inainte sa te intorci!");
+				.asRequired("Pana cand vrei sa pleci in concediu?")
+				.withValidator(r -> r != null && !r.isBefore(dateFrom.getValue()),"Nu poti sa pleci inainte sa te intorci!");
 		Binder.Binding<HolidayRequest, LocalDate> returnBinder = returnBindingBuilder
 				.bind(HolidayRequest::getDateTo, HolidayRequest::setDateTo);
 

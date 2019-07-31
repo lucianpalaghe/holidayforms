@@ -7,23 +7,24 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.util.StringUtils;
 import ro.pss.holidayforms.domain.HolidayRequest;
+import ro.pss.holidayforms.gui.HolidayAppLayout;
 
 @SpringComponent
 @UIScope
+@Route(value = "", layout = HolidayAppLayout.class)
 public class HolidayRequestView extends VerticalLayout {
-	private final HolidayRequestRepository requestRepository;
-
-	private final HolidayRequestEditor editor;
-
 	final Grid<HolidayRequest> grid;
-
 	final TextField filter;
-
+	private final HolidayRequestRepository requestRepository;
+	private final HolidayRequestEditor editor;
 	private final Button addNewBtn;
+//	@Autowired
+//	private DefaultNotificationHolder notifications;
 
 	public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor) {
 		this.requestRepository = repo;
@@ -31,10 +32,9 @@ public class HolidayRequestView extends VerticalLayout {
 		this.grid = new Grid<>(HolidayRequest.class);
 		this.filter = new TextField();
 		this.addNewBtn = new Button("New HolidayRequest", VaadinIcon.PLUS.create());
-//		this.setWidth("75");
 
 		HorizontalLayout actions = new HorizontalLayout(filter, addNewBtn);
-		add(actions, grid, editor);
+		add(actions, grid, this.editor);
 
 		grid.setHeight("300px");
 		grid.setColumns("id", "requester", "replacer", "dateFrom", "dateTo", "type");
@@ -49,7 +49,10 @@ public class HolidayRequestView extends VerticalLayout {
 			editor.editHolidayRequest(e.getValue());
 		});
 
-		addNewBtn.addClickListener(e -> editor.editHolidayRequest(new HolidayRequest()));
+		addNewBtn.addClickListener(e -> {
+//			notifications.addNotification(new DefaultNotification("Test", "This is a test"));
+			editor.editHolidayRequest(new HolidayRequest());
+		});
 
 		editor.setChangeHandler(() -> {
 			editor.setVisible(false);

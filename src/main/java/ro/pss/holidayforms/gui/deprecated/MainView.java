@@ -1,10 +1,11 @@
-package ro.pss.holidayforms;
+package ro.pss.holidayforms.gui.deprecated;
 
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.router.Route;
+import ro.pss.holidayforms.HolidayRequestView;
 
 //@Route("/concedii")
-@Route(layout = MainLayout.class)
+//@Route(layout = MainLayout.class)
 public class MainView extends Div {
 	private final HolidayRequestView holidayRequestView;
 
