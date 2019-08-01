@@ -1,0 +1,7 @@
+INSERT INTO USER(id, email, name, department, photo, regular_vacation_days, role) VALUES (1,'lucian.palaghe@pss.ro'  , 'Lucian Palaghe'  , 'Dezvoltare software', 'cat.jpg', 21, 'USER');
+INSERT INTO USER(id, email, name, department, photo, regular_vacation_days, role) VALUES (2,'nicoleta.palie@pss.ro'  , 'Nicoleta Dobrea' , 'Dezvoltare software', 'cat.jpg', 21, 'USER');
+INSERT INTO USER(id, email, name, department, photo, regular_vacation_days, role) VALUES (3,'florin.sia@pss.ro'      , 'Florin Sia'      , 'Dezvoltare software', 'cat.jpg', 21, 'USER');
+INSERT INTO USER(id, email, name, department, photo, regular_vacation_days, role) VALUES (4,'raluca.purdeliu@pss.ro' , 'Raluca Purdeliu' , 'Testare'            , 'cat.jpg', 21, 'USER');
+INSERT INTO USER(id, email, name, department, photo, regular_vacation_days, role) VALUES (5,'alexandru.enescu@pss.ro', 'Alexandru Enescu', 'Dezvoltare software', 'cat.jpg', 21, 'USER');
+INSERT INTO USER(id, email, name, department, photo, regular_vacation_days, role) VALUES (6,'claudia.gican@pss.ro'   , 'Claudia Gican'   , 'Dezvoltare software', 'cat.jpg', 23, 'USER');
+INSERT INTO USER(id, email, name, department, photo, regular_vacation_days, role) VALUES (7,'luminita.petre@pss.ro'  , 'Luminita Petre'  , 'Resurse umane'      , 'cat.jpg', 25, 'HR');

@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import java.time.LocalDate;
+import javax.persistence.*;
 
 @Entity
 @NoArgsConstructor
@@ -22,5 +19,31 @@ public class User {
 
 	@Getter
 	@Setter
+	@Enumerated(EnumType.STRING)
+	private Role role;
+
+	@Getter
+	@Setter
 	private String name;
+
+	@Getter
+	@Setter
+	private String department;
+
+	@Getter
+	@Setter
+	private String photo;
+
+	@Getter
+	@Setter
+	private int regularVacationDays;
+
+	@Override
+	public String toString() {
+		return name;
+	}
+
+	public enum Role {
+		USER, HR
+	}
 }

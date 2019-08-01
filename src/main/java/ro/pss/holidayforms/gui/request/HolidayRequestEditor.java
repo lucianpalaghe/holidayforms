@@ -1,4 +1,4 @@
-package ro.pss.holidayforms;
+package ro.pss.holidayforms.gui.request;
 
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.KeyNotifier;
@@ -8,28 +8,28 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
-import ro.pss.holidayforms.domain.Approval;
-import ro.pss.holidayforms.domain.ApprovalStatus;
+import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
-import ro.pss.holidayforms.domain.HolidayType;
+import ro.pss.holidayforms.domain.User;
+import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
+import ro.pss.holidayforms.domain.repo.UserRepository;
 
 import java.time.LocalDate;
 
 @SpringComponent
 @UIScope
 public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier {
+	private final HolidayRequestRepository holidayRepo;
+	private final UserRepository userRepo;
 
-	private final HolidayRequestRepository repository;
-	TextField requester = new TextField("Cine cere");
-	TextField replacer = new TextField("Cine inlocuieste");
+	ComboBox<User> replacer = new ComboBox<>("Cine inlocuieste");
 	DatePicker dateFrom = new DatePicker("De la");
 	DatePicker dateTo = new DatePicker("Pana la");
-	ComboBox<HolidayType> type = new ComboBox<>();
+	ComboBox<HolidayRequest.Type> type = new ComboBox<>("Ce fel de concediu");
 	DatePicker creationDate = new DatePicker("Data crearii");
 	Button save = new Button("Save", VaadinIcon.CHECK.create());
 	Button cancel = new Button("Cancel");
@@ -40,11 +40,20 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private ChangeHandler changeHandler;
 
 	@Autowired
-	public HolidayRequestEditor(HolidayRequestRepository repository) {
-		this.repository = repository;
+	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository) {
+		this.holidayRepo = holidayRepository;
+		this.userRepo = userRepository;
 
-		type.setItems(HolidayType.values());
-		add(requester, replacer, dateFrom, dateTo, type, creationDate, actions);
+		type.setItems(HolidayRequest.Type.values());
+		replacer.setItems(userRepo.findAll());
+
+//		dateFrom.setLocale(new Locale("ro"));
+//		dateTo.setLocale(new Locale("ro"));
+//		creationDate.setLocale(new Locale("ro"));
+//
+//		dateFrom.getI18n().setFirstDayOfWeek(1);//setI18n(new DatePicker.DatePickerI18n().getDatePickerI18n().setFirstDayOfWeek(1));
+
+		add(replacer, dateFrom, dateTo, type, creationDate, actions);
 
 		addValidations();
 		binder.bindInstanceFields(this);
@@ -64,9 +73,6 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	}
 
 	private void addValidations() {
-		binder.forField(requester).asRequired("Cine vrea concediu?")
-				.bind(HolidayRequest::getRequester, HolidayRequest::setRequester);
-
 		binder.forField(replacer).asRequired("Cine te inlocuieste?")
 				.bind(HolidayRequest::getReplacer, HolidayRequest::setReplacer);
 
@@ -76,7 +82,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		Binder.BindingBuilder<HolidayRequest, LocalDate> returnBindingBuilder = binder
 				.forField(dateTo)
 				.asRequired("Pana cand vrei sa pleci in concediu?")
-				.withValidator(r -> r != null && !r.isBefore(dateFrom.getValue()),"Nu poti sa pleci inainte sa te intorci!");
+				.withValidator(r -> r != null && !r.isBefore(dateFrom.getValue()), "Nu poti sa pleci inainte sa te intorci!");
 		Binder.Binding<HolidayRequest, LocalDate> returnBinder = returnBindingBuilder
 				.bind(HolidayRequest::getDateTo, HolidayRequest::setDateTo);
 
@@ -90,14 +96,18 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	}
 
 	void delete() {
-		repository.delete(holidayRequest);
+		holidayRepo.delete(holidayRequest);
 		changeHandler.onChange();
 	}
 
+	//	void save(@UserPrincipal User loggedInUser) {
 	void save() {
 		if (binder.validate().isOk()) {
-			holidayRequest.addApproval(new Approval("Luminita", ApprovalStatus.NEW));
-			repository.save(holidayRequest);
+			User requester = userRepo.getOne("lucian.palaghe@pss.ro");
+			User approver = userRepo.getOne("luminita.petre@pss.ro");
+			holidayRequest.setRequester(requester);
+			holidayRequest.addApproval(new ApprovalRequest(approver, ApprovalRequest.Status.NEW));
+			holidayRepo.save(holidayRequest);
 			changeHandler.onChange();
 		}
 
@@ -110,7 +120,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		}
 		final boolean persisted = c.getId() != null;
 		if (persisted) {
-			holidayRequest = repository.findById(c.getId()).get();
+			holidayRequest = holidayRepo.findById(c.getId()).get();
 		} else {
 			holidayRequest = c;
 		}
@@ -118,7 +128,6 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		cancel.setVisible(persisted);
 		binder.setBean(holidayRequest);
 		setVisible(true);
-		requester.focus();
 	}
 
 	void cancelEdit() {

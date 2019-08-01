@@ -21,7 +21,6 @@
 	</repositories>
 	<properties>
 		<java.version>1.8</java.version>
-		<vaadin.version>13.0.11</vaadin.version>
 		<vaadin.version>13.0.9</vaadin.version>
 		<vaadin.plugin.version>13.0.9</vaadin.plugin.version>
 		<vaadin-spring-boot-starter.version>13.0.9</vaadin-spring-boot-starter.version>
@@ -122,6 +121,10 @@
 		<dependency>
 			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin-charts-flow</artifactId>
 		</dependency>
 
 	</dependencies>

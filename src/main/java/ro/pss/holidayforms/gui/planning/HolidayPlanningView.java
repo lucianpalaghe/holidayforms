@@ -1,5 +1,7 @@
-package ro.pss.holidayforms;
+package ro.pss.holidayforms.gui.planning;
 
+import com.github.appreciated.app.layout.notification.DefaultNotificationHolder;
+import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
@@ -13,24 +15,26 @@ import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.util.StringUtils;
 import ro.pss.holidayforms.domain.HolidayRequest;
+import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
+import ro.pss.holidayforms.gui.request.HolidayRequestEditor;
 
 @SpringComponent
 @UIScope
-@Route(value = "", layout = HolidayAppLayout.class)
-public class HolidayRequestView extends VerticalLayout {
+@Route(value = "planning", layout = HolidayAppLayout.class)
+public class HolidayPlanningView extends VerticalLayout {
 	final Grid<HolidayRequest> grid;
 	final TextField filter;
 	private final HolidayRequestRepository requestRepository;
 	private final HolidayRequestEditor editor;
 	private final Button addNewBtn;
 	private final Dialog dialog;
-//	@Autowired
-//	private DefaultNotificationHolder notifications;
+	private DefaultNotificationHolder notifications;
 
-	public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor) {
+	public HolidayPlanningView(HolidayRequestRepository repo, HolidayRequestEditor editor, DefaultNotificationHolder notifs) {
 		this.requestRepository = repo;
 		this.editor = editor;
+		this.notifications = notifs;
 		this.grid = new Grid<>(HolidayRequest.class);
 		this.filter = new TextField();
 		this.addNewBtn = new Button("New HolidayRequest", VaadinIcon.PLUS.create());
@@ -57,9 +61,11 @@ public class HolidayRequestView extends VerticalLayout {
 		});
 
 		addNewBtn.addClickListener(e -> {
-//			notifications.addNotification(new DefaultNotification("Test", "This is a test"));
+//			Notification.show("testnotif");
+			notifications.addNotification(new DefaultNotification("Test", "This is a test"));
 //			editor.editHolidayRequest(new HolidayRequest());
-			 editor.editHolidayRequest(new HolidayRequest()); mountEditorInDialog(true);
+			editor.editHolidayRequest(new HolidayRequest());
+			mountEditorInDialog(true);
 		});
 
 		editor.setChangeHandler(() -> {
@@ -79,12 +85,13 @@ public class HolidayRequestView extends VerticalLayout {
 //			grid.setItems(requestRepository.findByLastNameStartsWithIgnoreCase(filterText));
 //		}
 	}
+
 	void mountEditorInDialog(boolean mount) {
-		if(mount && editor.isVisible()) {
+		if (mount && editor.isVisible()) {
 			dialog.removeAll();
 			dialog.addComponentAsFirst(this.editor);
 			dialog.open();
-		}else {
+		} else {
 			dialog.close();
 			dialog.removeAll();
 		}

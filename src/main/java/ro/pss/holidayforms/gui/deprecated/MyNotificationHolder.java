@@ -6,5 +6,5 @@ import org.springframework.stereotype.Component;
 
 @Component
 @NoArgsConstructor
-public class NotificationHolder extends DefaultNotificationHolder {
+public class MyNotificationHolder extends DefaultNotificationHolder {
 }
