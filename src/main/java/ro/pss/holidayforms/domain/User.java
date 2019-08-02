@@ -38,6 +38,12 @@ public class User {
 	@Setter
 	private int regularVacationDays;
 
+	public static User EMPTY = new User("");
+
+	private User(String name) {
+		this.name = name;
+	}
+
 	@Override
 	public String toString() {
 		return name;

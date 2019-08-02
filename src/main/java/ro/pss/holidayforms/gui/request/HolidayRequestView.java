@@ -1,56 +1,47 @@
 package ro.pss.holidayforms.gui.request;
 
-import com.github.appreciated.app.layout.notification.DefaultNotificationHolder;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import org.springframework.util.StringUtils;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
+
+import java.util.List;
 
 @SpringComponent
 @UIScope
 @Route(value = "requests", layout = HolidayAppLayout.class)
 public class HolidayRequestView extends VerticalLayout {
 	final Grid<HolidayRequest> grid;
-	final TextField filter;
 	private final HolidayRequestRepository requestRepository;
 	private final HolidayRequestEditor editor;
 	private final Button addNewBtn;
 	private final Dialog dialog;
-	private DefaultNotificationHolder notifications;
 
-	public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor, DefaultNotificationHolder notifs) {
+	public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor) {
 		this.requestRepository = repo;
 		this.editor = editor;
-		this.notifications = notifs;
-		this.grid = new Grid<>(HolidayRequest.class);
-		this.filter = new TextField();
+		this.grid = new Grid<>();
 		this.addNewBtn = new Button("New HolidayRequest", VaadinIcon.PLUS.create());
 		this.dialog = new Dialog(editor);
-		this.dialog.setWidth("300px");
-		this.dialog.setHeight("600px");
 		this.dialog.setCloseOnOutsideClick(false);
 
-		HorizontalLayout actions = new HorizontalLayout(filter, addNewBtn);
+		HorizontalLayout actions = new HorizontalLayout(addNewBtn);
 		add(actions, grid, this.editor);
+		setHeightFull();
+		grid.addColumn(HolidayRequest::getNumberOfDays).setHeader("Numar de zile").setFlexGrow(1);
+		grid.addColumn(HolidayRequest::getDateFrom).setHeader("Incepand cu data").setFlexGrow(1);
+		grid.addColumn(HolidayRequest::getSubstitute).setHeader("Inlocuitor").setFlexGrow(10);
 
-		grid.setHeight("300px");
-		grid.setColumns("dateFrom", "dateTo", "replacer", "numberOfDays", "type");
-//		grid.getColumnByKey("id").setWidth("50px").setFlexGrow(0);
-
-//		filter.setPlaceholder("Filter by last name");
-//
-//		filter.setValueChangeMode(ValueChangeMode.EAGER);
-//		filter.addValueChangeListener(e -> listHolidayRequests(e.getValue()));
+//		grid.setWidthFull();
+//		grid.setHeightFull();
 
 		grid.asSingleSelect().addValueChangeListener(e -> {
 			editor.editHolidayRequest(e.getValue());
@@ -58,29 +49,27 @@ public class HolidayRequestView extends VerticalLayout {
 		});
 
 		addNewBtn.addClickListener(e -> {
-//			Notification.show("testnotif");
-//			notifications.addNotification(new DefaultNotification("Test", "This is a test"));
-//			editor.editHolidayRequest(new HolidayRequest());
 			editor.editHolidayRequest(new HolidayRequest());
 			mountEditorInDialog(true);
 		});
 
 		editor.setChangeHandler(() -> {
 			editor.setVisible(false);
-			listHolidayRequests(filter.getValue());
+			listHolidayRequests();
 			mountEditorInDialog(false);
 		});
 
-		listHolidayRequests(null);
+		listHolidayRequests();
 	}
 
-	void listHolidayRequests(String filterText) {
-		if (StringUtils.isEmpty(filterText)) {
-			grid.setItems(requestRepository.findAll());
+	void listHolidayRequests() {
+		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail("luminita.petre@pss.ro");
+		if (requests.isEmpty()) {
+			grid.setVisible(false);
+		} else {
+			grid.setVisible(true);
+			grid.setItems(requests);
 		}
-//		else {
-//			grid.setItems(requestRepository.findByLastNameStartsWithIgnoreCase(filterText));
-//		}
 	}
 
 	void mountEditorInDialog(boolean mount) {

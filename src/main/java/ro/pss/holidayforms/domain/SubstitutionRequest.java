@@ -8,15 +8,16 @@ import javax.persistence.*;
 
 @NoArgsConstructor
 @Entity
-public class ApprovalRequest {
+public class SubstitutionRequest {
 	@Id
 	@GeneratedValue
 	private Long id;
 
 	@ManyToOne
-	private User approver;
+	@Getter
+	private User substitute;
 
-	@ManyToOne
+	@OneToOne
 	@Setter
 	@Getter
 	private HolidayRequest request;
@@ -25,20 +26,20 @@ public class ApprovalRequest {
 	@Getter
 	private Status status;
 
-	public ApprovalRequest(User approver, Status status) {
-		this.approver = approver;
+	public SubstitutionRequest(User substitute, Status status) {
+		this.substitute = substitute;
 		this.status = status;
 	}
 
 	public enum Status {
-		NEW, APPROVED, DENIED, POSTPONED
+		NEW, APPROVED, DENIED
 	}
 
 	public void approve() {
-		status = ApprovalRequest.Status.APPROVED;
+		status = Status.APPROVED;
 	}
 
 	public void deny() {
-		status = ApprovalRequest.Status.DENIED;
+		status = Status.DENIED;
 	}
 }

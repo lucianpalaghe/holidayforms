@@ -1,99 +1,71 @@
 package ro.pss.holidayforms.gui.approval;
 
-import com.github.appreciated.app.layout.notification.DefaultNotificationHolder;
-import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import org.springframework.util.StringUtils;
-import ro.pss.holidayforms.domain.HolidayRequest;
-import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
+import ro.pss.holidayforms.domain.ApprovalRequest;
+import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
-import ro.pss.holidayforms.gui.request.HolidayRequestEditor;
 
 @SpringComponent
 @UIScope
 @Route(value = "approvals", layout = HolidayAppLayout.class)
 public class HolidayApprovalView extends VerticalLayout {
-	final Grid<HolidayRequest> grid;
-	final TextField filter;
-	private final HolidayRequestRepository requestRepository;
-	private final HolidayRequestEditor editor;
-	private final Button addNewBtn;
-	private final Dialog dialog;
-	private DefaultNotificationHolder notifications;
+	final Grid<ApprovalRequest> grid;
+	private final ApprovalRequestRepository requestRepository;
 
-	public HolidayApprovalView(HolidayRequestRepository repo, HolidayRequestEditor editor, DefaultNotificationHolder notifs) {
+	public HolidayApprovalView(ApprovalRequestRepository repo) {
 		this.requestRepository = repo;
-		this.editor = editor;
-		this.notifications = notifs;
-		this.grid = new Grid<>(HolidayRequest.class);
-		this.filter = new TextField();
-		this.addNewBtn = new Button("New HolidayRequest", VaadinIcon.PLUS.create());
-		this.dialog = new Dialog(editor);
-		this.dialog.setWidth("300px");
-		this.dialog.setHeight("600px");
-		this.dialog.setCloseOnOutsideClick(false);
+		this.grid = new Grid<>();
 
-		HorizontalLayout actions = new HorizontalLayout(filter, addNewBtn);
-		add(actions, grid, this.editor);
+		grid.addColumn(r -> r.getRequest().getRequester()).setHeader("Pe cine");
+		grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader("Numar de zile");
+		grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader("Incepand cu data");
+		grid.addColumn(r -> r.getStatus()).setHeader("Status");
+		grid.addColumn(new ComponentRenderer<>(this::getActionButtons));
 
-		grid.setHeight("300px");
-		grid.setColumns("id", "requester", "replacer", "dateFrom", "dateTo", "type");
-		grid.getColumnByKey("id").setWidth("50px").setFlexGrow(0);
-
-		filter.setPlaceholder("Filter by last name");
-
-		filter.setValueChangeMode(ValueChangeMode.EAGER);
-		filter.addValueChangeListener(e -> listHolidayRequests(e.getValue()));
-
-		grid.asSingleSelect().addValueChangeListener(e -> {
-			editor.editHolidayRequest(e.getValue());
-			mountEditorInDialog(true);
-		});
-
-		addNewBtn.addClickListener(e -> {
-//			Notification.show("testnotif");
-			notifications.addNotification(new DefaultNotification("Test", "This is a test"));
-//			editor.editHolidayRequest(new HolidayRequest());
-			editor.editHolidayRequest(new HolidayRequest());
-			mountEditorInDialog(true);
-		});
-
-		editor.setChangeHandler(() -> {
-			editor.setVisible(false);
-			listHolidayRequests(filter.getValue());
-			mountEditorInDialog(false);
-		});
-
-		listHolidayRequests(null);
+		add(grid);
+		setHeightFull();
+		listHolidayRequests();
 	}
 
-	void listHolidayRequests(String filterText) {
-		if (StringUtils.isEmpty(filterText)) {
-			grid.setItems(requestRepository.findAll());
+	void listHolidayRequests() {
+		grid.setItems(requestRepository.findAllByApproverEmail("luminita.petre@pss.ro"));
+	}
+
+	private HorizontalLayout getActionButtons(ApprovalRequest substitutionRequest) {
+		Button btnApprove = new Button(VaadinIcon.CHECK_CIRCLE.create(), event -> {
+			substitutionRequest.approve();
+			requestRepository.save(substitutionRequest);
+			grid.getDataProvider().refreshItem(substitutionRequest);
+		});
+		btnApprove.addThemeName("success");
+
+		Button btnDeny = new Button(VaadinIcon.CLOSE_CIRCLE.create(), event -> {
+			substitutionRequest.deny();
+			requestRepository.save(substitutionRequest);
+			grid.getDataProvider().refreshItem(substitutionRequest);
+		});
+		btnDeny.addThemeName("error");
+
+		if (substitutionRequest.getStatus() == ApprovalRequest.Status.NEW) {
+			return new HorizontalLayout(btnApprove, btnDeny);
 		}
-//		else {
-//			grid.setItems(requestRepository.findByLastNameStartsWithIgnoreCase(filterText));
-//		}
-	}
 
-	void mountEditorInDialog(boolean mount) {
-		if (mount && editor.isVisible()) {
-			dialog.removeAll();
-			dialog.addComponentAsFirst(this.editor);
-			dialog.open();
+		if (substitutionRequest.getStatus() == ApprovalRequest.Status.APPROVED) {
+			btnApprove.setEnabled(false);
+			btnDeny.setEnabled(false);
+			return new HorizontalLayout(btnApprove);
 		} else {
-			dialog.close();
-			dialog.removeAll();
+			btnApprove.setEnabled(false);
+			btnDeny.setEnabled(false);
+			return new HorizontalLayout(btnDeny);
 		}
 	}
 }

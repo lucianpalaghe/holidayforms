@@ -9,13 +9,13 @@ import com.github.appreciated.app.layout.component.menu.left.items.LeftNavigatio
 import com.github.appreciated.app.layout.entity.DefaultBadgeHolder;
 import com.github.appreciated.app.layout.notification.DefaultNotificationHolder;
 import com.github.appreciated.app.layout.notification.component.AppBarNotificationButton;
+import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.github.appreciated.app.layout.router.AppLayoutRouterLayout;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.page.Viewport;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
 import ro.pss.holidayforms.gui.dashboard.DashboardView;
-import ro.pss.holidayforms.gui.planning.HolidayPlanningView;
 import ro.pss.holidayforms.gui.request.HolidayRequestView;
 import ro.pss.holidayforms.gui.subtitution.SubstitutionRequestView;
 
@@ -25,16 +25,26 @@ import static com.github.appreciated.app.layout.entity.Section.HEADER;
 @Push
 @Viewport("width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes")
 public class HolidayAppLayout extends AppLayoutRouterLayout {
-	private DefaultNotificationHolder notifications;
-	private DefaultBadgeHolder badge = new DefaultBadgeHolder();
+	private DefaultNotificationHolder notifications = new DefaultNotificationHolder();
+	private DefaultBadgeHolder substitutionBadge = new DefaultBadgeHolder();
+	private DefaultBadgeHolder approvalBadge = new DefaultBadgeHolder();
 
 	public HolidayAppLayout(DefaultNotificationHolder notifications) {
-		this.notifications = notifications;
 		this.notifications.addClickListener(notification -> System.out.println(notification.getTitle()));
-//		this.notifications.addNotification(new DefaultNotification("title", "description"));
 
-		LeftNavigationItem menuEntry = new LeftNavigationItem("De aprobat", VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
-		badge.bind(menuEntry.getBadge());
+		LeftHeaderItemExt userItem = new LeftHeaderItemExt("User Johnson", null, "cat.jpg");
+		LeftNavigationItem holidayRequestsMenuEntry = new LeftNavigationItem("Cererile mele", VaadinIcon.AIRPLANE.create(), HolidayRequestView.class);
+		LeftNavigationItem dashboardMenuEntry = new LeftNavigationItem("Dashboard", VaadinIcon.LINE_CHART.create(), DashboardView.class);
+		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem("Ca inlocuitor", VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
+		LeftNavigationItem planningMenuEntry = new LeftNavigationItem("Planificare", VaadinIcon.EDIT.create(), SubstitutionRequestView.class);
+		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem("De aprobat", VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
+		substitutionBadge.bind(substitutionMenuEntry.getBadge());
+		approvalBadge.bind(approvalMenuEntry.getBadge());
+
+		LeftClickableItem preferencesMenuEntry = new LeftClickableItem("Preferinte", VaadinIcon.COG.create(),
+				clickEvent -> this.notifications.addNotification(new DefaultNotification("Whoops", "Not implemented yet!"))
+		);
+
 		init(AppLayoutBuilder
 				.get(Behaviour.LEFT_RESPONSIVE)
 				.withTitle("Holidays")
@@ -45,18 +55,13 @@ public class HolidayAppLayout extends AppLayoutRouterLayout {
 						.build())
 				.withAppMenu(LeftAppMenuBuilder
 						.get()
-						.addToSection(new LeftHeaderItemExt("User Johnson", null, "cat.jpg"), HEADER)
-						.add(new LeftNavigationItem("Dashboard", VaadinIcon.LINE_CHART.create(), DashboardView.class))
-						.add(new LeftNavigationItem("Cererile mele", VaadinIcon.AIRPLANE.create(), HolidayRequestView.class))
-						.add(new LeftNavigationItem("Ca inlocuitor", VaadinIcon.OFFICE.create(), SubstitutionRequestView.class))
-						.add(new LeftNavigationItem("Planificare", VaadinIcon.EDIT.create(), HolidayPlanningView.class))
-						.add(menuEntry)
-						.addToSection(new LeftClickableItem("Preferinte",
-								VaadinIcon.COG.create(),
-								clickEvent -> {//Notification.show("onClick ...");
-									badge.increase();
-								}
-						), FOOTER)
+						.addToSection(userItem, HEADER)
+						.add(dashboardMenuEntry)
+						.add(holidayRequestsMenuEntry)
+						.add(substitutionMenuEntry)
+						.add(planningMenuEntry)
+						.add(approvalMenuEntry)
+						.addToSection(preferencesMenuEntry, FOOTER)
 						.build())
 				.build());
 	}

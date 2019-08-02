@@ -26,11 +26,12 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final HolidayRequestRepository holidayRepo;
 	private final UserRepository userRepo;
 
-	ComboBox<User> replacer = new ComboBox<>("Cine inlocuieste");
+	ComboBox<User> replacer = new ComboBox<>("Inlocuitor");
 	DatePicker dateFrom = new DatePicker("De la");
 	DatePicker dateTo = new DatePicker("Pana la");
-	ComboBox<HolidayRequest.Type> type = new ComboBox<>("Ce fel de concediu");
+	ComboBox<HolidayRequest.Type> type = new ComboBox<>("Tipul de concediu");
 	DatePicker creationDate = new DatePicker("Data crearii");
+
 	Button save = new Button("Save", VaadinIcon.CHECK.create());
 	Button cancel = new Button("Cancel");
 	Button delete = new Button("Delete", VaadinIcon.TRASH.create());
@@ -45,13 +46,8 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		this.userRepo = userRepository;
 
 		type.setItems(HolidayRequest.Type.values());
+//		type.setItemLabelGenerator(i -> example.getDescription());
 		replacer.setItems(userRepo.findAll());
-
-//		dateFrom.setLocale(new Locale("ro"));
-//		dateTo.setLocale(new Locale("ro"));
-//		creationDate.setLocale(new Locale("ro"));
-//
-//		dateFrom.getI18n().setFirstDayOfWeek(1);//setI18n(new DatePicker.DatePickerI18n().getDatePickerI18n().setFirstDayOfWeek(1));
 
 		add(replacer, dateFrom, dateTo, type, creationDate, actions);
 
@@ -74,7 +70,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 	private void addValidations() {
 		binder.forField(replacer).asRequired("Cine te inlocuieste?")
-				.bind(HolidayRequest::getReplacer, HolidayRequest::setReplacer);
+				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
 		binder.forField(dateFrom).asRequired("Cand vrei sa pleci in concediu?")
 				.bind(HolidayRequest::getDateFrom, HolidayRequest::setDateFrom);
@@ -103,7 +99,8 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	//	void save(@UserPrincipal User loggedInUser) {
 	void save() {
 		if (binder.validate().isOk()) {
-			User requester = userRepo.getOne("lucian.palaghe@pss.ro");
+//			User requester = userRepo.getOne("lucian.palaghe@pss.ro");
+			User requester = userRepo.getOne("luminita.petre@pss.ro");
 			User approver = userRepo.getOne("luminita.petre@pss.ro");
 			holidayRequest.setRequester(requester);
 			holidayRequest.addApproval(new ApprovalRequest(approver, ApprovalRequest.Status.NEW));

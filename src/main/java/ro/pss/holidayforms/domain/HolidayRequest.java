@@ -41,15 +41,21 @@ public class HolidayRequest {
 	private LocalDate creationDate;
 
 	@Getter
-	@Setter
-	@ManyToOne
-	private User replacer;
+	@OneToOne(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	private SubstitutionRequest substitutionRequest;
 
 	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private List<ApprovalRequest> approvalRequests = new ArrayList<>();
 
 	@Transient
 	private int numberOfDays;
+
+	public void addSubstitute(User substitute) {
+		if (substitute != null) {
+			substitutionRequest = new SubstitutionRequest(substitute, SubstitutionRequest.Status.NEW);
+			substitutionRequest.setRequest(this);
+		}
+	}
 
 	public void addApproval(ApprovalRequest approvalRequest) {
 		if (approvalRequest != null) {
@@ -60,6 +66,13 @@ public class HolidayRequest {
 
 	public long getNumberOfDays() {
 		return DateUtils.getWorkingDays(dateFrom, dateTo);
+	}
+
+	public User getSubstitute() {
+		if (substitutionRequest == null) {
+			return null;
+		}
+		return substitutionRequest.getSubstitute();
 	}
 
 	public enum Type {
