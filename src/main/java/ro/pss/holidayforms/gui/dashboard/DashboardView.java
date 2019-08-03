@@ -8,51 +8,130 @@ import be.ceau.chart.options.Legend;
 import be.ceau.chart.options.LineOptions;
 import com.syndybat.chartjs.ChartJs;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
+import ro.pss.holidayforms.domain.HolidayRequest;
+import ro.pss.holidayforms.domain.User;
+import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
+import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
+import ro.pss.holidayforms.gui.utils.DateUtils;
+
+import java.time.Month;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.summingInt;
+
+//import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
 
 @Route(value = "", layout = HolidayAppLayout.class)
-public class DashboardView extends VerticalLayout {
-	public DashboardView() {
-		add(new Label("mai ai x zile de concediu de odihna"));
-		ChartJs barChartJs = new ChartJs(getBarChart());
-		Div div2 = new Div();
-		div2.setHeightFull();
-		div2.setWidthFull();
-		add(div2);
-		div2.add(barChartJs);
+public class DashboardView extends HorizontalLayout implements AfterNavigationObserver {
+	private final HolidayRequestRepository requestRepository;
+	private final UserRepository userRepository;
+	//	private final HolidayPlanningRepository planningRepository;
+	private H2 remainingDaysHeader = new H2();
+	private ChartJs holidaysChart;
+	private LineDataset chartPlannedDays;
+	private LineDataset chartHolidays;
+	private LineData chartLineData;
+	private LineOptions chartLineOptions;
+	private String email = "lucian.palaghe@pss.ro";
+
+	public DashboardView(HolidayRequestRepository requestRepository, UserRepository userRepository) {//}, HolidayPlanningRepository planningRepository) {
+		this.requestRepository = requestRepository;
+		this.userRepository = userRepository;
+//		this.planningRepository = planningRepository;
+
+		VerticalLayout container = new VerticalLayout();
+		container.add(remainingDaysHeader);
+
+		User user = userRepository.findById(email).get();
+		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(email);
+		refreshHeader(user, requests);
+
+		initializeChart();
+
+		holidaysChart = getUpdatedChart(requests);
+		Div chartContainer = new Div();
+		chartContainer.setWidthFull();
+		chartContainer.add(holidaysChart);
+
+		container.add(chartContainer);
+		container.setWidth("100%");
+		container.setMaxWidth("70em");
+		container.setHeightFull();
+
+		setJustifyContentMode(JustifyContentMode.CENTER);
+		setAlignItems(Alignment.CENTER);
+		add(container);
+		setHeightFull();
 	}
 
-	private String getBarChart() {
-		LineDataset planned = new LineDataset()
-				.setLabel("Planificat")
-				.setData(0, 1, 0, 3, 2, 5, 5, 0, 0, 1, 0, 6)
+	private void refreshHeader(User user, List<HolidayRequest> requests) {
+		int sumDaysTaken = requests.stream()
+				.filter(HolidayRequest::isCO)
+				.mapToInt(r -> DateUtils.getWorkingDays(r.getDateFrom(), r.getDateTo()))
+				.sum();
+
+		int days = user.getRegularVacationDays() - sumDaysTaken;//requestRepository.getRemainingDaysByUserEmail("lucian.palaghe@pss.ro");
+		remainingDaysHeader.setText(String.format("Mai ai %d zile de concediu de odihna", days));
+	}
+
+	private void initializeChart() {
+		chartPlannedDays = new LineDataset()
+				.setLabel("Zile planificate")
 				.setBackgroundColor(Color.TRANSPARENT)
 				.setBorderColor(Color.LIGHT_BLUE)
 				.addPointBackgroundColor(Color.LIGHT_BLUE)
 				.setLineTension(0f);
-		LineDataset done = new LineDataset()
+
+		chartHolidays = new LineDataset()
 				.setLabel("Concediu luat")
-				.setData(0, 1, 0, 5, 5, 1, 1, 0, 0, 1, 3, 6)
 				.setBackgroundColor(Color.TRANSPARENT)
 				.setBorderColor(Color.CRIMSON)
 				.addPointBackgroundColor(Color.CRIMSON)
 				.setLineTension(0f);
 
-		LineData data = new LineData()
+		chartLineData = new LineData()
 				.addLabels("Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie")
-				.addDataset(done)
-				.addDataset(planned);
+				.addDataset(chartHolidays)
+				.addDataset(chartPlannedDays);
 
-//		JavaScriptFunction label = new JavaScriptFunction("\"function(chart) {console.log('test legend');}\"");
-
-		LineOptions lineOptions = new LineOptions()
+		chartLineOptions = new LineOptions()
 				.setResponsive(true)
-				.setLegend(new Legend().setDisplay(true));//.setOnClick(label));
-
-		return new LineChart(data, lineOptions).toJson();
+				.setLegend(new Legend().setDisplay(true));
 	}
 
+	private ChartJs getUpdatedChart(List<HolidayRequest> requests) {
+		Map<Month, Integer> holidaysGroupedByMonth = requests.stream()
+				.collect(groupingBy(HolidayRequest::getStartingMonthOfHoliday,
+						summingInt(HolidayRequest::getNumberOfDays)));
+
+		Map<Month, Integer> emptyMonthsMap = DateUtils.getEmptyMonthsMap();
+		emptyMonthsMap.putAll(holidaysGroupedByMonth);
+
+		TreeMap<Month, Integer> monthIntegerTreeMap = new TreeMap<>(emptyMonthsMap);// treemap sorts contents by key
+
+		int[] daysArray = monthIntegerTreeMap.values().stream().mapToInt(i -> i).toArray();
+		chartPlannedDays.setData(0, 1, 0, 3, 2, 5, 5, 0, 0, 1, 0, 6);
+		chartHolidays.setData(daysArray);
+
+		return new ChartJs(new LineChart(chartLineData, chartLineOptions).toJson());
+	}
+
+	@Override
+	public void afterNavigation(AfterNavigationEvent event) {
+		User user = userRepository.findById(email).get();
+		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(email);
+
+		refreshHeader(user, requests);
+		holidaysChart = getUpdatedChart(requests);
+	}
 }

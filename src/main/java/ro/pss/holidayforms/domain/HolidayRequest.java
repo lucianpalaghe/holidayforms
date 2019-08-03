@@ -7,6 +7,7 @@ import ro.pss.holidayforms.gui.utils.DateUtils;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,7 +65,7 @@ public class HolidayRequest {
 		}
 	}
 
-	public long getNumberOfDays() {
+	public int getNumberOfDays() {
 		return DateUtils.getWorkingDays(dateFrom, dateTo);
 	}
 
@@ -73,6 +74,14 @@ public class HolidayRequest {
 			return null;
 		}
 		return substitutionRequest.getSubstitute();
+	}
+
+	public boolean isCO() {
+		return type == HolidayRequest.Type.CO;
+	}
+
+	public Month getStartingMonthOfHoliday() {
+		return dateFrom.getMonth();
 	}
 
 	public enum Type {

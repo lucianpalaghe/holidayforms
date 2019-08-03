@@ -2,8 +2,12 @@ package ro.pss.holidayforms.gui.utils;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.Year;
 import java.util.*;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toMap;
 
 public class DateUtils {
 	private static final Set<LocalDate> HOLIDAYS;
@@ -60,4 +64,22 @@ public class DateUtils {
 		}
 		return false;
 	}
+
+	public static Map<Month, Integer> getEmptyMonthsMap() {
+		return Stream.of(new Object[][]{
+				{Month.JANUARY, 0},
+				{Month.FEBRUARY, 0},
+				{Month.MARCH, 0},
+				{Month.APRIL, 0},
+				{Month.MAY, 0},
+				{Month.JUNE, 0},
+				{Month.JULY, 0},
+				{Month.AUGUST, 0},
+				{Month.SEPTEMBER, 0},
+				{Month.OCTOBER, 0},
+				{Month.NOVEMBER, 0},
+				{Month.DECEMBER, 0},
+		}).collect(toMap(data -> (Month) data[0], data -> (Integer) data[1]));
+	}
+
 }

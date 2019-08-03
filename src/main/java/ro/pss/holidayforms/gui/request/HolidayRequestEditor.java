@@ -19,6 +19,9 @@ import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @SpringComponent
 @UIScope
@@ -32,13 +35,17 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	ComboBox<HolidayRequest.Type> type = new ComboBox<>("Tipul de concediu");
 	DatePicker creationDate = new DatePicker("Data crearii");
 
-	Button save = new Button("Save", VaadinIcon.CHECK.create());
-	Button cancel = new Button("Cancel");
-	Button delete = new Button("Delete", VaadinIcon.TRASH.create());
-	HorizontalLayout actions = new HorizontalLayout(save, cancel, delete);
+	Button btnSave = new Button("Save", VaadinIcon.CHECK.create());
+	Button btnCancel = new Button("Cancel");
+	Button btnDelete = new Button("Delete", VaadinIcon.TRASH.create());
+	HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
 	Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
 	private HolidayRequest holidayRequest;
 	private ChangeHandler changeHandler;
+
+	// TODO: remove, only used for testing without security implementation
+	private String userId = "lucian.palaghe@pss.ro";
+	private List<String> approverIds = Arrays.asList("luminita.petre@pss.ro");
 
 	@Autowired
 	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository) {
@@ -57,14 +64,14 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		setSpacing(true);
 
-		save.getElement().getThemeList().add("primary");
-		delete.getElement().getThemeList().add("error");
+		btnSave.getElement().getThemeList().add("primary");
+		btnDelete.getElement().getThemeList().add("error");
 
 		addKeyPressListener(Key.ENTER, e -> save());
 
-		save.addClickListener(e -> save());
-		delete.addClickListener(e -> delete());
-		cancel.addClickListener(e -> cancelEdit());
+		btnSave.addClickListener(e -> save());
+		btnDelete.addClickListener(e -> delete());
+		btnCancel.addClickListener(e -> cancelEdit());
 		setVisible(false);
 	}
 
@@ -99,15 +106,18 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	//	void save(@UserPrincipal User loggedInUser) {
 	void save() {
 		if (binder.validate().isOk()) {
-//			User requester = userRepo.getOne("lucian.palaghe@pss.ro");
-			User requester = userRepo.getOne("luminita.petre@pss.ro");
-			User approver = userRepo.getOne("luminita.petre@pss.ro");
+			User requester = userRepo.getOne(userId);
+
+			List<ApprovalRequest> approvalRequests = approverIds.stream().map(a -> { // TODO: refactor
+				User approver = userRepo.getOne(a);
+				return new ApprovalRequest(approver, ApprovalRequest.Status.NEW);
+			}).collect(Collectors.toList());
+			approvalRequests.stream().forEach(a -> holidayRequest.addApproval(a));
+
 			holidayRequest.setRequester(requester);
-			holidayRequest.addApproval(new ApprovalRequest(approver, ApprovalRequest.Status.NEW));
 			holidayRepo.save(holidayRequest);
 			changeHandler.onChange();
 		}
-
 	}
 
 	public final void editHolidayRequest(HolidayRequest c) {
@@ -122,7 +132,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 			holidayRequest = c;
 		}
 
-		cancel.setVisible(persisted);
+		btnDelete.setVisible(persisted);
 		binder.setBean(holidayRequest);
 		setVisible(true);
 	}

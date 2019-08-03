@@ -16,6 +16,7 @@ import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.page.Viewport;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
 import ro.pss.holidayforms.gui.dashboard.DashboardView;
+import ro.pss.holidayforms.gui.planning.HolidayPlanningView;
 import ro.pss.holidayforms.gui.request.HolidayRequestView;
 import ro.pss.holidayforms.gui.subtitution.SubstitutionRequestView;
 
@@ -36,7 +37,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout {
 		LeftNavigationItem holidayRequestsMenuEntry = new LeftNavigationItem("Cererile mele", VaadinIcon.AIRPLANE.create(), HolidayRequestView.class);
 		LeftNavigationItem dashboardMenuEntry = new LeftNavigationItem("Dashboard", VaadinIcon.LINE_CHART.create(), DashboardView.class);
 		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem("Ca inlocuitor", VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
-		LeftNavigationItem planningMenuEntry = new LeftNavigationItem("Planificare", VaadinIcon.EDIT.create(), SubstitutionRequestView.class);
+		LeftNavigationItem planningMenuEntry = new LeftNavigationItem("Planificare", VaadinIcon.EDIT.create(), HolidayPlanningView.class);
 		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem("De aprobat", VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
 		substitutionBadge.bind(substitutionMenuEntry.getBadge());
 		approvalBadge.bind(approvalMenuEntry.getBadge());
@@ -59,8 +60,8 @@ public class HolidayAppLayout extends AppLayoutRouterLayout {
 						.add(dashboardMenuEntry)
 						.add(holidayRequestsMenuEntry)
 						.add(substitutionMenuEntry)
-						.add(planningMenuEntry)
 						.add(approvalMenuEntry)
+						.add(planningMenuEntry)
 						.addToSection(preferencesMenuEntry, FOOTER)
 						.build())
 				.build());
