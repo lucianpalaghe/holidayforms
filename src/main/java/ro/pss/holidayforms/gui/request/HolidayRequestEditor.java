@@ -17,8 +17,8 @@ import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
+import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,8 +30,9 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final UserRepository userRepo;
 
 	ComboBox<User> replacer = new ComboBox<>("Inlocuitor");
-	DatePicker dateFrom = new DatePicker("De la");
-	DatePicker dateTo = new DatePicker("Pana la");
+	DateRangePicker dateRange = new DateRangePicker();
+//	DatePicker dateFrom = new DatePicker("De la");
+//	DatePicker dateTo = new DatePicker("Pana la");
 	ComboBox<HolidayRequest.Type> type = new ComboBox<>("Tipul de concediu");
 	DatePicker creationDate = new DatePicker("Data crearii");
 
@@ -55,8 +56,11 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		type.setItems(HolidayRequest.Type.values());
 //		type.setItemLabelGenerator(i -> example.getDescription());
 		replacer.setItems(userRepo.findAll());
-
-		add(replacer, dateFrom, dateTo, type, creationDate, actions);
+		replacer.setWidthFull();
+		type.setWidthFull();
+		creationDate.setWidthFull();
+//		add(replacer, dateFrom, dateTo, type, creationDate, actions);
+		add(replacer, dateRange, type, creationDate, actions);
 
 		addValidations();
 		binder.bindInstanceFields(this);
@@ -79,15 +83,16 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		binder.forField(replacer).asRequired("Cine te inlocuieste?")
 				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
-		binder.forField(dateFrom).asRequired("Cand vrei sa pleci in concediu?")
-				.bind(HolidayRequest::getDateFrom, HolidayRequest::setDateFrom);
-
-		Binder.BindingBuilder<HolidayRequest, LocalDate> returnBindingBuilder = binder
-				.forField(dateTo)
-				.asRequired("Pana cand vrei sa pleci in concediu?")
-				.withValidator(r -> r != null && !r.isBefore(dateFrom.getValue()), "Nu poti sa pleci inainte sa te intorci!");
-		Binder.Binding<HolidayRequest, LocalDate> returnBinder = returnBindingBuilder
-				.bind(HolidayRequest::getDateTo, HolidayRequest::setDateTo);
+		binder.forField(dateRange).asRequired("Cand vrei sa pleci in concediu?")
+				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
+//				.bind(HolidayRequest::getDateFrom, HolidayRequest::setDateFrom);
+//
+//		Binder.BindingBuilder<HolidayRequest, LocalDate> returnBindingBuilder = binder
+//				.forField(dateTo)
+//				.asRequired("Pana cand vrei sa pleci in concediu?")
+//				.withValidator(r -> r != null && !r.isBefore(dateFrom.getValue()), "Nu poti sa pleci inainte sa te intorci!");
+//		Binder.Binding<HolidayRequest, LocalDate> returnBinder = returnBindingBuilder
+//				.bind(HolidayRequest::getDateTo, HolidayRequest::setDateTo);
 
 		binder.forField(type).asRequired("Trebuie selectat tipul de concediu!")
 				.bind(HolidayRequest::getType, HolidayRequest::setType);
@@ -95,7 +100,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		binder.forField(creationDate).asRequired("Data cererii trebuie selectata!")
 				.bind(HolidayRequest::getCreationDate, HolidayRequest::setCreationDate);
 
-		dateTo.addValueChangeListener(event -> returnBinder.validate());
+//		dateTo.addValueChangeListener(event -> returnBinder.validate());
 	}
 
 	void delete() {

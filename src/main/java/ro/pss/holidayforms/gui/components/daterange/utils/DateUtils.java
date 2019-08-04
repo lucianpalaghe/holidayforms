@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.gui.utils;
+package ro.pss.holidayforms.gui.components.daterange.utils;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;

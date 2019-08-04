@@ -19,7 +19,7 @@ import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
-import ro.pss.holidayforms.gui.utils.DateUtils;
+import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 
 import java.time.Month;
 import java.util.List;

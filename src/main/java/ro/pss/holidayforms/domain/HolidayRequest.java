@@ -3,7 +3,8 @@ package ro.pss.holidayforms.domain;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ro.pss.holidayforms.gui.utils.DateUtils;
+import ro.pss.holidayforms.gui.components.daterange.DateRange;
+import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -50,6 +51,11 @@ public class HolidayRequest {
 
 	@Transient
 	private int numberOfDays;
+
+	@Transient
+	@Getter
+	@Setter
+	private DateRange range;
 
 	public void addSubstitute(User substitute) {
 		if (substitute != null) {
