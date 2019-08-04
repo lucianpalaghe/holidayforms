@@ -6,6 +6,7 @@ import com.vaadin.flow.component.dependency.HtmlImport;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.dom.PropertyChangeEvent;
+import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -35,6 +36,18 @@ public class DateRangePicker extends AbstractField<DateRangePicker, DateRange> {
 //		getElement().addEventListener("date-to-changed", event -> Notification.show("to:" + getModel().getDateTo()));
 	}
 
+	public DateRangePicker(LocalDate startDate, LocalDate endDate) {
+		super(null);
+		getElement().setAttribute("locale", "ro");
+		ZoneId zoneId = ZoneId.systemDefault();
+		getElement().setAttribute("month", String.valueOf(startDate.getMonthValue()));
+		getElement().setAttribute("year", String.valueOf(startDate.getYear()));
+		getElement().setAttribute("min", String.valueOf(Math.toIntExact(startDate.atStartOfDay(zoneId).toEpochSecond())));
+		getElement().setAttribute("max", String.valueOf(Math.toIntExact(endDate.atStartOfDay(zoneId).toEpochSecond())));
+		setupProperty("dateFrom", "date-from-changed");
+		setupProperty("dateTo", "date-to-changed");
+	}
+
 	@Override
 	protected void setModelValue(DateRange newModelValue, boolean fromClient) {
 		super.setModelValue(newModelValue, fromClient);
@@ -48,7 +61,7 @@ public class DateRangePicker extends AbstractField<DateRangePicker, DateRange> {
 	}
 
 	private void propertyUpdated(PropertyChangeEvent event) {
-		Notification.show("Notified!");
+		Notification.show("" + LocalDate.ofInstant(Instant.ofEpochSecond(1504994400), ZoneId.systemDefault()));
 		Element element = getElement();
 
 		int dateFromUi = element.getProperty("dateFrom", -1);
