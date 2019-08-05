@@ -135,6 +135,12 @@
             <artifactId>javax.servlet-api</artifactId>
             <scope>provided</scope>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.claspina/confirm-dialog -->
+		<dependency>
+			<groupId>org.claspina</groupId>
+			<artifactId>confirm-dialog</artifactId>
+			<version>1.0.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

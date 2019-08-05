@@ -15,6 +15,7 @@ import com.vaadin.flow.spring.annotation.UIScope;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
+import ro.pss.holidayforms.gui.HolidayConfirmationDialog;
 
 @SpringComponent
 @UIScope
@@ -23,6 +24,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	final Grid<SubstitutionRequest> grid;
 	private final SubstitutionRequestRepository requestRepository;
 	private final VerticalLayout container;
+	private HolidayConfirmationDialog holidayConfDialog;
 
 	public SubstitutionRequestView(SubstitutionRequestRepository repo) {
 		this.requestRepository = repo;
@@ -53,17 +55,17 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 
 	private HorizontalLayout getActionButtons(SubstitutionRequest request) {
 		Button btnApprove = new Button("Aproba", VaadinIcon.CHECK_CIRCLE.create(), event -> {
-			request.approve();
-			requestRepository.save(request);
-			grid.getDataProvider().refreshItem(request);
+			String message = String.format("Vrei sa inlocuiesti pe %s pentru %s?", request.getRequest().getRequester().getName(), request.getRequest().getType());
+			holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.APPROVAL, () -> confirmHolidaySubstitution(request), "Aproba inlocuirea", message, "Aproba", "Inapoi");
+			holidayConfDialog.open();
 		});
 		btnApprove.addThemeName("success");
 		btnApprove.addThemeName("primary");
 
 		Button btnDeny = new Button("Respinge", VaadinIcon.CLOSE_CIRCLE.create(), event -> {
-			request.deny();
-			requestRepository.save(request);
-			grid.getDataProvider().refreshItem(request);
+			String message = String.format("Vrei sa respingi cererea de inlocuire a lui %s pentru %s?", request.getRequest().getRequester().getName(), request.getRequest().getType());
+			holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.DENIAL, () -> rejectHolidaySubstitution(request), "Respinge inlocuirea", message, "Respinge", "Inapoi");
+			holidayConfDialog.open();
 		});
 		btnDeny.addThemeName("error");
 
@@ -84,6 +86,18 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 			btnDeny.setText("Respins");
 			return new HorizontalLayout(btnDeny);
 		}
+	}
+
+	private void rejectHolidaySubstitution(SubstitutionRequest request) {
+		request.deny();
+		requestRepository.save(request);
+		grid.getDataProvider().refreshItem(request);
+	}
+
+	private void confirmHolidaySubstitution(SubstitutionRequest request) {
+		request.approve();
+		requestRepository.save(request);
+		grid.getDataProvider().refreshItem(request);
 	}
 
 	@Override
