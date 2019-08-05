@@ -6,7 +6,7 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>2.1.6.RELEASE</version>
-		<relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
 	</parent>
 	<groupId>ro.pss</groupId>
 	<artifactId>holidayforms</artifactId>
@@ -18,13 +18,9 @@
             <id>vaadin-addons</id>
             <url>http://maven.vaadin.com/vaadin-addons</url>
         </repository>
-		<repository>
-			<id>webjars</id>
-			<url>https://dl.bintray.com/webjars/maven</url>
-		</repository>
 	</repositories>
 	<properties>
-		<java.version>1.8</java.version>
+        <java.version>11</java.version>
 		<vaadin.version>13.0.9</vaadin.version>
 		<vaadin.plugin.version>13.0.9</vaadin.plugin.version>
 		<vaadin-spring-boot-starter.version>13.0.9</vaadin-spring-boot-starter.version>
@@ -33,10 +29,9 @@
 		<vaadin-client-compiled.version>8.8.5</vaadin-client-compiled.version>
 		<vaadin-themes.version>8.8.5</vaadin-themes.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
 		<vaadin.widgetset.mode>local</vaadin.widgetset.mode>
-		<vaadin.theme>mytheme</vaadin.theme>
 		<maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
 	</properties>
 
@@ -81,7 +76,7 @@
         <dependency>
             <groupId>com.github.appreciated</groupId>
             <artifactId>app-layout-addon</artifactId>
-            <version>LATEST</version>
+            <version>3.0.0.beta5</version>
         </dependency>
         <dependency>
             <groupId>com.syndybat</groupId>
@@ -111,10 +106,11 @@
 		<dependency>
 			<groupId>org.webjars.bowergithub.roxus</groupId>
 			<artifactId>range-datepicker</artifactId>
-			<version>0.0.29</version>
+            <version>0.0.31</version>
 		</dependency>
 
-<!--		<dependency>-->
+
+        <!--		<dependency>-->
 <!--			<groupId>org.springframework.boot</groupId>-->
 <!--			<artifactId>spring-boot-devtools</artifactId>-->
 <!--			<scope>runtime</scope>-->
@@ -151,8 +147,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>9</source>
-					<target>9</target>
+                    <source>11</source>
+                    <target>11</target>
 				</configuration>
 			</plugin>
 		</plugins>
