@@ -3,10 +3,12 @@ package ro.pss.holidayforms.domain;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ro.pss.holidayforms.gui.utils.DateUtils;
+import ro.pss.holidayforms.gui.components.daterange.DateRange;
+import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,16 +42,34 @@ public class HolidayRequest {
 	@Setter
 	private LocalDate creationDate;
 
+	@Transient
 	@Getter
-	@Setter
-	@ManyToOne
-	private User replacer;
+	private DateRange range;
+
+	@Getter
+	@OneToOne(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	private SubstitutionRequest substitutionRequest;
 
 	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private List<ApprovalRequest> approvalRequests = new ArrayList<>();
 
 	@Transient
 	private int numberOfDays;
+
+	public void setRange(DateRange range) {
+		if (range != null) {
+			this.range = range;
+			this.dateFrom = range.getDateFrom();
+			this.dateTo = range.getDateTo();
+		}
+	}
+
+	public void addSubstitute(User substitute) {
+		if (substitute != null) {
+			substitutionRequest = new SubstitutionRequest(substitute, SubstitutionRequest.Status.NEW);
+			substitutionRequest.setRequest(this);
+		}
+	}
 
 	public void addApproval(ApprovalRequest approvalRequest) {
 		if (approvalRequest != null) {
@@ -58,8 +78,23 @@ public class HolidayRequest {
 		}
 	}
 
-	public long getNumberOfDays() {
+	public int getNumberOfDays() {
 		return DateUtils.getWorkingDays(dateFrom, dateTo);
+	}
+
+	public User getSubstitute() {
+		if (substitutionRequest == null) {
+			return null;
+		}
+		return substitutionRequest.getSubstitute();
+	}
+
+	public boolean isCO() {
+		return type == HolidayRequest.Type.CO;
+	}
+
+	public Month getStartingMonthOfHoliday() {
+		return dateFrom.getMonth();
 	}
 
 	public enum Type {

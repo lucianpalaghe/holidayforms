@@ -1,99 +1,93 @@
 package ro.pss.holidayforms.gui.subtitution;
 
-import com.github.appreciated.app.layout.notification.DefaultNotificationHolder;
-import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import org.springframework.util.StringUtils;
-import ro.pss.holidayforms.domain.HolidayRequest;
-import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
+import ro.pss.holidayforms.domain.SubstitutionRequest;
+import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
-import ro.pss.holidayforms.gui.request.HolidayRequestEditor;
 
 @SpringComponent
 @UIScope
 @Route(value = "substitutions", layout = HolidayAppLayout.class)
-public class SubstitutionRequestView extends VerticalLayout {
-	final Grid<HolidayRequest> grid;
-	final TextField filter;
-	private final HolidayRequestRepository requestRepository;
-	private final HolidayRequestEditor editor;
-	private final Button addNewBtn;
-	private final Dialog dialog;
-	private DefaultNotificationHolder notifications;
+public class SubstitutionRequestView extends HorizontalLayout implements AfterNavigationObserver {
+	final Grid<SubstitutionRequest> grid;
+	private final SubstitutionRequestRepository requestRepository;
+	private final VerticalLayout container;
 
-	public SubstitutionRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor, DefaultNotificationHolder notifs) {
+	public SubstitutionRequestView(SubstitutionRequestRepository repo) {
 		this.requestRepository = repo;
-		this.editor = editor;
-		this.notifications = notifs;
-		this.grid = new Grid<>(HolidayRequest.class);
-		this.filter = new TextField();
-		this.addNewBtn = new Button("New HolidayRequest", VaadinIcon.PLUS.create());
-		this.dialog = new Dialog(editor);
-		this.dialog.setWidth("300px");
-		this.dialog.setHeight("600px");
-		this.dialog.setCloseOnOutsideClick(false);
+		this.grid = new Grid<>();
+		grid.addColumn(r -> r.getRequest().getRequester()).setHeader("Pe cine").setFlexGrow(2);
+		grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader("Numar de zile").setFlexGrow(1);
+		grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader("Incepand cu data").setFlexGrow(1);
+		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(4);
+		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 
-		HorizontalLayout actions = new HorizontalLayout(filter, addNewBtn);
-		add(actions, grid, this.editor);
+		container = new VerticalLayout();
+		container.add(grid);
+		container.setWidth("100%");
+		container.setMaxWidth("70em");
+		container.setHeightFull();
 
-		grid.setHeight("300px");
-		grid.setColumns("id", "requester", "replacer", "dateFrom", "dateTo", "type");
-		grid.getColumnByKey("id").setWidth("50px").setFlexGrow(0);
+		setJustifyContentMode(JustifyContentMode.CENTER);
+		setAlignItems(Alignment.CENTER);
+		add(container);
+		setHeightFull();
 
-		filter.setPlaceholder("Filter by last name");
-
-		filter.setValueChangeMode(ValueChangeMode.EAGER);
-		filter.addValueChangeListener(e -> listHolidayRequests(e.getValue()));
-
-		grid.asSingleSelect().addValueChangeListener(e -> {
-			editor.editHolidayRequest(e.getValue());
-			mountEditorInDialog(true);
-		});
-
-		addNewBtn.addClickListener(e -> {
-//			Notification.show("testnotif");
-			notifications.addNotification(new DefaultNotification("Test", "This is a test"));
-//			editor.editHolidayRequest(new HolidayRequest());
-			editor.editHolidayRequest(new HolidayRequest());
-			mountEditorInDialog(true);
-		});
-
-		editor.setChangeHandler(() -> {
-			editor.setVisible(false);
-			listHolidayRequests(filter.getValue());
-			mountEditorInDialog(false);
-		});
-
-		listHolidayRequests(null);
+		listSubstitutionRequests();
 	}
 
-	void listHolidayRequests(String filterText) {
-		if (StringUtils.isEmpty(filterText)) {
-			grid.setItems(requestRepository.findAll());
+	void listSubstitutionRequests() {
+		grid.setItems(requestRepository.findAllBySubstituteEmail("lucian.palaghe@pss.ro"));
+	}
+
+	private HorizontalLayout getActionButtons(SubstitutionRequest request) {
+		Button btnApprove = new Button("Aproba", VaadinIcon.CHECK_CIRCLE.create(), event -> {
+			request.approve();
+			requestRepository.save(request);
+			grid.getDataProvider().refreshItem(request);
+		});
+		btnApprove.addThemeName("success");
+		btnApprove.addThemeName("primary");
+
+		Button btnDeny = new Button("Respinge", VaadinIcon.CLOSE_CIRCLE.create(), event -> {
+			request.deny();
+			requestRepository.save(request);
+			grid.getDataProvider().refreshItem(request);
+		});
+		btnDeny.addThemeName("error");
+
+		if (request.getStatus() == SubstitutionRequest.Status.NEW) {
+			HorizontalLayout horizontalLayout = new HorizontalLayout(btnApprove, btnDeny);
+			horizontalLayout.setMinWidth("10em");
+			return horizontalLayout;
 		}
-//		else {
-//			grid.setItems(requestRepository.findByLastNameStartsWithIgnoreCase(filterText));
-//		}
-	}
 
-	void mountEditorInDialog(boolean mount) {
-		if (mount && editor.isVisible()) {
-			dialog.removeAll();
-			dialog.addComponentAsFirst(this.editor);
-			dialog.open();
+		if (request.getStatus() == SubstitutionRequest.Status.APPROVED) {
+			btnDeny.setEnabled(false);
+			btnApprove.setEnabled(false);
+			btnApprove.setText("Aprobat");
+			return new HorizontalLayout(btnApprove);
 		} else {
-			dialog.close();
-			dialog.removeAll();
+			btnApprove.setEnabled(false);
+			btnDeny.setEnabled(false);
+			btnDeny.setText("Respins");
+			return new HorizontalLayout(btnDeny);
 		}
+	}
+
+	@Override
+	public void afterNavigation(AfterNavigationEvent event) {
+		listSubstitutionRequests();
 	}
 }

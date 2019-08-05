@@ -17,8 +17,11 @@ import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
+import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 
-import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @SpringComponent
 @UIScope
@@ -26,18 +29,24 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final HolidayRequestRepository holidayRepo;
 	private final UserRepository userRepo;
 
-	ComboBox<User> replacer = new ComboBox<>("Cine inlocuieste");
-	DatePicker dateFrom = new DatePicker("De la");
-	DatePicker dateTo = new DatePicker("Pana la");
-	ComboBox<HolidayRequest.Type> type = new ComboBox<>("Ce fel de concediu");
+	ComboBox<User> replacer = new ComboBox<>("Inlocuitor");
+	DateRangePicker dateRange = new DateRangePicker();
+//	DatePicker dateFrom = new DatePicker("De la");
+//	DatePicker dateTo = new DatePicker("Pana la");
+	ComboBox<HolidayRequest.Type> type = new ComboBox<>("Tipul de concediu");
 	DatePicker creationDate = new DatePicker("Data crearii");
-	Button save = new Button("Save", VaadinIcon.CHECK.create());
-	Button cancel = new Button("Cancel");
-	Button delete = new Button("Delete", VaadinIcon.TRASH.create());
-	HorizontalLayout actions = new HorizontalLayout(save, cancel, delete);
+
+	Button btnSave = new Button("Save", VaadinIcon.CHECK.create());
+	Button btnCancel = new Button("Cancel");
+	Button btnDelete = new Button("Delete", VaadinIcon.TRASH.create());
+	HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
 	Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
 	private HolidayRequest holidayRequest;
 	private ChangeHandler changeHandler;
+
+	// TODO: remove, only used for testing without security implementation
+	private String userId = "lucian.palaghe@pss.ro";
+	private List<String> approverIds = Arrays.asList("luminita.petre@pss.ro");
 
 	@Autowired
 	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository) {
@@ -45,15 +54,13 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		this.userRepo = userRepository;
 
 		type.setItems(HolidayRequest.Type.values());
+//		type.setItemLabelGenerator(i -> example.getDescription());
 		replacer.setItems(userRepo.findAll());
-
-//		dateFrom.setLocale(new Locale("ro"));
-//		dateTo.setLocale(new Locale("ro"));
-//		creationDate.setLocale(new Locale("ro"));
-//
-//		dateFrom.getI18n().setFirstDayOfWeek(1);//setI18n(new DatePicker.DatePickerI18n().getDatePickerI18n().setFirstDayOfWeek(1));
-
-		add(replacer, dateFrom, dateTo, type, creationDate, actions);
+		replacer.setWidthFull();
+		type.setWidthFull();
+		creationDate.setWidthFull();
+//		add(replacer, dateFrom, dateTo, type, creationDate, actions);
+		add(replacer, dateRange, type, creationDate, actions);
 
 		addValidations();
 		binder.bindInstanceFields(this);
@@ -61,30 +68,31 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		setSpacing(true);
 
-		save.getElement().getThemeList().add("primary");
-		delete.getElement().getThemeList().add("error");
+		btnSave.getElement().getThemeList().add("primary");
+		btnDelete.getElement().getThemeList().add("error");
 
 		addKeyPressListener(Key.ENTER, e -> save());
 
-		save.addClickListener(e -> save());
-		delete.addClickListener(e -> delete());
-		cancel.addClickListener(e -> cancelEdit());
+		btnSave.addClickListener(e -> save());
+		btnDelete.addClickListener(e -> delete());
+		btnCancel.addClickListener(e -> cancelEdit());
 		setVisible(false);
 	}
 
 	private void addValidations() {
 		binder.forField(replacer).asRequired("Cine te inlocuieste?")
-				.bind(HolidayRequest::getReplacer, HolidayRequest::setReplacer);
+				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
-		binder.forField(dateFrom).asRequired("Cand vrei sa pleci in concediu?")
-				.bind(HolidayRequest::getDateFrom, HolidayRequest::setDateFrom);
-
-		Binder.BindingBuilder<HolidayRequest, LocalDate> returnBindingBuilder = binder
-				.forField(dateTo)
-				.asRequired("Pana cand vrei sa pleci in concediu?")
-				.withValidator(r -> r != null && !r.isBefore(dateFrom.getValue()), "Nu poti sa pleci inainte sa te intorci!");
-		Binder.Binding<HolidayRequest, LocalDate> returnBinder = returnBindingBuilder
-				.bind(HolidayRequest::getDateTo, HolidayRequest::setDateTo);
+		binder.forField(dateRange).asRequired("Cand vrei sa pleci in concediu?")
+				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
+//				.bind(HolidayRequest::getDateFrom, HolidayRequest::setDateFrom);
+//
+//		Binder.BindingBuilder<HolidayRequest, LocalDate> returnBindingBuilder = binder
+//				.forField(dateTo)
+//				.asRequired("Pana cand vrei sa pleci in concediu?")
+//				.withValidator(r -> r != null && !r.isBefore(dateFrom.getValue()), "Nu poti sa pleci inainte sa te intorci!");
+//		Binder.Binding<HolidayRequest, LocalDate> returnBinder = returnBindingBuilder
+//				.bind(HolidayRequest::getDateTo, HolidayRequest::setDateTo);
 
 		binder.forField(type).asRequired("Trebuie selectat tipul de concediu!")
 				.bind(HolidayRequest::getType, HolidayRequest::setType);
@@ -92,7 +100,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		binder.forField(creationDate).asRequired("Data cererii trebuie selectata!")
 				.bind(HolidayRequest::getCreationDate, HolidayRequest::setCreationDate);
 
-		dateTo.addValueChangeListener(event -> returnBinder.validate());
+//		dateTo.addValueChangeListener(event -> returnBinder.validate());
 	}
 
 	void delete() {
@@ -103,14 +111,18 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	//	void save(@UserPrincipal User loggedInUser) {
 	void save() {
 		if (binder.validate().isOk()) {
-			User requester = userRepo.getOne("lucian.palaghe@pss.ro");
-			User approver = userRepo.getOne("luminita.petre@pss.ro");
+			User requester = userRepo.getOne(userId);
+
+			List<ApprovalRequest> approvalRequests = approverIds.stream().map(a -> { // TODO: refactor
+				User approver = userRepo.getOne(a);
+				return new ApprovalRequest(approver, ApprovalRequest.Status.NEW);
+			}).collect(Collectors.toList());
+			approvalRequests.stream().forEach(a -> holidayRequest.addApproval(a));
+
 			holidayRequest.setRequester(requester);
-			holidayRequest.addApproval(new ApprovalRequest(approver, ApprovalRequest.Status.NEW));
 			holidayRepo.save(holidayRequest);
 			changeHandler.onChange();
 		}
-
 	}
 
 	public final void editHolidayRequest(HolidayRequest c) {
@@ -125,7 +137,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 			holidayRequest = c;
 		}
 
-		cancel.setVisible(persisted);
+		btnDelete.setVisible(persisted);
 		binder.setBean(holidayRequest);
 		setVisible(true);
 	}
