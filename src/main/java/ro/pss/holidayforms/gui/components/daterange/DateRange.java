@@ -12,4 +12,9 @@ import java.time.LocalDate;
 public class DateRange {
 	private LocalDate dateFrom;
 	private LocalDate dateTo;
+
+	public boolean isRangeValid() {
+		return dateFrom != null && dateTo != null;
+	}
+
 }
