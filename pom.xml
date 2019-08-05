@@ -106,7 +106,7 @@
 		<dependency>
 			<groupId>org.webjars.bowergithub.roxus</groupId>
 			<artifactId>range-datepicker</artifactId>
-            <version>0.0.31</version>
+			<version>0.0.29</version>
 		</dependency>
 
 

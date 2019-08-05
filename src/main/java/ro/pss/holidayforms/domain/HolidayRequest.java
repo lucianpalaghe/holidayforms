@@ -42,6 +42,10 @@ public class HolidayRequest {
 	@Setter
 	private LocalDate creationDate;
 
+	@Transient
+	@Getter
+	private DateRange range;
+
 	@Getter
 	@OneToOne(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private SubstitutionRequest substitutionRequest;
@@ -52,10 +56,13 @@ public class HolidayRequest {
 	@Transient
 	private int numberOfDays;
 
-	@Transient
-	@Getter
-	@Setter
-	private DateRange range;
+	public void setRange(DateRange range) {
+		if (range != null) {
+			this.range = range;
+			this.dateFrom = range.getDateFrom();
+			this.dateTo = range.getDateTo();
+		}
+	}
 
 	public void addSubstitute(User substitute) {
 		if (substitute != null) {
