@@ -48,7 +48,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 	// TODO: remove, only used for testing without security implementation
 	private String userId = "lucian.palaghe@pss.ro";
-	private List<String> approverIds = Arrays.asList("luminita.petre@pss.ro");
+	private List<String> approverIds = Arrays.asList("luminita.petre@pss.ro", "claudia.gican@pss.ro");
 
 	@Autowired
 	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository) {

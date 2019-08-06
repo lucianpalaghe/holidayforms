@@ -24,9 +24,9 @@ public class HolidayPlanningEntry {
 	@Setter
 	private LocalDate dateTo;
 
-	@ManyToOne
 	@Setter
 	@Getter
+	@ManyToOne(cascade = CascadeType.ALL)
 	private HolidayPlanning planning;
 
 	@Transient

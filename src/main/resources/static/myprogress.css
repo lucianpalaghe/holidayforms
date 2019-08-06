@@ -1,0 +1,66 @@
+  .progressbar {
+      counter-reset: step;
+      padding-inline-start: 0;
+      margin-inline-start: 0px;
+  }
+
+  .progressbar li {
+      list-style-type: none;
+      width: 25%;
+      float: left;
+      font-size: 20px;
+      position: relative;
+      text-align: center;
+      text-transform: uppercase;
+      color: #7d7d7d;
+  }
+  .progressbar li:before {
+      width: 30px;
+      height: 30px;
+      font-family: lumo-icons;
+      content: '\ea14';
+      counter-increment: step;
+      line-height: 30px;
+      border: 2px solid #7d7d7d;
+      display: block;
+      text-align: center;
+      margin: 0 auto 10px auto;
+      border-radius: 50%;
+      background-color: white;
+  }
+  .progressbar li:after {
+      width: 100%;
+      height: 2px;
+      content: '';
+      position: absolute;
+      background-color: #7d7d7d;
+      top: 15px;
+      left: -50%;
+      z-index: -1;
+  }
+  .progressbar li:first-child:after {
+      content: none;
+  }
+  .progressbar li.active {
+      color: black;
+  }
+  .progressbar li.active:before {
+      border-color: var(--lumo-primary-color);
+      font-family: lumo-icons;
+      content: '\ea0f';
+  }
+  .progressbar li.active:after {
+      background-color: var(--lumo-primary-color);
+  }
+
+  .progressbar li.denied {
+        color: black;
+    }
+    .progressbar li.denied:before {
+        border-color: var(--lumo-error-color);
+        font-family: lumo-icons;
+        content: '\ea16';
+    }
+    .progressbar li.denied:after {
+        background-color: var(--lumo-error-color);
+    }

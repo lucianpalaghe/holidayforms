@@ -1,0 +1,13 @@
+@media screen and (max-width:400px) {
+
+    .btnMine span {
+         display: none;
+    }
+
+    .btnMine {
+        min-width: 2em;
+        max-width: 3em;
+        border: 0;
+        padding: 0;
+    }
+}

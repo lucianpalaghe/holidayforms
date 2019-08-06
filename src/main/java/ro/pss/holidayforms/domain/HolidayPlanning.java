@@ -22,7 +22,7 @@ public class HolidayPlanning {
 
 	@Getter
 	@Setter
-	@OneToMany(mappedBy = "planning", cascade = CascadeType.MERGE, fetch = FetchType.EAGER, orphanRemoval = true)
+	@OneToMany(mappedBy = "planning", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
 	private List<HolidayPlanningEntry> entries;
 
 	public HolidayPlanning(User employee, List<HolidayPlanningEntry> entries) {
@@ -39,7 +39,11 @@ public class HolidayPlanning {
 
 	public void removePlanningEntry(HolidayPlanningEntry planningEntry) {
 		if (planningEntry != null) {
+//			Optional<HolidayPlanningEntry> existing = entries.stream().filter(p -> p.equals(planningEntry)).findAny();
+//			if(existing.isPresent()) {
+//				existing.get().setPlanning(null);
 			planningEntry.setPlanning(null);
+//			}
 			entries.remove(planningEntry);
 		}
 	}

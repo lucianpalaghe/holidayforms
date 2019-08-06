@@ -96,6 +96,9 @@ public class HolidayRequest {
 		return substitutionRequest.getSubstitute();
 	}
 
+	public boolean isStillEditable() {
+		return substitutionRequest.getStatus() == SubstitutionRequest.Status.NEW;
+	}
 	public boolean isCO() {
 		return type == HolidayRequest.Type.CO;
 	}

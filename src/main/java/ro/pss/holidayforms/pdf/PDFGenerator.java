@@ -1,12 +1,13 @@
 package ro.pss.holidayforms.pdf;
-import java.io.File;
-import java.io.IOException;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
-import org.apache.pdfbox.pdmodel.interactive.form.*;
+import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
+
+import java.io.File;
+import java.io.IOException;
 
 public class PDFGenerator {
 
@@ -34,8 +35,8 @@ public class PDFGenerator {
                 field.setValue(holidayRequest.getNumberOfDays() + "");
                 field = (PDTextField) acroForm.getField("Type");
                 field.setValue(holidayRequest.getType().name());
-                field = (PDTextField) acroForm.getField("DateFrom");
-                field.setValue(holidayRequest.getDateFrom().toString());
+//                field = (PDTextField) acroForm.getField("DateFrom");
+//                field.setValue(holidayRequest.getDateFrom().toString());
                 field = (PDTextField) acroForm.getField("Replacer");
                 field.setValue(holidayRequest.getSubstitute().getName());
                 field = (PDTextField) acroForm.getField("Date");

@@ -1,6 +1,7 @@
 package ro.pss.holidayforms.gui.approval;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -20,6 +21,7 @@ import ro.pss.holidayforms.gui.HolidayConfirmationDialog;
 @SpringComponent
 @UIScope
 @Route(value = "approvals", layout = HolidayAppLayout.class)
+@StyleSheet("context://mybuttons.css")
 public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver {
     final Grid<ApprovalRequest> grid;
     private final ApprovalRequestRepository requestRepository;
@@ -29,10 +31,11 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
     public HolidayApprovalView(ApprovalRequestRepository repo) {
         this.requestRepository = repo;
         this.grid = new Grid<>();
-        grid.addColumn(r -> r.getRequest().getRequester()).setHeader("Pe cine").setFlexGrow(2);
+        grid.addColumn(r -> r.getRequest().getRequester()).setHeader("Pe cine").setFlexGrow(1);
         grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader("Numar de zile").setFlexGrow(1);
         grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader("Incepand cu data").setFlexGrow(1);
-        grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(4);
+        grid.addColumn(new ComponentRenderer<>(this::getActionButtons));
+
         grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 
         container = new VerticalLayout();
@@ -61,6 +64,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         });
         btnApprove.addThemeName("success");
         btnApprove.addThemeName("primary");
+        btnApprove.addClassName("btnMine");
 
         Button btnDeny = new Button("Respinge", VaadinIcon.CLOSE_CIRCLE.create(), event -> {
 			String message = String.format("Vrei sa respingi cererea de %s pentru %s?", request.getRequest().getType(), request.getRequest().getRequester().getName());
@@ -68,10 +72,12 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 			holidayConfDialog.open();
         });
         btnDeny.addThemeName("error");
+        btnDeny.addClassName("btnMine");
 
         if (request.getStatus() == ApprovalRequest.Status.NEW) {
             HorizontalLayout horizontalLayout = new HorizontalLayout(btnApprove, btnDeny);
-            horizontalLayout.setMinWidth("10em");
+//            horizontalLayout.setMinWidth("10em");
+//            horizontalLayout.setSpacing(false);
             return horizontalLayout;
         }
 
