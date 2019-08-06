@@ -21,6 +21,7 @@ import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @SpringComponent
@@ -31,6 +32,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 	ComboBox<User> replacer = new ComboBox<>("Inlocuitor");
 	DateRangePicker dateRange = new DateRangePicker();
+
 //	DatePicker dateFrom = new DatePicker("De la");
 //	DatePicker dateTo = new DatePicker("Pana la");
 	ComboBox<HolidayRequest.Type> type = new ComboBox<>("Tipul de concediu");
@@ -53,12 +55,14 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		this.holidayRepo = holidayRepository;
 		this.userRepo = userRepository;
 
+		dateRange.setForceNarrow(true);
 		type.setItems(HolidayRequest.Type.values());
 //		type.setItemLabelGenerator(i -> example.getDescription());
 		replacer.setItems(userRepo.findAll());
 		replacer.setWidthFull();
 		type.setWidthFull();
 		creationDate.setWidthFull();
+		creationDate.setLocale(new Locale("ro", "RO"));
 //		add(replacer, dateFrom, dateTo, type, creationDate, actions);
 		add(replacer, dateRange, type, creationDate, actions);
 

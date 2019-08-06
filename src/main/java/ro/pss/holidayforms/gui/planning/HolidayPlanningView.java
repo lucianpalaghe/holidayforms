@@ -1,47 +1,153 @@
 package ro.pss.holidayforms.gui.planning;
 
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.data.provider.ListDataProvider;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
+import ro.pss.holidayforms.domain.HolidayPlanning;
+import ro.pss.holidayforms.domain.HolidayPlanningEntry;
+import ro.pss.holidayforms.domain.User;
+import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
+import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 
-import java.time.LocalDate;
-
-import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @SpringComponent
 @UIScope
 @Route(value = "planning", layout = HolidayAppLayout.class)
+//@StyleSheet("context://mycustom.css")
 public class HolidayPlanningView extends HorizontalLayout implements AfterNavigationObserver {
-	private final VerticalLayout container;
+	private final HolidayPlanningRepository repository;
+	private final UserRepository userRepository;
+	// TODO: remove, only used for testing without security implementation
 	private String userId = "lucian.palaghe@pss.ro";
-	private final DateRangePicker rangePicker;
-	public HolidayPlanningView(ApprovalRequestRepository repo) {
-		LocalDate feb = LocalDate.of(2019,2,1);
-		rangePicker = new DateRangePicker(LocalDate.of(2019, 1, 1), feb.with(lastDayOfMonth()));
-		container = new VerticalLayout();
-		container.add(rangePicker);
-		container.setWidth("100%");
-		container.setMaxWidth("70em");
-		container.setHeightFull();
-		container.setJustifyContentMode(JustifyContentMode.CENTER);
-		container.setAlignItems(Alignment.CENTER);
 
+	private final HorizontalLayout container;
+	//	private final H2 heading;
+	private final DateRangePicker rangePicker;
+	private final Grid<HolidayPlanningEntry> grid;
+	List<HolidayPlanningEntry> entries = new ArrayList<>();
+	private ListDataProvider<HolidayPlanningEntry> provider = new ListDataProvider(entries);
+
+	private HolidayPlanning holidayPlanning;
+
+	public HolidayPlanningView(HolidayPlanningRepository repo, UserRepository userRepo) {
+		this.repository = repo;
+		this.userRepository = userRepo;
+		rangePicker = new DateRangePicker();
+		grid = new Grid<>();
+		grid.addColumn(HolidayPlanningEntry::getDateFrom).setHeader("Incepand cu data");//.setFlexGrow(2);
+		grid.addColumn(HolidayPlanningEntry::getDateTo).setHeader("Pana la data");//.setFlexGrow(2);
+		grid.addColumn(HolidayPlanningEntry::getNumberOfDays).setHeader("Nr. de zile");//.setFlexGrow(1);
+		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(0);
+		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
+		grid.setDataProvider(provider);
+
+		container = new HorizontalLayout();
+		container.setWidth("100%");
+		container.setMaxWidth("80em");
+		// ****************************
+//		Div mainDiv = new Div();
+//		Div rowDiv = new Div();
+//		Div colDiv = new Div();
+//		Div colDiv2 = new Div();
+//		rowDiv.setClassName("row");
+//		colDiv.setClassName("column");
+//		colDiv2.setClassName("double-column");
+
+//		FlexLayout.cre
+//		rowDiv.getStyle().set("display","flex");
+//		rowDiv.getStyle().set("flex-direction","row");
+//		rowDiv.getStyle().set("flex-wrap","wrap");
+//		rowDiv.getStyle().set("width","100%");
+//
+//		colDiv.getStyle().set("display","flex");
+//		colDiv.getStyle().set("flex-direction","column");
+//		colDiv.getStyle().set("flex-basis","100%");
+//		colDiv.getStyle().set("flex","1");
+//
+//		colDiv2.getStyle().set("display","flex");
+//		colDiv2.getStyle().set("flex-direction","column");
+//		colDiv2.getStyle().set("flex-basis","100%");
+//		colDiv2.getStyle().set("flex","1");
+
+//		colDiv.add(rangePicker);
+//		colDiv2.add(grid);
+//		rowDiv.add(colDiv, colDiv2);
+//		mainDiv.add(rowDiv);
+//		container.add(mainDiv);
+
+
+		// *****************************
+		container.setHeightFull();
 		setJustifyContentMode(JustifyContentMode.CENTER);
 		setAlignItems(Alignment.CENTER);
-		add(container);
-		setHeightFull();
+//
+		HorizontalLayout subContainer = new HorizontalLayout();
+		subContainer.setPadding(true);
+		subContainer.add(rangePicker, grid);
+		subContainer.setWidthFull();
 
+		container.add(subContainer);
+
+		rangePicker.addListener(r -> {
+			HolidayPlanningEntry planningEntry = new HolidayPlanningEntry(r.getDateFrom(), r.getDateTo());
+			holidayPlanning.addPlanningEntry(planningEntry);
+			repository.save(holidayPlanning);
+			entries.add(planningEntry);
+			grid.getDataProvider().refreshAll();
+			rangePicker.setValue(null);
+		});
+
+//		setJustifyContentMode(JustifyContentMode.CENTER);
+//		setAlignItems(Alignment.CENTER);
+		add(container);
+//		setHeightFull();
+
+		listHolidayPlanningEntries();
 	}
+
+	private HorizontalLayout getActionButtons(HolidayPlanningEntry request) {
+		Button btnDeny = new Button(VaadinIcon.CLOSE_CIRCLE.create(), event -> {
+			holidayPlanning.removePlanningEntry(request); // TODO: delete doesn't work
+			entries.remove(request);
+			repository.save(holidayPlanning);
+			grid.getDataProvider().refreshAll();
+		});
+		btnDeny.addThemeName("error");
+		return new HorizontalLayout(btnDeny);
+	}
+
+	private void listHolidayPlanningEntries() {
+		Optional<HolidayPlanning> planning = repository.findByEmployeeEmail(userId);
+		User u = userRepository.findById(userId).get();
+		if (planning.isPresent()) {
+			holidayPlanning = planning.get();
+			grid.setVisible(true);
+		} else {
+			holidayPlanning = new HolidayPlanning(u, new ArrayList<>());
+			repository.save(holidayPlanning);
+			grid.setVisible(true);
+		}
+		entries.clear();
+		entries.addAll(holidayPlanning.getEntries());
+	}
+
 
 	@Override
 	public void afterNavigation(AfterNavigationEvent event) {
-//		listApprovalRequests();
+		listHolidayPlanningEntries();
 	}
 }

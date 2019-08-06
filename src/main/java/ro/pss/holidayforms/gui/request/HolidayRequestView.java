@@ -26,6 +26,7 @@ public class HolidayRequestView extends HorizontalLayout {
 	private final HolidayRequestEditor editor;
 	private final Dialog dialog;
 	private final VerticalLayout container;
+	private final H2 heading;
 	private String userId = "lucian.palaghe@pss.ro";
 
 	public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor) {
@@ -57,8 +58,11 @@ public class HolidayRequestView extends HorizontalLayout {
 		dialog = new Dialog(editor);
 		dialog.setCloseOnOutsideClick(false);
 
+		heading = new H2();
+		heading.setVisible(false);
+
 		container = new VerticalLayout();
-		container.add(actions, grid, this.editor);
+		container.add(actions, heading, grid, this.editor);
 		container.setWidth("100%");
 		container.setMaxWidth("70em");
 		container.setHeightFull();
@@ -75,8 +79,10 @@ public class HolidayRequestView extends HorizontalLayout {
 		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(userId);
 		if (requests.isEmpty()) {
 			grid.setVisible(false);
-			container.add(new H2("Nu exista nici o cerere de concediu"));
+			heading.setText("Nu exista nici o cerere de concediu");
+			heading.setVisible(true);
 		} else {
+			heading.setVisible(false);
 			grid.setVisible(true);
 			grid.setItems(requests);
 		}

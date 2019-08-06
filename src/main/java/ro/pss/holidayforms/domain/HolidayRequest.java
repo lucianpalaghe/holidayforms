@@ -43,7 +43,6 @@ public class HolidayRequest {
 	private LocalDate creationDate;
 
 	@Transient
-	@Getter
 	private DateRange range;
 
 	@Getter
@@ -55,6 +54,13 @@ public class HolidayRequest {
 
 	@Transient
 	private int numberOfDays;
+
+	public DateRange getRange() {
+		if (dateFrom != null && dateTo != null) {
+			return new DateRange(dateFrom, dateTo);
+		}
+		return null;
+	}
 
 	public void setRange(DateRange range) {
 		if (range != null) {
