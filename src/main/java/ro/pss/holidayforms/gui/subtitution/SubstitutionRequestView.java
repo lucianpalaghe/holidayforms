@@ -16,6 +16,7 @@ import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
 import ro.pss.holidayforms.gui.HolidayConfirmationDialog;
+import ro.pss.holidayforms.gui.MessageRetriever;
 
 @SpringComponent
 @UIScope
@@ -29,9 +30,9 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	public SubstitutionRequestView(SubstitutionRequestRepository repo) {
 		this.requestRepository = repo;
 		this.grid = new Grid<>();
-		grid.addColumn(r -> r.getRequest().getRequester()).setHeader("Pe cine").setFlexGrow(2);
-		grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader("Numar de zile").setFlexGrow(1);
-		grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader("Incepand cu data").setFlexGrow(1);
+		grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(2);
+		grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(1);
+		grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart")).setFlexGrow(1);
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(4);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 
@@ -54,17 +55,17 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	}
 
 	private HorizontalLayout getActionButtons(SubstitutionRequest request) {
-		Button btnApprove = new Button("Aproba", VaadinIcon.CHECK_CIRCLE.create(), event -> {
-			String message = String.format("Vrei sa inlocuiesti pe %s pentru %s?", request.getRequest().getRequester().getName(), request.getRequest().getType());
-			holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.APPROVAL, () -> confirmHolidaySubstitution(request), "Aproba inlocuirea", message, "Aproba", "Inapoi");
+		Button btnApprove = new Button(MessageRetriever.get("approveTxt"), VaadinIcon.CHECK_CIRCLE.create(), event -> {
+			String message = String.format(MessageRetriever.get("msgApproveRequestSubst"), request.getRequest().getRequester().getName(), request.getRequest().getType());
+			holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.APPROVAL, () -> confirmHolidaySubstitution(request), MessageRetriever.get("confDialogHeaderApproveSubst"), message, MessageRetriever.get("approveTxt"), MessageRetriever.get("backTxt"));
 			holidayConfDialog.open();
 		});
 		btnApprove.addThemeName("success");
 		btnApprove.addThemeName("primary");
 
-		Button btnDeny = new Button("Respinge", VaadinIcon.CLOSE_CIRCLE.create(), event -> {
-			String message = String.format("Vrei sa respingi cererea de inlocuire a lui %s pentru %s?", request.getRequest().getRequester().getName(), request.getRequest().getType());
-			holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.DENIAL, () -> rejectHolidaySubstitution(request), "Respinge inlocuirea", message, "Respinge", "Inapoi");
+		Button btnDeny = new Button(MessageRetriever.get("denyTxt"), VaadinIcon.CLOSE_CIRCLE.create(), event -> {
+			String message = String.format(MessageRetriever.get("msgDenyRequestSubst"), request.getRequest().getRequester().getName(), request.getRequest().getType());
+			holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.DENIAL, () -> rejectHolidaySubstitution(request), MessageRetriever.get("confDialogHeaderDenySubst"), message, MessageRetriever.get("denyTxt"), MessageRetriever.get("backTxt"));
 			holidayConfDialog.open();
 		});
 		btnDeny.addThemeName("error");
@@ -78,12 +79,12 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 		if (request.getStatus() == SubstitutionRequest.Status.APPROVED) {
 			btnDeny.setEnabled(false);
 			btnApprove.setEnabled(false);
-			btnApprove.setText("Aprobat");
+			btnApprove.setText(MessageRetriever.get("approvedTxt"));
 			return new HorizontalLayout(btnApprove);
 		} else {
 			btnApprove.setEnabled(false);
 			btnDeny.setEnabled(false);
-			btnDeny.setText("Respins");
+			btnDeny.setText(MessageRetriever.get("deniedTxt"));
 			return new HorizontalLayout(btnDeny);
 		}
 	}

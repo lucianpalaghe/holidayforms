@@ -19,6 +19,7 @@ import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
+import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 
 import java.time.Month;
@@ -81,26 +82,26 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 				.sum();
 
 		int days = user.getRegularVacationDays() - sumDaysTaken;//requestRepository.getRemainingDaysByUserEmail("lucian.palaghe@pss.ro");
-		remainingDaysHeader.setText(String.format("Mai ai %d zile de concediu de odihna", days));
+		remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeader"), days));
 	}
 
 	private void initializeChart() {
 		chartPlannedDays = new LineDataset()
-				.setLabel("Zile planificate")
+				.setLabel(MessageRetriever.get("chartPlannedDaysLbl"))
 				.setBackgroundColor(Color.TRANSPARENT)
 				.setBorderColor(Color.LIGHT_BLUE)
 				.addPointBackgroundColor(Color.LIGHT_BLUE)
 				.setLineTension(0f);
 
 		chartHolidays = new LineDataset()
-				.setLabel("Concediu luat")
+				.setLabel(MessageRetriever.get("chartHolidaysLbl"))
 				.setBackgroundColor(Color.TRANSPARENT)
 				.setBorderColor(Color.CRIMSON)
 				.addPointBackgroundColor(Color.CRIMSON)
 				.setLineTension(0f);
 
 		chartLineData = new LineData()
-				.addLabels("Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie")
+				.addLabels(MessageRetriever.get("monthsNamesLong").split(","))
 				.addDataset(chartHolidays)
 				.addDataset(chartPlannedDays);
 

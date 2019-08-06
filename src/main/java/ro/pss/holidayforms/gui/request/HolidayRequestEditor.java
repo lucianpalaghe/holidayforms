@@ -17,6 +17,7 @@ import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
+import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 
 import java.util.Arrays;
@@ -30,17 +31,16 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final HolidayRequestRepository holidayRepo;
 	private final UserRepository userRepo;
 
-	ComboBox<User> replacer = new ComboBox<>("Inlocuitor");
+	ComboBox<User> replacer = new ComboBox<>(MessageRetriever.get("replacerName"));
 	DateRangePicker dateRange = new DateRangePicker();
 
 //	DatePicker dateFrom = new DatePicker("De la");
 //	DatePicker dateTo = new DatePicker("Pana la");
-	ComboBox<HolidayRequest.Type> type = new ComboBox<>("Tipul de concediu");
-	DatePicker creationDate = new DatePicker("Data crearii");
-
-	Button btnSave = new Button("Save", VaadinIcon.CHECK.create());
-	Button btnCancel = new Button("Cancel");
-	Button btnDelete = new Button("Delete", VaadinIcon.TRASH.create());
+	ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
+	DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
+	Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.CHECK.create());
+	Button btnCancel = new Button(MessageRetriever.get("btnCancelLbl"));
+	Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
 	HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
 	Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
 	private HolidayRequest holidayRequest;
@@ -54,6 +54,18 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository) {
 		this.holidayRepo = holidayRepository;
 		this.userRepo = userRepository;
+		creationDate.setLocale(MessageRetriever.getLocale());
+		DatePicker.DatePickerI18n dp18n = new DatePicker.DatePickerI18n();
+		dp18n.setCalendar(MessageRetriever.get("calendarName"));
+		dp18n.setFirstDayOfWeek(0);
+		dp18n.setCancel(MessageRetriever.get("cancelName"));
+		dp18n.setClear(MessageRetriever.get("clearName"));
+		dp18n.setToday(MessageRetriever.get("todayName"));
+		dp18n.setWeek(MessageRetriever.get("weekName"));
+		dp18n.setWeekdays(Arrays.asList(MessageRetriever.get("daysNamesLong").split(",")));
+		dp18n.setWeekdaysShort(Arrays.asList(MessageRetriever.get("daysNamesShort").split(",")));
+		dp18n.setMonthNames(Arrays.asList(MessageRetriever.get("monthsNamesLong").split(",")));
+		creationDate.setI18n(dp18n);
 
 		dateRange.setForceNarrow(true);
 		type.setItems(HolidayRequest.Type.values());
@@ -84,10 +96,10 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	}
 
 	private void addValidations() {
-		binder.forField(replacer).asRequired("Cine te inlocuieste?")
+		binder.forField(replacer).asRequired(MessageRetriever.get("validationReplacer"))
 				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
-		binder.forField(dateRange).asRequired("Cand vrei sa pleci in concediu?")
+		binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
 				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
 //				.bind(HolidayRequest::getDateFrom, HolidayRequest::setDateFrom);
 //
@@ -98,10 +110,10 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 //		Binder.Binding<HolidayRequest, LocalDate> returnBinder = returnBindingBuilder
 //				.bind(HolidayRequest::getDateTo, HolidayRequest::setDateTo);
 
-		binder.forField(type).asRequired("Trebuie selectat tipul de concediu!")
+		binder.forField(type).asRequired(MessageRetriever.get("validationHolidayType"))
 				.bind(HolidayRequest::getType, HolidayRequest::setType);
 
-		binder.forField(creationDate).asRequired("Data cererii trebuie selectata!")
+		binder.forField(creationDate).asRequired(MessageRetriever.get("validationDate"))
 				.bind(HolidayRequest::getCreationDate, HolidayRequest::setCreationDate);
 
 //		dateTo.addValueChangeListener(event -> returnBinder.validate());

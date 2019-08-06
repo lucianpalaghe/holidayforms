@@ -22,6 +22,7 @@ import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
+import ro.pss.holidayforms.gui.MessageRetriever;
 
 import java.io.IOException;
 import java.util.List;
@@ -51,14 +52,14 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		});
 
 		grid = new Grid<>();
-		grid.addColumn(HolidayRequest::getNumberOfDays).setHeader("Nr. de zile").setWidth("min-content");//.setFlexGrow(1);
-		grid.addColumn(HolidayRequest::getDateFrom).setHeader("Incepand cu data");//.setFlexGrow(2);
-		grid.addColumn(HolidayRequest::getSubstitute).setHeader("Inlocuitor");//.setFlexGrow(5);
-		grid.addColumn(new ComponentRenderer<>(this::getActionButtons));//.setFlexGrow(0);
-		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
+		grid.addColumn(HolidayRequest::getNumberOfDays).setHeader(MessageRetriever.get("gridColDaysHeader")).setWidth("min-content");//.setFlexGrow(1);
+		grid.addColumn(HolidayRequest::getDateFrom).setHeader(MessageRetriever.get("gridColFromDate"));//.setFlexGrow(2);
+		grid.addColumn(HolidayRequest::getSubstitute).setHeader(MessageRetriever.get("gridColReplacer"));//.setFlexGrow(5);
+        grid.addColumn(new ComponentRenderer<>(this::getActionButtons));//.setFlexGrow(0);
+        grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 		grid.setItemDetailsRenderer(getRequestStatusRenderer());
 
-		Button btnAdd = new Button("Adauga cerere", VaadinIcon.PLUS.create());
+		Button btnAdd = new Button(MessageRetriever.get("addHolidayRequest"), VaadinIcon.PLUS.create());
 		btnAdd.addClickListener(e -> {
 			this.editor.editHolidayRequest(new HolidayRequest());
 			mountEditorInDialog(true);
@@ -87,24 +88,24 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 
 	private ComponentRenderer<HorizontalLayout, HolidayRequest> getRequestStatusRenderer() {
 		return new ComponentRenderer<>(holidayRequest -> {
-			ListItem initialStep = new ListItem("Creat");
+			ListItem initialStep = new ListItem(MessageRetriever.get("created"));
 			initialStep.addClassName("active");
 
-			ListItem substituteStep = new ListItem("Inlocuitor");
+			ListItem substituteStep = new ListItem(MessageRetriever.get("replacerName"));
 			if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED) {
 				substituteStep.addClassName("active");
 			} else if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.DENIED) {
 				substituteStep.addClassName("denied");
 			}
 
-			ListItem teamLeaderStep = new ListItem("Team leader");
+			ListItem teamLeaderStep = new ListItem(MessageRetriever.get("teamLeader"));
 			if (holidayRequest.getApprovalRequests().get(0).getStatus() == ApprovalRequest.Status.APPROVED) {
 				teamLeaderStep.addClassName("active");
 			} else if (holidayRequest.getApprovalRequests().get(0).getStatus() == ApprovalRequest.Status.DENIED) {
 				teamLeaderStep.addClassName("denied");
 			}
 
-			ListItem projectManagerStep = new ListItem("Project manager");
+			ListItem projectManagerStep = new ListItem(MessageRetriever.get("projectManager"));
 			if (holidayRequest.getApprovalRequests().get(1).getStatus() == ApprovalRequest.Status.APPROVED) {
 				projectManagerStep.addClassName("active");
 			} else if (holidayRequest.getApprovalRequests().get(1).getStatus() == ApprovalRequest.Status.DENIED) {
@@ -124,11 +125,11 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 	}
 
 	private HorizontalLayout getActionButtons(HolidayRequest request) {
-		Button btnEdit = new Button("Editeaza", VaadinIcon.EDIT.create(), e -> {
+		Button btnEdit = new Button(MessageRetriever.get("editHoliday"), VaadinIcon.EDIT.create(), e -> {
 			editor.editHolidayRequest(request);
 			mountEditorInDialog(true);
 		});
-		Button btnPrint = new Button("Tipareste", VaadinIcon.PRINT.create(), event -> {
+		Button btnPrint = new Button(MessageRetriever.get("printHoliday"), VaadinIcon.PRINT.create(), event -> {
 			try {
 				fillHolidayRequest(request, request.getRequester());
 			} catch (IOException e) {
@@ -151,8 +152,8 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(userId);
 		if (requests.isEmpty()) {
 			grid.setVisible(false);
-			heading.setText("Nu exista nici o cerere de concediu");
-			heading.setVisible(true);
+            heading.setText(MessageRetriever.get("noHolidayRequest"));
+            heading.setVisible(true);
 		} else {
 			heading.setVisible(false);
 			grid.setVisible(true);
