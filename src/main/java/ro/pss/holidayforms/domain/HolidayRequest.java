@@ -49,8 +49,8 @@ public class HolidayRequest {
 	@OneToOne(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private SubstitutionRequest substitutionRequest;
 
-	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@Getter
+	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private List<ApprovalRequest> approvalRequests = new ArrayList<>();
 
 	@Transient

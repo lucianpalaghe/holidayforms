@@ -10,14 +10,14 @@ import java.util.List;
 @Entity
 @NoArgsConstructor
 public class HolidayPlanning {
-	@Id
 	@GeneratedValue
 	@Getter
+	@Id
 	private Long id;
 
 	@Getter
 	@Setter
-	@ManyToOne
+	@OneToOne
 	private User employee;
 
 	@Getter
