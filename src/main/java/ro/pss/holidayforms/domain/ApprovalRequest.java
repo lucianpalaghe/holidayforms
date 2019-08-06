@@ -14,6 +14,7 @@ public class ApprovalRequest {
 	private Long id;
 
 	@ManyToOne
+    @Getter
 	private User approver;
 
 	@ManyToOne

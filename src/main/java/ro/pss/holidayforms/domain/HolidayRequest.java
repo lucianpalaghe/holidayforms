@@ -50,6 +50,7 @@ public class HolidayRequest {
 	private SubstitutionRequest substitutionRequest;
 
 	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@Getter
 	private List<ApprovalRequest> approvalRequests = new ArrayList<>();
 
 	@Transient
