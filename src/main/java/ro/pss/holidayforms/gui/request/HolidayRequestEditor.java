@@ -31,18 +31,15 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final HolidayRequestRepository holidayRepo;
 	private final UserRepository userRepo;
 
-	ComboBox<User> replacer = new ComboBox<>(MessageRetriever.get("replacerName"));
-	DateRangePicker dateRange = new DateRangePicker();
-
-//	DatePicker dateFrom = new DatePicker("De la");
-//	DatePicker dateTo = new DatePicker("Pana la");
-	ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
-	DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
-	Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.CHECK.create());
-	Button btnCancel = new Button(MessageRetriever.get("btnCancelLbl"));
-	Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
-	HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
-	Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
+	private ComboBox<User> replacer = new ComboBox<>(MessageRetriever.get("replacerName"));
+	private DateRangePicker dateRange = new DateRangePicker();
+	private ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
+	private DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
+	private Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.CHECK.create());
+	private Button btnCancel = new Button(MessageRetriever.get("btnCancelLbl"));
+	private Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
+	private HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
+	private Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
 	private HolidayRequest holidayRequest;
 	private ChangeHandler changeHandler;
 
@@ -75,23 +72,21 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		type.setWidthFull();
 		creationDate.setWidthFull();
 		creationDate.setLocale(new Locale("ro", "RO"));
-//		add(replacer, dateFrom, dateTo, type, creationDate, actions);
-		add(replacer, dateRange, type, creationDate, actions);
 
-		addValidations();
 		binder.bindInstanceFields(this);
-
-
-		setSpacing(true);
 
 		btnSave.getElement().getThemeList().add("primary");
 		btnDelete.getElement().getThemeList().add("error");
-
-		addKeyPressListener(Key.ENTER, e -> save());
-
 		btnSave.addClickListener(e -> save());
 		btnDelete.addClickListener(e -> delete());
 		btnCancel.addClickListener(e -> cancelEdit());
+
+		setJustifyContentMode(JustifyContentMode.CENTER);
+		setAlignItems(Alignment.CENTER);
+		add(replacer, dateRange, type, creationDate, actions);
+		addKeyPressListener(Key.ENTER, e -> save());
+		addValidations();
+		setSpacing(true);
 		setVisible(false);
 	}
 
@@ -119,13 +114,13 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 //		dateTo.addValueChangeListener(event -> returnBinder.validate());
 	}
 
-	void delete() {
+	private void delete() {
 		holidayRepo.delete(holidayRequest);
 		changeHandler.onChange();
 	}
 
 	//	void save(@UserPrincipal User loggedInUser) {
-	void save() {
+	private void save() {
 		if (binder.validate().isOk()) {
 			User requester = userRepo.getOne(userId);
 
@@ -133,7 +128,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 				User approver = userRepo.getOne(a);
 				return new ApprovalRequest(approver, ApprovalRequest.Status.NEW);
 			}).collect(Collectors.toList());
-			approvalRequests.stream().forEach(a -> holidayRequest.addApproval(a));
+			approvalRequests.forEach(a -> holidayRequest.addApproval(a));
 
 			holidayRequest.setRequester(requester);
 			holidayRepo.save(holidayRequest);
@@ -141,7 +136,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		}
 	}
 
-	public final void editHolidayRequest(HolidayRequest c) {
+	final void editHolidayRequest(HolidayRequest c) {
 		if (c == null) {
 			setVisible(false);
 			return;
@@ -158,11 +153,11 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		setVisible(true);
 	}
 
-	void cancelEdit() {
+	private void cancelEdit() {
 		changeHandler.onChange();
 	}
 
-	public void setChangeHandler(ChangeHandler h) {
+	void setChangeHandler(ChangeHandler h) {
 		changeHandler = h;
 	}
 

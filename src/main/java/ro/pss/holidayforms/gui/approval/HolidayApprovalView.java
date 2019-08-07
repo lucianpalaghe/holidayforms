@@ -22,9 +22,9 @@ import ro.pss.holidayforms.gui.MessageRetriever;
 @SpringComponent
 @UIScope
 @Route(value = "approvals", layout = HolidayAppLayout.class)
-@StyleSheet("context://mybuttons.css")
+@StyleSheet("responsive-buttons.css")
 public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver {
-    final Grid<ApprovalRequest> grid;
+    private final Grid<ApprovalRequest> grid;
     private final ApprovalRequestRepository requestRepository;
     private final VerticalLayout container;
     private HolidayConfirmationDialog holidayConfDialog;
@@ -35,7 +35,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
         grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(1);
         grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart")).setFlexGrow(1);
-        grid.addColumn(new ComponentRenderer<>(this::getActionButtons));
+        grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
         grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 
         container = new VerticalLayout();
@@ -52,7 +52,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         listApprovalRequests();
     }
 
-    void listApprovalRequests() {
+    private void listApprovalRequests() {
         grid.setItems(requestRepository.findAllByApproverEmail("luminita.petre@pss.ro"));
     }
 
@@ -64,7 +64,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         });
         btnApprove.addThemeName("success");
         btnApprove.addThemeName("primary");
-        btnApprove.addClassName("btnMine");
+        btnApprove.addClassName("responsive");
 
         Button btnDeny = new Button(MessageRetriever.get("denyTxt"), VaadinIcon.CLOSE_CIRCLE.create(), event -> {
 			String message = String.format(MessageRetriever.get("msgDenyRequest"), request.getRequest().getType(), request.getRequest().getRequester().getName());
@@ -72,13 +72,10 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 			holidayConfDialog.open();
         });
         btnDeny.addThemeName("error");
-        btnDeny.addClassName("btnMine");
+        btnDeny.addClassName("responsive");
 
         if (request.getStatus() == ApprovalRequest.Status.NEW) {
-            HorizontalLayout horizontalLayout = new HorizontalLayout(btnApprove, btnDeny);
-//            horizontalLayout.setMinWidth("10em");
-//            horizontalLayout.setSpacing(false);
-            return horizontalLayout;
+            return new HorizontalLayout(btnApprove, btnDeny);
         }
 
         if (request.getStatus() == ApprovalRequest.Status.APPROVED) {

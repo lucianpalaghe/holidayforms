@@ -4,7 +4,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -31,19 +30,17 @@ import java.util.Optional;
 @SpringComponent
 @UIScope
 @Route(value = "planning", layout = HolidayAppLayout.class)
-@StyleSheet("context://mycustom.css")
+@StyleSheet("responsive-panels-beta.css")
 public class HolidayPlanningView extends HorizontalLayout implements AfterNavigationObserver, BeforeLeaveObserver {
 	private final HolidayPlanningRepository repository;
 	private final UserRepository userRepository;
-	// TODO: remove, only used for testing without security implementation
-	private String userId = "lucian.palaghe@pss.ro";
-
 	private final HorizontalLayout container;
 	//	private final H2 heading;
 	private final DateRangePicker rangePicker;
 	private final Grid<HolidayPlanningEntry> grid;
-	List<HolidayPlanningEntry> entries = new ArrayList<>();
-	private ListDataProvider<HolidayPlanningEntry> provider = new ListDataProvider(entries);
+	private List<HolidayPlanningEntry> entries = new ArrayList<>();
+	// TODO: remove, only used for testing without security implementation
+	private String userId = "lucian.palaghe@pss.ro";
 
 	private HolidayPlanning holidayPlanning;
 
@@ -52,11 +49,12 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		this.userRepository = userRepo;
 		rangePicker = new DateRangePicker();
 		grid = new Grid<>();
-		grid.addColumn(HolidayPlanningEntry::getDateFrom).setHeader("Incepand cu data");//.setFlexGrow(2);
-		grid.addColumn(HolidayPlanningEntry::getDateTo).setHeader("Pana la data");//.setFlexGrow(2);
-		grid.addColumn(HolidayPlanningEntry::getNumberOfDays).setHeader("Nr. de zile");//.setFlexGrow(1);
+		grid.addColumn(HolidayPlanningEntry::getDateFrom).setHeader("Incepand cu data");
+		grid.addColumn(HolidayPlanningEntry::getDateTo).setHeader("Pana la data");
+		grid.addColumn(HolidayPlanningEntry::getNumberOfDays).setHeader("Nr. de zile");
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(0);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
+		ListDataProvider<HolidayPlanningEntry> provider = new ListDataProvider(entries);
 		grid.setDataProvider(provider);
 
 		container = new HorizontalLayout();
@@ -103,7 +101,6 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		subContainer.setPadding(true);
 		VerticalLayout maiAiPixZile = new VerticalLayout(new H3("Mai ai pix zile"), new Hr(), rangePicker);
 		maiAiPixZile.setWidth("auto");
-		Div d = new Div();
 
 		Button btnSave = new Button("Salveaza", VaadinIcon.LOCK.create(), event -> repo.save(holidayPlanning));
 		btnSave.addClassName("butondreapta");

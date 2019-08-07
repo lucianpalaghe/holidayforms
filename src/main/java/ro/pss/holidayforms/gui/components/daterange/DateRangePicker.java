@@ -1,8 +1,11 @@
 package ro.pss.holidayforms.gui.components.daterange;
 
 import com.vaadin.flow.component.AbstractField;
+import com.vaadin.flow.component.HasValidation;
+import com.vaadin.flow.component.Synchronize;
 import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.dependency.HtmlImport;
+import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.dom.PropertyChangeEvent;
 
@@ -14,8 +17,9 @@ import java.util.List;
 
 @Tag("range-datepicker")
 @HtmlImport("bower_components/range-datepicker/range-datepicker.html")
-public class DateRangePicker extends AbstractField<DateRangePicker, DateRange> {
-	private List<DateRangeSelectedLisetner> listeners = new ArrayList<DateRangeSelectedLisetner>();
+@StyleSheet("rangepicker-validation.css")
+public class DateRangePicker extends AbstractField<DateRangePicker, DateRange> implements HasValidation {
+	private List<DateRangeSelectedLisetner> listeners = new ArrayList<>();
 
 	private ZoneId zoneId = ZoneId.systemDefault();
 
@@ -95,5 +99,36 @@ public class DateRangePicker extends AbstractField<DateRangePicker, DateRange> {
 			element.setProperty("dateFrom", String.valueOf(Math.toIntExact(value.getDateFrom().atStartOfDay(zoneId).toEpochSecond())));
 			element.setProperty("dateTo", String.valueOf(Math.toIntExact(value.getDateTo().atStartOfDay(zoneId).toEpochSecond())));
 		}
+	}
+
+	@Override
+	public void setErrorMessage(String errorMessage) {
+		if (errorMessage != null) {
+			getElement().setAttribute("errorMessage", errorMessage);
+		}
+	}
+
+	@Override
+	public String getErrorMessage() {
+		return getElement().getAttribute("errorMessage");
+	}
+
+	@Override
+	public void setInvalid(boolean invalid) {
+		if (invalid) {
+			getElement().setAttribute("invalid", "");
+		} else {
+			getElement().removeAttribute("invalid");
+		}
+	}
+
+	@Override
+	public boolean isInvalid() {
+		return isInvalidBoolean();
+	}
+
+	@Synchronize(property = "invalid", value = "invalid-changed")
+	private boolean isInvalidBoolean() {
+		return getElement().getProperty("invalid", false);
 	}
 }

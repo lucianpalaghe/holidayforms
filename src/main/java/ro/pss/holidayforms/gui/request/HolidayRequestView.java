@@ -32,7 +32,8 @@ import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 @SpringComponent
 @UIScope
 @Route(value = "requests", layout = HolidayAppLayout.class)
-@StyleSheet("context://myprogress.css")
+@StyleSheet("step-progress-bar.css")
+@StyleSheet("responsive-buttons.css")
 public class HolidayRequestView extends HorizontalLayout implements AfterNavigationObserver {
 	private final Grid<HolidayRequest> grid;
 	private final HolidayRequestRepository requestRepository;
@@ -52,11 +53,11 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		});
 
 		grid = new Grid<>();
-		grid.addColumn(HolidayRequest::getNumberOfDays).setHeader(MessageRetriever.get("gridColDaysHeader")).setWidth("min-content");//.setFlexGrow(1);
-		grid.addColumn(HolidayRequest::getDateFrom).setHeader(MessageRetriever.get("gridColFromDate"));//.setFlexGrow(2);
-		grid.addColumn(HolidayRequest::getSubstitute).setHeader(MessageRetriever.get("gridColReplacer"));//.setFlexGrow(5);
-        grid.addColumn(new ComponentRenderer<>(this::getActionButtons));//.setFlexGrow(0);
-        grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
+		grid.addColumn(HolidayRequest::getNumberOfDays).setHeader(MessageRetriever.get("gridColDaysHeader")).setWidth("min-content").setFlexGrow(1);
+		grid.addColumn(HolidayRequest::getDateFrom).setHeader(MessageRetriever.get("gridColFromDate")).setFlexGrow(1);
+		grid.addColumn(HolidayRequest::getSubstitute).setHeader(MessageRetriever.get("gridColReplacer")).setFlexGrow(1);
+		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
+		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 		grid.setItemDetailsRenderer(getRequestStatusRenderer());
 
 		Button btnAdd = new Button(MessageRetriever.get("addHolidayRequest"), VaadinIcon.PLUS.create());
@@ -129,6 +130,9 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 			editor.editHolidayRequest(request);
 			mountEditorInDialog(true);
 		});
+		btnEdit.addClassName("responsive");
+		btnEdit.addClassName("responsive");
+
 		Button btnPrint = new Button(MessageRetriever.get("printHoliday"), VaadinIcon.PRINT.create(), event -> {
 			try {
 				fillHolidayRequest(request, request.getRequester());
@@ -138,8 +142,10 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		});
 		btnPrint.addThemeName("success");
 		btnPrint.addThemeName("primary");
+		btnPrint.addClassName("responsive");
 
 		HorizontalLayout horizontalLayout = new HorizontalLayout();
+//		horizontalLayout.setSpacing(false);
 		if (request.isStillEditable()) {
 			horizontalLayout.add(btnEdit);
 		} else {
@@ -152,8 +158,8 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(userId);
 		if (requests.isEmpty()) {
 			grid.setVisible(false);
-            heading.setText(MessageRetriever.get("noHolidayRequest"));
-            heading.setVisible(true);
+			heading.setText(MessageRetriever.get("noHolidayRequest"));
+			heading.setVisible(true);
 		} else {
 			heading.setVisible(false);
 			grid.setVisible(true);
