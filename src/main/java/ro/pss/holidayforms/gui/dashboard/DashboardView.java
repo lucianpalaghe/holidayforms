@@ -14,8 +14,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
+import ro.pss.holidayforms.domain.HolidayPlanning;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
+import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
@@ -25,6 +27,7 @@ import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 import java.time.Month;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -36,7 +39,7 @@ import static java.util.stream.Collectors.summingInt;
 public class DashboardView extends HorizontalLayout implements AfterNavigationObserver {
 	private final HolidayRequestRepository requestRepository;
 	private final UserRepository userRepository;
-	//	private final HolidayPlanningRepository planningRepository;
+	private final HolidayPlanningRepository planningRepository;
 	private H2 remainingDaysHeader = new H2();
 	private ChartJs holidaysChart;
 	private LineDataset chartPlannedDays;
@@ -45,10 +48,10 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 	private LineOptions chartLineOptions;
 	private String email = "lucian.palaghe@pss.ro";
 
-	public DashboardView(HolidayRequestRepository requestRepository, UserRepository userRepository) {//}, HolidayPlanningRepository planningRepository) {
+	public DashboardView(HolidayRequestRepository requestRepository, UserRepository userRepository,  HolidayPlanningRepository planningRepository) {
 		this.requestRepository = requestRepository;
 		this.userRepository = userRepository;
-//		this.planningRepository = planningRepository;
+		this.planningRepository = planningRepository;
 
 		VerticalLayout container = new VerticalLayout();
 		container.add(remainingDaysHeader);
@@ -111,6 +114,7 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 	}
 
 	private ChartJs getUpdatedChart(List<HolidayRequest> requests) {
+		Optional<HolidayPlanning> planning = planningRepository.findByEmployeeEmail(email);
 		Map<Month, Integer> holidaysGroupedByMonth = requests.stream()
 				.collect(groupingBy(HolidayRequest::getStartingMonthOfHoliday,
 						summingInt(HolidayRequest::getNumberOfDays)));

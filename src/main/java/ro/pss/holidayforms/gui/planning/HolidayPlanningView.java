@@ -7,6 +7,7 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.provider.ListDataProvider;
@@ -21,11 +22,12 @@ import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
 import ro.pss.holidayforms.gui.HolidayConfirmationDialog;
+import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 
 @SpringComponent
 @UIScope
@@ -38,25 +40,27 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	//	private final H2 heading;
 	private final DateRangePicker rangePicker;
 	private final Grid<HolidayPlanningEntry> grid;
-	private List<HolidayPlanningEntry> entries = new ArrayList<>();
 	// TODO: remove, only used for testing without security implementation
 	private String userId = "lucian.palaghe@pss.ro";
+	Set<HolidayPlanningEntry> entries = new TreeSet<>();
+	private ListDataProvider<HolidayPlanningEntry> provider = new ListDataProvider(entries);
 
 	private HolidayPlanning holidayPlanning;
+	private H3 remainingDaysHeader = new H3();
 
 	public HolidayPlanningView(HolidayPlanningRepository repo, UserRepository userRepo) {
 		this.repository = repo;
 		this.userRepository = userRepo;
 		rangePicker = new DateRangePicker();
 		grid = new Grid<>();
-		grid.addColumn(HolidayPlanningEntry::getDateFrom).setHeader("Incepand cu data");
-		grid.addColumn(HolidayPlanningEntry::getDateTo).setHeader("Pana la data");
-		grid.addColumn(HolidayPlanningEntry::getNumberOfDays).setHeader("Nr. de zile");
+		grid.addColumn(HolidayPlanningEntry::getDateFrom).setHeader(MessageRetriever.get("gridColFromDate"));
+		grid.addColumn(HolidayPlanningEntry::getDateTo).setHeader(MessageRetriever.get("gridColToDate"));
+		grid.addColumn(HolidayPlanningEntry::getNumberOfDays).setHeader(MessageRetriever.get("gridColDaysHeader"));
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(0);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 		ListDataProvider<HolidayPlanningEntry> provider = new ListDataProvider(entries);
 		grid.setDataProvider(provider);
-
+		listHolidayPlanningEntries();
 		container = new HorizontalLayout();
 		container.setWidth("100%");
 		container.setMaxWidth("80em");
@@ -99,23 +103,40 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 
 		HorizontalLayout subContainer = new HorizontalLayout();
 		subContainer.setPadding(true);
-		VerticalLayout maiAiPixZile = new VerticalLayout(new H3("Mai ai pix zile"), new Hr(), rangePicker);
-		maiAiPixZile.setWidth("auto");
 
-		Button btnSave = new Button("Salveaza", VaadinIcon.LOCK.create(), event -> repo.save(holidayPlanning));
-		btnSave.addClassName("butondreapta");
+		refreshRemainingDaysHeader();
+		VerticalLayout remainingDays = new VerticalLayout(remainingDaysHeader, new Hr(), rangePicker);
+		remainingDays.setWidth("auto");
+		Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.LOCK.create(), event -> {
+			holidayPlanning.getEntries().clear();
+			holidayPlanning.setEntries(entries);
+			HolidayPlanning savedPlanning = repo.save(holidayPlanning);
+			/*
+			 * Unexpected JPA behaviour when trying to save, it only deletes all the entities, without insert command afterwards.
+			 * Strangely enough, it returns all the entities as they were saved. So, save once again in order to actually execute the
+			 * insert command.
+			 */
+			//repo.save(savedPlanning);
+
+			Notification.show(MessageRetriever.get("planningSaved"),3000, Notification.Position.TOP_CENTER);
+		});
+		btnSave.addClassName("pull-right");
 		VerticalLayout salveaza = new VerticalLayout(grid, btnSave);
-		subContainer.add(maiAiPixZile, salveaza);
+		subContainer.add(remainingDays, salveaza);
 		subContainer.setWidthFull();
-
 		container.add(subContainer);
 
 		rangePicker.addListener(r -> {
 			HolidayPlanningEntry planningEntry = new HolidayPlanningEntry(r.getDateFrom(), r.getDateTo());
-			holidayPlanning.addPlanningEntry(planningEntry);
-//			repository.save(holidayPlanning);
-			entries.add(planningEntry);
-			grid.getDataProvider().refreshAll();
+			planningEntry.setPlanning(holidayPlanning);
+			HolidayPlanningEntry.EntryValidityStatus status = holidayPlanning.addPlanningEntry(planningEntry);
+			if(status.equals(HolidayPlanningEntry.EntryValidityStatus.VALID)) {
+				entries.add(planningEntry);
+				grid.getDataProvider().refreshAll();
+				refreshRemainingDaysHeader();
+			}else {
+				Notification.show(getMessageFromEntryStatus(status),3000, Notification.Position.TOP_CENTER);
+			}
 			rangePicker.setValue(null);
 		});
 
@@ -123,16 +144,42 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 //		setAlignItems(Alignment.CENTER);
 		add(container);
 //		setHeightFull();
+	}
 
-		listHolidayPlanningEntries();
+	private String getMessageFromEntryStatus(HolidayPlanningEntry.EntryValidityStatus status) {
+		String message = "";
+		switch(status) {
+			case NO_WORKING_DAYS:
+				message = MessageRetriever.get("noWorkingDay");
+				break;
+			case RANGE_CONFLICT:
+				message = MessageRetriever.get("rangeConflict");
+				break;
+			case EXCEEDED_DAYS:
+				message = String.format(MessageRetriever.get("exceededDays"), holidayPlanning.getEmployee().getRegularVacationDays());
+				break;
+			default:
+				message = MessageRetriever.get("notImplementedMsg");
+		}
+		return message;
+	}
+
+	private void refreshRemainingDaysHeader() {
+		int usedDays = entries.stream().mapToInt(HolidayPlanningEntry::getNumberOfDays).sum();
+		int remainingDays = holidayPlanning.getEmployee().getRegularVacationDays()  - usedDays;
+		if(remainingDays > 0) {
+			remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeader"), remainingDays));
+		}else {
+			remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeaderNoDays"), remainingDays));
+		}
 	}
 
 	private HorizontalLayout getActionButtons(HolidayPlanningEntry request) {
 		Button btnDeny = new Button(VaadinIcon.CLOSE_CIRCLE.create(), event -> {
-			holidayPlanning.removePlanningEntry(request); // TODO: delete doesn't work
+			holidayPlanning.removePlanningEntry(request);
 			entries.remove(request);
-//			repository.save(holidayPlanning);
 			grid.getDataProvider().refreshAll();
+			refreshRemainingDaysHeader();
 		});
 		btnDeny.addThemeName("error");
 		return new HorizontalLayout(btnDeny);
@@ -145,8 +192,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 			holidayPlanning = planning.get();
 			grid.setVisible(true);
 		} else {
-			holidayPlanning = new HolidayPlanning(u, new ArrayList<>());
-//			repository.save(holidayPlanning);
+			holidayPlanning = new HolidayPlanning(u, new TreeSet<>());
 			grid.setVisible(true);
 		}
 		entries.clear();
@@ -168,7 +214,12 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	}
 
 	private boolean hasChanges() {
-		// no-op implementation
-		return true;
+		Optional<HolidayPlanning> original = repository.findByEmployeeEmail(userId);
+		if(original.isPresent()) {
+			if(!original.get().getEntries().containsAll(entries)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
