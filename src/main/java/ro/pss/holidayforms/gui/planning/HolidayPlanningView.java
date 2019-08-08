@@ -120,7 +120,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 
 			Notification.show(MessageRetriever.get("planningSaved"),3000, Notification.Position.TOP_CENTER);
 		});
-		btnSave.addClassName("pull-right");
+		btnSave.getStyle().set("margin-left", "auto");
 		VerticalLayout salveaza = new VerticalLayout(grid, btnSave);
 		subContainer.add(remainingDays, salveaza);
 		subContainer.setWidthFull();

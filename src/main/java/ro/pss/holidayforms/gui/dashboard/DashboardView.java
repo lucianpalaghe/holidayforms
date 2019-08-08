@@ -15,6 +15,7 @@ import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import ro.pss.holidayforms.domain.HolidayPlanning;
+import ro.pss.holidayforms.domain.HolidayPlanningEntry;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
@@ -25,10 +26,7 @@ import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 
 import java.time.Month;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingInt;
@@ -61,8 +59,12 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 		refreshHeader(user, requests);
 
 		initializeChart();
-
-		holidaysChart = getUpdatedChart(requests);
+		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(email);
+		List<HolidayPlanningEntry> entries = new ArrayList<>();
+		if (byEmployeeEmail.isPresent()) {
+			entries.addAll(byEmployeeEmail.get().getEntries());
+		}
+		holidaysChart = getUpdatedChart(requests, entries);
 		Div chartContainer = new Div();
 		chartContainer.setWidthFull();
 		chartContainer.add(holidaysChart);
@@ -94,14 +96,14 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 				.setBackgroundColor(Color.TRANSPARENT)
 				.setBorderColor(Color.LIGHT_BLUE)
 				.addPointBackgroundColor(Color.LIGHT_BLUE)
-				.setLineTension(0f);
+				.setLineTension(0.25f);
 
 		chartHolidays = new LineDataset()
 				.setLabel(MessageRetriever.get("chartHolidaysLbl"))
 				.setBackgroundColor(Color.TRANSPARENT)
 				.setBorderColor(Color.CRIMSON)
 				.addPointBackgroundColor(Color.CRIMSON)
-				.setLineTension(0f);
+				.setLineTension(0.25f);
 
 		chartLineData = new LineData()
 				.addLabels(MessageRetriever.get("monthsNamesLong").split(","))
@@ -113,8 +115,7 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 				.setLegend(new Legend().setDisplay(true));
 	}
 
-	private ChartJs getUpdatedChart(List<HolidayRequest> requests) {
-		Optional<HolidayPlanning> planning = planningRepository.findByEmployeeEmail(email);
+	private ChartJs getUpdatedChart(List<HolidayRequest> requests, List<HolidayPlanningEntry> planningEntries) {
 		Map<Month, Integer> holidaysGroupedByMonth = requests.stream()
 				.collect(groupingBy(HolidayRequest::getStartingMonthOfHoliday,
 						summingInt(HolidayRequest::getNumberOfDays)));
@@ -125,8 +126,21 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 		TreeMap<Month, Integer> monthIntegerTreeMap = new TreeMap<>(emptyMonthsMap);// treemap sorts contents by key
 
 		int[] daysArray = monthIntegerTreeMap.values().stream().mapToInt(i -> i).toArray();
-		chartPlannedDays.setData(0, 1, 0, 3, 2, 5, 5, 0, 0, 1, 0, 6);
 		chartHolidays.setData(daysArray);
+
+		Map<Month, Integer> planningsGroupedByMonth = planningEntries.stream()
+				.collect(groupingBy(HolidayPlanningEntry::getStartingMonthOfPlanning,
+						summingInt(HolidayPlanningEntry::getNumberOfDays)));
+
+		Map<Month, Integer> emptyMonthsMap2 = DateUtils.getEmptyMonthsMap();
+		emptyMonthsMap2.putAll(planningsGroupedByMonth);
+
+		TreeMap<Month, Integer> monthIntegerTreeMap2 = new TreeMap<>(emptyMonthsMap2);// treemap sorts contents by key
+
+		int[] daysArray2 = monthIntegerTreeMap2.values().stream().mapToInt(i -> i).toArray();
+		chartHolidays.setData(daysArray);
+
+		chartPlannedDays.setData(daysArray2);
 
 		return new ChartJs(new LineChart(chartLineData, chartLineOptions).toJson());
 	}
@@ -135,8 +149,13 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 	public void afterNavigation(AfterNavigationEvent event) {
 		User user = userRepository.findById(email).get();
 		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(email);
+		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(email);
+		List<HolidayPlanningEntry> entries = new ArrayList<>();
+		if (byEmployeeEmail.isPresent()) {
+			entries.addAll(byEmployeeEmail.get().getEntries());
+		}
 
 		refreshHeader(user, requests);
-		holidaysChart = getUpdatedChart(requests);
+		holidaysChart = getUpdatedChart(requests, entries);
 	}
 }

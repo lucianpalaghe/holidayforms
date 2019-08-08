@@ -7,6 +7,7 @@ import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.Objects;
 
 @Entity
@@ -67,6 +68,11 @@ public class HolidayPlanningEntry implements Comparable<HolidayPlanningEntry> {
         }
         return ret;
     }
+
+	public Month getStartingMonthOfPlanning() {
+		return dateFrom.getMonth();
+	}
+
 	public enum EntryValidityStatus {
 		VALID, NO_WORKING_DAYS, RANGE_CONFLICT, EXCEEDED_DAYS
 	}
