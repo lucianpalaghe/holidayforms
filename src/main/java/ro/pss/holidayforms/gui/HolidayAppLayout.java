@@ -15,8 +15,13 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.page.Viewport;
+import ro.pss.holidayforms.domain.ApprovalRequest;
+import ro.pss.holidayforms.domain.SubstitutionRequest;
+import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
+import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
 import ro.pss.holidayforms.gui.broadcast.BroadcastMessage;
+import ro.pss.holidayforms.gui.broadcast.BroadcastNewData;
 import ro.pss.holidayforms.gui.broadcast.Broadcaster;
 import ro.pss.holidayforms.gui.dashboard.DashboardView;
 import ro.pss.holidayforms.gui.planning.HolidayPlanningView;
@@ -32,8 +37,9 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	private DefaultNotificationHolder notifications;
 	private DefaultBadgeHolder substitutionBadge;
 	private DefaultBadgeHolder approvalBadge;
+	private String userId = "lucian.palaghe@pss.ro";
 
-	public HolidayAppLayout() {
+	public HolidayAppLayout(ApprovalRequestRepository approvalRepository, SubstitutionRequestRepository substitutionRepository)  {
 		this.notifications = new DefaultNotificationHolder();
 		this.substitutionBadge = new DefaultBadgeHolder();
 		this.approvalBadge = new DefaultBadgeHolder();
@@ -48,7 +54,8 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("toApprove"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
 		substitutionBadge.bind(substitutionMenuEntry.getBadge());
 		approvalBadge.bind(approvalMenuEntry.getBadge());
-
+		approvalBadge.setCount(approvalRepository.findAllByApproverEmailAndStatus("luminita.petre@pss.ro", ApprovalRequest.Status.NEW).size());
+		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(userId, SubstitutionRequest.Status.NEW).size());
 		Broadcaster.register(UI.getCurrent(), this);
 
 		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("preferencesTxt"), VaadinIcon.COG.create(),
@@ -87,23 +94,26 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 
 	@Override
 	public void receiveBroadcast(UI ui, BroadcastMessage message) {
-		ui.access(() -> {
-			// TODO: after spring security implementation, compare message.getTargetUserId with logged in user
-			String typeString = MessageRetriever.get("notification_" + message.getType());
-
-			notifications.addNotification(new DefaultNotification(typeString, message.getMessage()));
-			BroadcastMessage.BroadcastMessageType type = message.getType();
-			switch (type) {
-				case SUBSTITUTE:
-					substitutionBadge.increase();
-					break;
-				case APPROVE:
-					approvalBadge.increase();
-					break;
-				default:
-					throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
-			}
-		});
+		if(userId.equals(message.getTargetUserId())) {
+			ui.access(() -> {
+				// TODO: after spring security implementation, compare message.getTargetUserId with logged in user
+				String typeString = MessageRetriever.get("notification_" + message.getType());
+				BroadcastNewData.broadcast("new data!");
+				notifications.addNotification(new DefaultNotification(typeString, message.getMessage()));
+				BroadcastMessage.BroadcastMessageType type = message.getType();
+				switch (type) {
+					case SUBSTITUTE:
+						substitutionBadge.increase();
+						break;
+					case APPROVE:
+						approvalBadge.increase();
+						break;
+					default:
+						throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
+				}
+			});
+		}
 	}
+
 }
 

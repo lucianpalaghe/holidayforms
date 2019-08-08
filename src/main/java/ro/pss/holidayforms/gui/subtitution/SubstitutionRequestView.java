@@ -1,5 +1,7 @@
 package ro.pss.holidayforms.gui.subtitution;
 
+import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.Grid;
@@ -18,12 +20,13 @@ import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.HolidayAppLayout;
 import ro.pss.holidayforms.gui.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.MessageRetriever;
+import ro.pss.holidayforms.gui.broadcast.BroadcastNewData;
 
 @SpringComponent
 @UIScope
 @Route(value = "substitutions", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-buttons.css")
-public class SubstitutionRequestView extends HorizontalLayout implements AfterNavigationObserver {
+public class SubstitutionRequestView extends HorizontalLayout implements AfterNavigationObserver, BroadcastNewData.NewDataListener {
 	private final Grid<SubstitutionRequest> grid;
 	private final SubstitutionRequestRepository requestRepository;
 	private final VerticalLayout container;
@@ -50,6 +53,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 		setHeightFull();
 
 		listSubstitutionRequests();
+		BroadcastNewData.register(UI.getCurrent(), this);
 	}
 
 	private void listSubstitutionRequests() {
@@ -106,5 +110,15 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	@Override
 	public void afterNavigation(AfterNavigationEvent event) {
 		listSubstitutionRequests();
+	}
+
+	@Override
+	public void onDataReceive(UI ui, String message) {
+		ui.access(() -> listSubstitutionRequests());
+	}
+
+	@Override
+	protected void onDetach(DetachEvent detachEvent) {
+		BroadcastNewData.unregister(detachEvent.getUI());
 	}
 }

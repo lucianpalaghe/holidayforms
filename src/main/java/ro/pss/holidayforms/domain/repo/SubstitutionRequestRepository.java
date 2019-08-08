@@ -6,5 +6,6 @@ import ro.pss.holidayforms.domain.SubstitutionRequest;
 import java.util.List;
 
 public interface SubstitutionRequestRepository extends JpaRepository<SubstitutionRequest, Long> {
-	public List<SubstitutionRequest> findAllBySubstituteEmail(String email);
+	List<SubstitutionRequest> findAllBySubstituteEmail(String email);
+	List<SubstitutionRequest> findAllBySubstituteEmailAndStatus(String email, SubstitutionRequest.Status status);
 }

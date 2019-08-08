@@ -126,7 +126,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 			holidayRequest = holidayRepo.save(holidayRequest);
 			changeHandler.onChange();
 			Broadcaster.broadcast(
-					new BroadcastMessage(holidayRequest.getSubstitute().getName(),
+					new BroadcastMessage(holidayRequest.getSubstitute().getEmail(),
 							BroadcastMessage.BroadcastMessageType.SUBSTITUTE,
 							String.format(MessageRetriever.get("notificationSubstituteMessage"), holidayRequest.getRequester().getName())));
 		}
