@@ -208,7 +208,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	public void beforeLeave(BeforeLeaveEvent event) {
 		if (this.hasChanges()) {
 			BeforeLeaveEvent.ContinueNavigationAction action = event.postpone();
-			HolidayConfirmationDialog holidayConfirmationDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.DENIAL, action::proceed, "Modificari nesalvate", "Exista modificari nesalvate, vrei sa iesi?", "Da", "Inapoi");
+			HolidayConfirmationDialog holidayConfirmationDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.DENIAL, action::proceed, MessageRetriever.get("unsavedChanges"), MessageRetriever.get("unsavedChangesMsg"), MessageRetriever.get("answerYes"), MessageRetriever.get("backTxt"));
 			holidayConfirmationDialog.open();
 		}
 	}

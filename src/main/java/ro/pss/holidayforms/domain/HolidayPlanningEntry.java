@@ -27,7 +27,7 @@ public class HolidayPlanningEntry implements Comparable<HolidayPlanningEntry> {
 
     @Setter
     @Getter
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     private HolidayPlanning planning;
 
     @Transient
