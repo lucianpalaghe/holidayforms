@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.gui;
+package ro.pss.holidayforms.gui.broadcast;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,9 +10,10 @@ import lombok.Setter;
 @Setter @Getter
 public class BroadcastMessage {
     private String targetUserId;
-    private Enum messageType;
+	private BroadcastMessageType type;
+	private String message;
 
     public enum BroadcastMessageType {
-       REPLACE, APPROVE, REQUEST
+		SUBSTITUTE, APPROVE, REQUEST
     }
 }

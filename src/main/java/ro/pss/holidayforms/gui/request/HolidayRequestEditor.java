@@ -18,6 +18,8 @@ import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
+import ro.pss.holidayforms.gui.broadcast.BroadcastMessage;
+import ro.pss.holidayforms.gui.broadcast.Broadcaster;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 
 import java.util.Arrays;
@@ -96,22 +98,12 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
 				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
-//				.bind(HolidayRequest::getDateFrom, HolidayRequest::setDateFrom);
-//
-//		Binder.BindingBuilder<HolidayRequest, LocalDate> returnBindingBuilder = binder
-//				.forField(dateTo)
-//				.asRequired("Pana cand vrei sa pleci in concediu?")
-//				.withValidator(r -> r != null && !r.isBefore(dateFrom.getValue()), "Nu poti sa pleci inainte sa te intorci!");
-//		Binder.Binding<HolidayRequest, LocalDate> returnBinder = returnBindingBuilder
-//				.bind(HolidayRequest::getDateTo, HolidayRequest::setDateTo);
 
 		binder.forField(type).asRequired(MessageRetriever.get("validationHolidayType"))
 				.bind(HolidayRequest::getType, HolidayRequest::setType);
 
 		binder.forField(creationDate).asRequired(MessageRetriever.get("validationDate"))
 				.bind(HolidayRequest::getCreationDate, HolidayRequest::setCreationDate);
-
-//		dateTo.addValueChangeListener(event -> returnBinder.validate());
 	}
 
 	private void delete() {
@@ -122,7 +114,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	//	void save(@UserPrincipal User loggedInUser) {
 	private void save() {
 		if (binder.validate().isOk()) {
-			User requester = userRepo.getOne(userId);
+			User requester = userRepo.findById(userId).get();
 
 			List<ApprovalRequest> approvalRequests = approverIds.stream().map(a -> { // TODO: refactor
 				User approver = userRepo.getOne(a);
@@ -131,8 +123,12 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 			approvalRequests.forEach(a -> holidayRequest.addApproval(a));
 
 			holidayRequest.setRequester(requester);
-			holidayRepo.save(holidayRequest);
+			holidayRequest = holidayRepo.save(holidayRequest);
 			changeHandler.onChange();
+			Broadcaster.broadcast(
+					new BroadcastMessage(holidayRequest.getSubstitute().getName(),
+							BroadcastMessage.BroadcastMessageType.SUBSTITUTE,
+							String.format(MessageRetriever.get("notificationSubstituteMessage"), holidayRequest.getRequester().getName())));
 		}
 	}
 

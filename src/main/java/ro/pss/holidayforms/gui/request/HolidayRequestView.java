@@ -50,6 +50,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 			this.editor.setVisible(false);
 			listHolidayRequests();
 			mountEditorInDialog(false);
+//			Broadcaster.broadcast("PAMPAM:");
 		});
 
 		grid = new Grid<>();
