@@ -137,6 +137,34 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		Button btnPrint = new Button(MessageRetriever.get("printHoliday"), VaadinIcon.PRINT.create(), event -> {
 			try {
 				fillHolidayRequest(request, request.getRequester());
+
+				// Create the stream resource and give it a file name
+//				String filename = "CO_Lucian Palaghe_2019-08-14.pdf";
+//				StreamResource resource = new StreamResource(filename, () -> {
+//					try {
+//						return new FileInputStream(filename);
+//					} catch (FileNotFoundException e) {
+//						e.printStackTrace();
+//					}
+//				});
+//
+//				// These settings are not usually necessary. MIME type
+//				// is detected automatically from the file name, but
+//				// setting it explicitly may be necessary if the file
+//				// suffix is not ".pdf".
+//				resource.setContentType("application/pdf");
+//				resource.getStream().setParameter(
+//						"Content-Disposition",
+//						"attachment; filename="+filename);
+//
+//				// Extend the print button with an opener
+//				// for the PDF resource
+//				BrowserWindowOpener opener = new BrowserWindowOpener(resource);
+//				opener.extend(print);
+//
+//				name.setEnabled(false);
+//				ok.setEnabled(false);
+//				print.setEnabled(true);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

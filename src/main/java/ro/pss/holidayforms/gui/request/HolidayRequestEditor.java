@@ -20,8 +20,8 @@ import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.broadcast.BroadcastMessage;
 import ro.pss.holidayforms.gui.broadcast.Broadcaster;
+import ro.pss.holidayforms.gui.components.daterange.DateRange;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
-import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -101,14 +101,23 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		List<HolidayRequest> requests = holidayRepo.findAllByRequesterEmail(userId);
 		int sumDaysTaken = requests.stream()
 				.filter(HolidayRequest::isCO)
-				.mapToInt(r -> DateUtils.getWorkingDays(r.getDateFrom(), r.getDateTo()))
+				.mapToInt(HolidayRequest::getNumberOfDays)
 				.sum();
 		int days = u.getRegularVacationDays() - sumDaysTaken;//requestRepository.getRemainingDaysByUserEmail("lucian.palaghe@pss.ro");
 
-		binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
+		Binder.Binding<HolidayRequest, DateRange> holidayRequestDateRangeBinding = binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
 				.withValidator(range -> range.hasWorkingDays(), MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
-				.withValidator(range -> (days - range.getNumberOfDays()) > 0, MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft")) // TODO: add check only for CO
+				.withValidator(range -> {
+					if (type.getValue() != null && type.getValue().equals(HolidayRequest.Type.CO)) {
+						if (days - range.getNumberOfDays() < 0) {
+							return false;
+						}
+					}
+					return true;
+				}, MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft")) // TODO: add check only for CO
 				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
+
+		type.addValueChangeListener(event -> holidayRequestDateRangeBinding.validate());
 
 		binder.forField(type).asRequired(MessageRetriever.get("validationHolidayType"))
 				.bind(HolidayRequest::getType, HolidayRequest::setType);
