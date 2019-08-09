@@ -17,7 +17,7 @@ import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
-import ro.pss.holidayforms.gui.components.layout.HolidayAppLayout;
+import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 
 @SpringComponent
 @UIScope
@@ -34,6 +34,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         this.grid = new Grid<>();
         grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
         grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(1);
+		grid.addColumn(r -> r.getRequest().getSubstitute()).setHeader(MessageRetriever.get("appViewGridHeaderSubstitute")).setFlexGrow(1);
 		grid.addColumn(r -> r.getRequest().getType()).setHeader(MessageRetriever.get("gridColType")).setFlexGrow(1);
         grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart")).setFlexGrow(1);
         grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);

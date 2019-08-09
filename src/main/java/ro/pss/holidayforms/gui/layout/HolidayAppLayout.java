@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.gui.components.layout;
+package ro.pss.holidayforms.gui.layout;
 
 import com.github.appreciated.app.layout.behaviour.Behaviour;
 import com.github.appreciated.app.layout.builder.AppLayoutBuilder;
@@ -45,9 +45,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		this.substitutionBadge = new DefaultBadgeHolder();
 		this.approvalBadge = new DefaultBadgeHolder();
 
-		this.notifications.addClickListener(notification -> System.out.println(notification.getTitle()));
-
-		UserMenuItem userItem = new UserMenuItem("User Johnson", "user.johnson@pss.ro", "cat.jpg");
+		UserMenuItem userItem = new UserMenuItem("User Johnson", userId, "cat.jpg");
 		LeftNavigationItem holidayRequestsMenuEntry = new LeftNavigationItem(MessageRetriever.get("myHolidayRequests"), VaadinIcon.AIRPLANE.create(), HolidayRequestView.class);
 		LeftNavigationItem dashboardMenuEntry = new LeftNavigationItem(MessageRetriever.get("dashboard"), VaadinIcon.LINE_CHART.create(), DashboardView.class);
 		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem(MessageRetriever.get("asReplacer"), VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
@@ -57,7 +55,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		approvalBadge.bind(approvalMenuEntry.getBadge());
 		approvalBadge.setCount(approvalRepository.findAllByApproverEmailAndStatus("luminita.petre@pss.ro", ApprovalRequest.Status.NEW).size());
 		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(userId, SubstitutionRequest.Status.NEW).size());
-		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.3");
+		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.4"); // TODO: get version from somewhere
 
 		Broadcaster.register(UI.getCurrent(), this);
 

@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.gui.components.layout;
+package ro.pss.holidayforms.gui.layout;
 
 import com.github.appreciated.app.layout.component.menu.RoundImage;
 import com.vaadin.flow.component.Composite;

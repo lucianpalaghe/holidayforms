@@ -114,7 +114,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 						}
 					}
 					return true;
-				}, MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft")) // TODO: add check only for CO
+				}, MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft"))
 				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
 
 		type.addValueChangeListener(event -> holidayRequestDateRangeBinding.validate());
@@ -135,6 +135,10 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private void save() {
 		if (binder.validate().isOk()) {
 			User requester = userRepo.findById(userId).get();
+
+			if (holidayRequest.getApprovalRequests().size() > 0) { // if this request is edited, remove all previous approvals
+				holidayRequest.getApprovalRequests().clear();
+			}
 
 			List<ApprovalRequest> approvalRequests = approverIds.stream().map(a -> { // TODO: refactor
 				User approver = userRepo.getOne(a);

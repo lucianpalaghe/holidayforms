@@ -23,7 +23,7 @@ import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
-import ro.pss.holidayforms.gui.components.layout.HolidayAppLayout;
+import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 
 import java.util.Optional;
 import java.util.Set;
@@ -202,6 +202,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	@Override
 	public void afterNavigation(AfterNavigationEvent event) {
 		listHolidayPlanningEntries();
+		refreshRemainingDaysHeader();
 	}
 
 	@Override
@@ -216,9 +217,12 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	private boolean hasChanges() {
 		Optional<HolidayPlanning> original = repository.findByEmployeeEmail(userId);
 		if(original.isPresent()) {
-			if(!original.get().getEntries().containsAll(entries)) {
+			HolidayPlanning holidayPlanning = original.get();
+			if (!(holidayPlanning.getEntries().containsAll(entries) && holidayPlanning.getEntries().size() == entries.size())) {
 				return true;
 			}
+		} else if (entries.size() > 0) {
+			return true;
 		}
 		return false;
 	}

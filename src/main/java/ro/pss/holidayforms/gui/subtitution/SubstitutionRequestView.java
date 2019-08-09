@@ -20,7 +20,7 @@ import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.broadcast.BroadcastNewData;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
-import ro.pss.holidayforms.gui.components.layout.HolidayAppLayout;
+import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 
 @SpringComponent
 @UIScope

@@ -23,7 +23,7 @@ import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
-import ro.pss.holidayforms.gui.components.layout.HolidayAppLayout;
+import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 
 import java.time.Month;
 import java.util.*;

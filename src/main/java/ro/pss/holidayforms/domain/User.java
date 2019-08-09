@@ -40,8 +40,14 @@ public class User {
 
 	public static User EMPTY = new User("");
 
-	private User(String name) {
+	public User(String name) {
 		this.name = name;
+	}
+
+	public User(String name, String email, String photo) {
+		this.name = name;
+		this.email = email;
+		this.photo = photo;
 	}
 
 	@Override

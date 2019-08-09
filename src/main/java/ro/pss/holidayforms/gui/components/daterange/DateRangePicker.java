@@ -25,7 +25,6 @@ public class DateRangePicker extends AbstractField<DateRangePicker, DateRange> i
 
 	public DateRangePicker() {
 		super(null);
-//		getElement().setAttribute("force-narrow", "");
 		getElement().setAttribute("locale", "ro");
 		getElement().addPropertyChangeListener("dateFrom", "date-from-changed", this::propertyUpdated);
 		getElement().addPropertyChangeListener("dateTo", "date-to-changed", this::propertyUpdated);
@@ -38,17 +37,6 @@ public class DateRangePicker extends AbstractField<DateRangePicker, DateRange> i
 			getElement().removeAttribute("force-narrow");
 		}
 	}
-//
-//	public DateRangePicker(LocalDate startDate, LocalDate endDate) {
-//		super(null);
-//		getElement().setAttribute("locale", "ro");
-//		getElement().setAttribute("month", String.valueOf(startDate.getMonthValue()));
-//		getElement().setAttribute("year", String.valueOf(startDate.getYear()));
-//		getElement().setAttribute("min", String.valueOf(Math.toIntExact(startDate.atStartOfDay(zoneId).toEpochSecond())));
-//		getElement().setAttribute("max", String.valueOf(Math.toIntExact(endDate.atStartOfDay(zoneId).toEpochSecond())));
-//		getElement().addPropertyChangeListener("dateFrom", "date-from-changed", this::propertyUpdated);
-//		getElement().addPropertyChangeListener("dateTo", "date-to-changed", this::propertyUpdated);
-//	}
 
 	private void propertyUpdated(PropertyChangeEvent event) {
 		Element element = getElement();

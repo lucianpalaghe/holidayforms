@@ -22,7 +22,7 @@ import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
-import ro.pss.holidayforms.gui.components.layout.HolidayAppLayout;
+import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 
 import java.io.IOException;
 import java.util.List;

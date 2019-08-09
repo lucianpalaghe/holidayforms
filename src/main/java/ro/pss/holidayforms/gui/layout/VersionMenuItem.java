@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.gui.components.layout;
+package ro.pss.holidayforms.gui.layout;
 
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.html.Label;
