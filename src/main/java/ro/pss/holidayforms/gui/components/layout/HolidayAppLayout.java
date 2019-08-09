@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.gui;
+package ro.pss.holidayforms.gui.components.layout;
 
 import com.github.appreciated.app.layout.behaviour.Behaviour;
 import com.github.appreciated.app.layout.builder.AppLayoutBuilder;
@@ -19,6 +19,7 @@ import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
+import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
 import ro.pss.holidayforms.gui.broadcast.BroadcastMessage;
 import ro.pss.holidayforms.gui.broadcast.BroadcastNewData;
@@ -46,7 +47,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 
 		this.notifications.addClickListener(notification -> System.out.println(notification.getTitle()));
 
-		LeftHeaderItemExt userItem = new LeftHeaderItemExt("User Johnson", "user.johnson@pss.ro", "cat.jpg");
+		UserMenuItem userItem = new UserMenuItem("User Johnson", "user.johnson@pss.ro", "cat.jpg");
 		LeftNavigationItem holidayRequestsMenuEntry = new LeftNavigationItem(MessageRetriever.get("myHolidayRequests"), VaadinIcon.AIRPLANE.create(), HolidayRequestView.class);
 		LeftNavigationItem dashboardMenuEntry = new LeftNavigationItem(MessageRetriever.get("dashboard"), VaadinIcon.LINE_CHART.create(), DashboardView.class);
 		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem(MessageRetriever.get("asReplacer"), VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
@@ -56,6 +57,8 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		approvalBadge.bind(approvalMenuEntry.getBadge());
 		approvalBadge.setCount(approvalRepository.findAllByApproverEmailAndStatus("luminita.petre@pss.ro", ApprovalRequest.Status.NEW).size());
 		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(userId, SubstitutionRequest.Status.NEW).size());
+		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.3");
+
 		Broadcaster.register(UI.getCurrent(), this);
 
 		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("preferencesTxt"), VaadinIcon.COG.create(),
@@ -87,7 +90,9 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 						.add(approvalMenuEntry)
 						.add(planningMenuEntry)
 						.add(languageMenuEntry)
-						.addToSection(preferencesMenuEntry, FOOTER)
+						.add(preferencesMenuEntry)
+						.withStickyFooter()
+						.addToSection(versionItem, FOOTER)
 						.build())
 				.build());
 	}

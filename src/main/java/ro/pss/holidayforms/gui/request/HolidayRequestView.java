@@ -21,8 +21,8 @@ import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
-import ro.pss.holidayforms.gui.HolidayAppLayout;
 import ro.pss.holidayforms.gui.MessageRetriever;
+import ro.pss.holidayforms.gui.components.layout.HolidayAppLayout;
 
 import java.io.IOException;
 import java.util.List;
@@ -50,11 +50,11 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 			this.editor.setVisible(false);
 			listHolidayRequests();
 			mountEditorInDialog(false);
-//			Broadcaster.broadcast("PAMPAM:");
 		});
 
 		grid = new Grid<>();
 		grid.addColumn(HolidayRequest::getNumberOfDays).setHeader(MessageRetriever.get("gridColDaysHeader")).setWidth("min-content").setFlexGrow(1);
+		grid.addColumn(HolidayRequest::getType).setHeader(MessageRetriever.get("gridColType")).setFlexGrow(1);
 		grid.addColumn(HolidayRequest::getDateFrom).setHeader(MessageRetriever.get("gridColFromDate")).setFlexGrow(1);
 		grid.addColumn(HolidayRequest::getSubstitute).setHeader(MessageRetriever.get("gridColReplacer")).setFlexGrow(1);
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
@@ -193,6 +193,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 			heading.setVisible(false);
 			grid.setVisible(true);
 			grid.setItems(requests);
+//			grid.setDetailsVisible(requests.get(0), true);
 		}
 	}
 

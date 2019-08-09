@@ -35,8 +35,8 @@ public class PDFGenerator {
                 field.setValue(holidayRequest.getNumberOfDays() + "");
                 field = (PDTextField) acroForm.getField("Type");
                 field.setValue(holidayRequest.getType().name());
-//                field = (PDTextField) acroForm.getField("DateFrom");
-//                field.setValue(holidayRequest.getDateFrom().toString());
+                field = (PDTextField) acroForm.getField("DateFrom");
+                field.setValue(holidayRequest.getDateFrom().toString());
                 field = (PDTextField) acroForm.getField("Replacer");
                 field.setValue(holidayRequest.getSubstitute().getName());
                 field = (PDTextField) acroForm.getField("Date");

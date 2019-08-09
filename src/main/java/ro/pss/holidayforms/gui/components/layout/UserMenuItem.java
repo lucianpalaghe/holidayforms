@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.gui;
+package ro.pss.holidayforms.gui.components.layout;
 
 import com.github.appreciated.app.layout.component.menu.RoundImage;
 import com.vaadin.flow.component.Composite;
@@ -6,9 +6,9 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
-public class LeftHeaderItemExt extends Composite<HorizontalLayout> {
+public class UserMenuItem extends Composite<HorizontalLayout> {
 
-	public LeftHeaderItemExt(String title, String subtitle, String src) {
+	public UserMenuItem(String title, String subtitle, String src) {
 		HorizontalLayout content = getContent();
 		content.setPadding(false);
 		content.getStyle().set("padding", "var(--app-layout-menu-header-padding)");

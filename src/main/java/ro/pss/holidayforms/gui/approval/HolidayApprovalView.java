@@ -15,9 +15,9 @@ import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
-import ro.pss.holidayforms.gui.HolidayAppLayout;
-import ro.pss.holidayforms.gui.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.MessageRetriever;
+import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
+import ro.pss.holidayforms.gui.components.layout.HolidayAppLayout;
 
 @SpringComponent
 @UIScope
@@ -34,6 +34,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         this.grid = new Grid<>();
         grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
         grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(1);
+		grid.addColumn(r -> r.getRequest().getType()).setHeader(MessageRetriever.get("gridColType")).setFlexGrow(1);
         grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart")).setFlexGrow(1);
         grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
         grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);

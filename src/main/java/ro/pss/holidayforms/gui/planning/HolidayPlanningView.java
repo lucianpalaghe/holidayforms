@@ -20,10 +20,10 @@ import ro.pss.holidayforms.domain.HolidayPlanningEntry;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
-import ro.pss.holidayforms.gui.HolidayAppLayout;
-import ro.pss.holidayforms.gui.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
+import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
+import ro.pss.holidayforms.gui.components.layout.HolidayAppLayout;
 
 import java.util.Optional;
 import java.util.Set;

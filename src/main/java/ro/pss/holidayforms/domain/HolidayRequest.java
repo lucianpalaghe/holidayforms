@@ -46,11 +46,11 @@ public class HolidayRequest {
 	private DateRange range;
 
 	@Getter
-	@OneToOne(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@OneToOne(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
 	private SubstitutionRequest substitutionRequest;
 
 	@Getter
-	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
 	private List<ApprovalRequest> approvalRequests = new ArrayList<>();
 
 	@Transient

@@ -17,10 +17,10 @@ import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
-import ro.pss.holidayforms.gui.HolidayAppLayout;
-import ro.pss.holidayforms.gui.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.broadcast.BroadcastNewData;
+import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
+import ro.pss.holidayforms.gui.components.layout.HolidayAppLayout;
 
 @SpringComponent
 @UIScope
