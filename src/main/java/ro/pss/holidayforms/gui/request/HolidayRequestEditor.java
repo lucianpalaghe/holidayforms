@@ -21,6 +21,7 @@ import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.broadcast.BroadcastMessage;
 import ro.pss.holidayforms.gui.broadcast.Broadcaster;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
+import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -96,7 +97,17 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		binder.forField(replacer).asRequired(MessageRetriever.get("validationReplacer"))
 				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
+		User u = userRepo.findById(userId).get();
+		List<HolidayRequest> requests = holidayRepo.findAllByRequesterEmail(userId);
+		int sumDaysTaken = requests.stream()
+				.filter(HolidayRequest::isCO)
+				.mapToInt(r -> DateUtils.getWorkingDays(r.getDateFrom(), r.getDateTo()))
+				.sum();
+		int days = u.getRegularVacationDays() - sumDaysTaken;//requestRepository.getRemainingDaysByUserEmail("lucian.palaghe@pss.ro");
+
 		binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
+				.withValidator(range -> range.hasWorkingDays(), MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
+				.withValidator(range -> (days - range.getNumberOfDays()) > 0, MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft")) // TODO: add check only for CO
 				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
 
 		binder.forField(type).asRequired(MessageRetriever.get("validationHolidayType"))

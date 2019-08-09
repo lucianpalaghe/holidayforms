@@ -78,7 +78,7 @@ public class DateRangePicker extends AbstractField<DateRangePicker, DateRange> i
 
 	@Override
 	public void setValue(DateRange value) {
-		if (value != null && !value.isRangeValid()) {
+		if (value != null && !value.isObjectValid()) {
 			super.setValue(null);
 			setPresentationValue(null);
 			return;
