@@ -2,15 +2,15 @@ package ro.pss.holidayforms.gui.broadcast;
 
 import com.vaadin.flow.component.UI;
 
-        import java.io.Serializable;
-        import java.util.HashMap;
-        import java.util.Map;
-        import java.util.concurrent.ExecutorService;
-        import java.util.concurrent.Executors;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class BroadcastNewData implements Serializable {
-    static ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private static Map<UI, NewDataListener> listeners = new HashMap<>();
+	static final ExecutorService executorService = Executors.newSingleThreadExecutor();
+	private static final Map<UI, NewDataListener> listeners = new HashMap<>();
 
     public static synchronized void register(UI ui, NewDataListener listener) {
         listeners.put(ui, listener);

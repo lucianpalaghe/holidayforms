@@ -34,10 +34,8 @@ public class HolidayPlanning {
 
 	public HolidayPlanningEntry.EntryValidityStatus addPlanningEntry(HolidayPlanningEntry planningEntry) {
 		HolidayPlanningEntry.EntryValidityStatus validEntry = isPlanningEntryValid(planningEntry);
-		if (planningEntry != null) {
-			if(validEntry.equals(HolidayPlanningEntry.EntryValidityStatus.VALID)) {
-				entries.add(planningEntry);
-			}
+		if (validEntry.equals(HolidayPlanningEntry.EntryValidityStatus.VALID)) {
+			entries.add(planningEntry);
 		}
 		return validEntry;
 	}

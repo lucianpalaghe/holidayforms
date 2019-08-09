@@ -9,8 +9,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Broadcaster implements Serializable {
-	static ExecutorService executorService = Executors.newSingleThreadExecutor();
-	private static Map<UI, BroadcastListener> listeners = new HashMap<>();
+	static final ExecutorService executorService = Executors.newSingleThreadExecutor();
+	private static final Map<UI, BroadcastListener> listeners = new HashMap<>();
 
 	public static synchronized void register(UI ui, BroadcastListener listener) {
 		listeners.put(ui, listener);

@@ -25,7 +25,9 @@ public class HolidayConfirmationDialog {
         switch (type)  {
             case APPROVAL: this.confirmDialog.getButton(ButtonType.YES).getElement().setAttribute("theme", "primary success"); break;
             case DENIAL: this.confirmDialog.getButton(ButtonType.YES).getElement().setAttribute("theme", "primary error"); break;
-            default: this.confirmDialog.getButton(ButtonType.YES).getElement().setAttribute("theme", "primary success");
+			default:
+				this.confirmDialog.getButton(ButtonType.YES).getElement().setAttribute("theme", "primary success");
+				break;
         }
         this.confirmDialog.getButton(ButtonType.CANCEL).getElement().setAttribute("theme", "primary cancel");
     }

@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface HolidayRequestRepository extends JpaRepository<HolidayRequest, Long> {
-	public List<HolidayRequest> findAllByRequesterEmail(String email);
-	public List<HolidayRequest> findAllByRequesterEmailAndDateFromBetween(String email, LocalDate from, LocalDate to);
+	List<HolidayRequest> findAllByRequesterEmail(String email);
+
+	List<HolidayRequest> findAllByRequesterEmailAndDateFromBetween(String email, LocalDate from, LocalDate to);
 }

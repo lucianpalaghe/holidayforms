@@ -25,4 +25,8 @@ public class DateRange {
 	public boolean hasWorkingDays() {
 		return getNumberOfDays() > 0;
 	}
+
+	public boolean isOverlapping(LocalDate dateFrom, LocalDate dateTo) {
+		return (this.dateFrom.isBefore(dateTo) && this.dateTo.isAfter(dateFrom)) || dateFrom.isEqual(this.dateTo) || dateTo.isEqual(this.dateFrom);
+	}
 }

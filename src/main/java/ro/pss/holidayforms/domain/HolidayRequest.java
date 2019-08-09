@@ -51,7 +51,7 @@ public class HolidayRequest {
 
 	@Getter
 	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-	private List<ApprovalRequest> approvalRequests = new ArrayList<>();
+	private final List<ApprovalRequest> approvalRequests = new ArrayList<>();
 
 	@Transient
 	private int numberOfDays;

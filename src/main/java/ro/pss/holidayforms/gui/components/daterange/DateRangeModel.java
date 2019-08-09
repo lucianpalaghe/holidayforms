@@ -1,10 +1,7 @@
 package ro.pss.holidayforms.gui.components.daterange;
 
-import com.vaadin.flow.templatemodel.Encode;
 import com.vaadin.flow.templatemodel.Include;
 import com.vaadin.flow.templatemodel.TemplateModel;
-
-import java.util.Date;
 
 public interface DateRangeModel extends TemplateModel {
 

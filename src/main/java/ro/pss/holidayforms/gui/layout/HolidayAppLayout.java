@@ -35,10 +35,10 @@ import static com.github.appreciated.app.layout.entity.Section.HEADER;
 @Push
 @Viewport("width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes")
 public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcaster.BroadcastListener {
-	private DefaultNotificationHolder notifications;
-	private DefaultBadgeHolder substitutionBadge;
-	private DefaultBadgeHolder approvalBadge;
-	private String userId = "lucian.palaghe@pss.ro";
+	private final DefaultNotificationHolder notifications;
+	private final DefaultBadgeHolder substitutionBadge;
+	private final DefaultBadgeHolder approvalBadge;
+	private final String userId = "lucian.palaghe@pss.ro";
 
 	public HolidayAppLayout(ApprovalRequestRepository approvalRepository, SubstitutionRequestRepository substitutionRepository)  {
 		this.notifications = new DefaultNotificationHolder();

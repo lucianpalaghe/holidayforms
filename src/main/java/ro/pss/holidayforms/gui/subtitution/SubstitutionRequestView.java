@@ -114,7 +114,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 
 	@Override
 	public void onDataReceive(UI ui, String message) {
-		ui.access(() -> listSubstitutionRequests());
+		ui.access(this::listSubstitutionRequests);
 	}
 
 	@Override

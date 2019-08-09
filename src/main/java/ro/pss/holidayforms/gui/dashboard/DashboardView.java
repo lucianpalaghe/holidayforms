@@ -38,13 +38,13 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 	private final HolidayRequestRepository requestRepository;
 	private final UserRepository userRepository;
 	private final HolidayPlanningRepository planningRepository;
-	private H2 remainingDaysHeader = new H2();
+	private final H2 remainingDaysHeader = new H2();
 	private ChartJs holidaysChart;
 	private LineDataset chartPlannedDays;
 	private LineDataset chartHolidays;
 	private LineData chartLineData;
 	private LineOptions chartLineOptions;
-	private String email = "lucian.palaghe@pss.ro";
+	private final String email = "lucian.palaghe@pss.ro";
 
 	public DashboardView(HolidayRequestRepository requestRepository, UserRepository userRepository,  HolidayPlanningRepository planningRepository) {
 		this.requestRepository = requestRepository;
@@ -61,9 +61,7 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 		initializeChart();
 		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(email);
 		List<HolidayPlanningEntry> entries = new ArrayList<>();
-		if (byEmployeeEmail.isPresent()) {
-			entries.addAll(byEmployeeEmail.get().getEntries());
-		}
+		byEmployeeEmail.ifPresent(holidayPlanning -> entries.addAll(holidayPlanning.getEntries()));
 		holidaysChart = getUpdatedChart(requests, entries);
 		Div chartContainer = new Div();
 		chartContainer.setWidthFull();
@@ -151,9 +149,7 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(email);
 		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(email);
 		List<HolidayPlanningEntry> entries = new ArrayList<>();
-		if (byEmployeeEmail.isPresent()) {
-			entries.addAll(byEmployeeEmail.get().getEntries());
-		}
+		byEmployeeEmail.ifPresent(holidayPlanning -> entries.addAll(holidayPlanning.getEntries()));
 
 		refreshHeader(user, requests);
 		holidaysChart = getUpdatedChart(requests, entries);

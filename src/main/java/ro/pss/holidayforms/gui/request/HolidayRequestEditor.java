@@ -9,6 +9,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.function.SerializablePredicate;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,21 +35,20 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final HolidayRequestRepository holidayRepo;
 	private final UserRepository userRepo;
 
-	private ComboBox<User> replacer = new ComboBox<>(MessageRetriever.get("replacerName"));
-	private DateRangePicker dateRange = new DateRangePicker();
-	private ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
-	private DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
-	private Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.CHECK.create());
-	private Button btnCancel = new Button(MessageRetriever.get("btnCancelLbl"));
-	private Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
-	private HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
-	private Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
+	private final ComboBox<User> replacer = new ComboBox<>(MessageRetriever.get("replacerName"));
+	private final DateRangePicker dateRange = new DateRangePicker();
+	private final ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
+	private final DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
+	private final Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.CHECK.create());
+	private final Button btnCancel = new Button(MessageRetriever.get("btnCancelLbl"));
+	private final Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
+	private final HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
+	private final Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
+	// TODO: remove, only used for testing without security implementation
+	private final String userId = "lucian.palaghe@pss.ro";
+	private final List<String> approverIds = Arrays.asList("luminita.petre@pss.ro", "claudia.gican@pss.ro");
 	private HolidayRequest holidayRequest;
 	private ChangeHandler changeHandler;
-
-	// TODO: remove, only used for testing without security implementation
-	private String userId = "lucian.palaghe@pss.ro";
-	private List<String> approverIds = Arrays.asList("luminita.petre@pss.ro", "claudia.gican@pss.ro");
 
 	@Autowired
 	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository) {
@@ -97,24 +97,12 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		binder.forField(replacer).asRequired(MessageRetriever.get("validationReplacer"))
 				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
-		User u = userRepo.findById(userId).get();
-		List<HolidayRequest> requests = holidayRepo.findAllByRequesterEmail(userId);
-		int sumDaysTaken = requests.stream()
-				.filter(HolidayRequest::isCO)
-				.mapToInt(HolidayRequest::getNumberOfDays)
-				.sum();
-		int days = u.getRegularVacationDays() - sumDaysTaken;//requestRepository.getRemainingDaysByUserEmail("lucian.palaghe@pss.ro");
+		List<HolidayRequest> allByRequesterEmail = holidayRepo.findAllByRequesterEmail(userId);
 
 		Binder.Binding<HolidayRequest, DateRange> holidayRequestDateRangeBinding = binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
-				.withValidator(range -> range.hasWorkingDays(), MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
-				.withValidator(range -> {
-					if (type.getValue() != null && type.getValue().equals(HolidayRequest.Type.CO)) {
-						if (days - range.getNumberOfDays() < 0) {
-							return false;
-						}
-					}
-					return true;
-				}, MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft"))
+				.withValidator(DateRange::hasWorkingDays, MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
+				.withValidator(hasEnoughHolidayDays(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft"))
+//				.withValidator(isPeriodNotOverlapping(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodOverlapping"))
 				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
 
 		type.addValueChangeListener(event -> holidayRequestDateRangeBinding.validate());
@@ -124,6 +112,32 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		binder.forField(creationDate).asRequired(MessageRetriever.get("validationDate"))
 				.bind(HolidayRequest::getCreationDate, HolidayRequest::setCreationDate);
+	}
+
+//	private SerializablePredicate<? super DateRange> isPeriodNotOverlapping(List<HolidayRequest> requests) {
+//		return range -> {
+//			Optional<HolidayRequest> any = requests
+//					.stream()
+//					.filter(e -> range.isOverlapping(e.getDateFrom(), e.getDateTo()))
+//					.findAny();
+//			return any.isEmpty();
+//		};
+//	}
+
+	private SerializablePredicate<DateRange> hasEnoughHolidayDays(List<HolidayRequest> requests) {
+		User u = userRepo.findById(userId).get();
+		int sumDaysTaken = requests.stream()
+				.filter(HolidayRequest::isCO)
+				.mapToInt(HolidayRequest::getNumberOfDays)
+				.sum();
+		int days = u.getRegularVacationDays() - sumDaysTaken;
+
+		return range -> {
+			if (type.getValue() != null && type.getValue().equals(HolidayRequest.Type.CO)) {
+				return days - range.getNumberOfDays() >= 0;
+			}
+			return true;
+		};
 	}
 
 	private void delete() {

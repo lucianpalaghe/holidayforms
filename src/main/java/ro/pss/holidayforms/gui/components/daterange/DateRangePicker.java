@@ -19,9 +19,9 @@ import java.util.List;
 @HtmlImport("bower_components/range-datepicker/range-datepicker.html")
 @StyleSheet("rangepicker-validation.css")
 public class DateRangePicker extends AbstractField<DateRangePicker, DateRange> implements HasValidation {
-	private List<DateRangeSelectedLisetner> listeners = new ArrayList<>();
+	private final List<DateRangeSelectedLisetner> listeners = new ArrayList<>();
 
-	private ZoneId zoneId = ZoneId.systemDefault();
+	private final ZoneId zoneId = ZoneId.systemDefault();
 
 	public DateRangePicker() {
 		super(null);

@@ -4,7 +4,10 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.Year;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
@@ -31,7 +34,7 @@ public class DateUtils {
 				LocalDate.of(currentYear, 12, 25),
 				LocalDate.of(currentYear, 12, 26)
 		);
-		HOLIDAYS = Collections.unmodifiableSet(new HashSet<>(dates));
+		HOLIDAYS = Set.copyOf(dates);
 	}
 
 	public static int getWorkingDays(LocalDate startInclusive, LocalDate endExclusive) {
@@ -57,12 +60,9 @@ public class DateUtils {
 
 	private static boolean isWorkingDay(LocalDate d) {
 		DayOfWeek dw = d.getDayOfWeek();
-		if (!HOLIDAYS.contains(d)
+		return !HOLIDAYS.contains(d)
 				&& dw != DayOfWeek.SATURDAY
-				&& dw != DayOfWeek.SUNDAY) {
-			return true;
-		}
-		return false;
+				&& dw != DayOfWeek.SUNDAY;
 	}
 
 	public static Map<Month, Integer> getEmptyMonthsMap() {

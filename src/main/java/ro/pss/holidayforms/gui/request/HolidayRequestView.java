@@ -41,7 +41,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 	private final Dialog dialog;
 	private final VerticalLayout container;
 	private final H2 heading;
-	private String userId = "lucian.palaghe@pss.ro";
+	private final String userId = "lucian.palaghe@pss.ro";
 
 	public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor) {
 		this.requestRepository = repo;

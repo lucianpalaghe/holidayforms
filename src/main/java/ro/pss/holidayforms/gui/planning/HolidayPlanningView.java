@@ -41,12 +41,12 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	private final DateRangePicker rangePicker;
 	private final Grid<HolidayPlanningEntry> grid;
 	// TODO: remove, only used for testing without security implementation
-	private String userId = "lucian.palaghe@pss.ro";
-	Set<HolidayPlanningEntry> entries = new TreeSet<>();
+	private final String userId = "lucian.palaghe@pss.ro";
+	private final Set<HolidayPlanningEntry> entries = new TreeSet<>();
 	private ListDataProvider<HolidayPlanningEntry> provider = new ListDataProvider(entries);
 
 	private HolidayPlanning holidayPlanning;
-	private H3 remainingDaysHeader = new H3();
+	private final H3 remainingDaysHeader = new H3();
 
 	public HolidayPlanningView(HolidayPlanningRepository repo, UserRepository userRepo) {
 		this.repository = repo;
@@ -110,7 +110,8 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.LOCK.create(), event -> {
 			holidayPlanning.getEntries().clear();
 			holidayPlanning.setEntries(entries);
-			HolidayPlanning savedPlanning = repo.save(holidayPlanning);
+
+			repo.save(holidayPlanning);
 			/*
 			 * Unexpected JPA behaviour when trying to save, it only deletes all the entities, without insert command afterwards.
 			 * Strangely enough, it returns all the entities as they were saved. So, save once again in order to actually execute the
@@ -121,8 +122,8 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 			Notification.show(MessageRetriever.get("planningSaved"),3000, Notification.Position.TOP_CENTER);
 		});
 		btnSave.getStyle().set("margin-left", "auto");
-		VerticalLayout salveaza = new VerticalLayout(grid, btnSave);
-		subContainer.add(remainingDays, salveaza);
+		VerticalLayout saveLayout = new VerticalLayout(grid, btnSave);
+		subContainer.add(remainingDays, saveLayout);
 		subContainer.setWidthFull();
 		container.add(subContainer);
 
@@ -147,7 +148,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	}
 
 	private String getMessageFromEntryStatus(HolidayPlanningEntry.EntryValidityStatus status) {
-		String message = "";
+		String message;
 		switch(status) {
 			case NO_WORKING_DAYS:
 				message = MessageRetriever.get("noWorkingDay");
@@ -218,12 +219,9 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		Optional<HolidayPlanning> original = repository.findByEmployeeEmail(userId);
 		if(original.isPresent()) {
 			HolidayPlanning holidayPlanning = original.get();
-			if (!(holidayPlanning.getEntries().containsAll(entries) && holidayPlanning.getEntries().size() == entries.size())) {
-				return true;
-			}
-		} else if (entries.size() > 0) {
-			return true;
+			return !holidayPlanning.getEntries().equals(entries);
+		} else {
+			return entries.size() > 0;
 		}
-		return false;
 	}
 }
