@@ -9,16 +9,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Broadcaster implements Serializable {
-    static final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private static final Map<UserUITuple, BroadcastListener> listeners = new HashMap<>();
 
     public static synchronized void register(UserUITuple uit, BroadcastListener listener) {
         listeners.put(uit, listener);
     }
 
-    public static synchronized void unregister(UserUITuple uit) {
-        listeners.remove(uit);
-    }
+    public static synchronized void unregister(String userId) {
+       listeners.remove(getUserUITupleFromUserId(userId));
+   }
 
     public static synchronized void broadcast(final BroadcastEvent message) {
         for (final Map.Entry<UserUITuple, BroadcastListener> entry : listeners.entrySet()) {
@@ -30,5 +30,16 @@ public class Broadcaster implements Serializable {
 
     public interface BroadcastListener {
         void receiveBroadcast(UI ui, BroadcastEvent message);
+    }
+
+    private static UserUITuple getUserUITupleFromUserId(String userId) {
+       UserUITuple tuple = null;
+        for(Map.Entry<UserUITuple, BroadcastListener> entry : listeners.entrySet()) {
+           if(entry.getKey().getUser().getEmail().equals(userId)) {
+               tuple = entry.getKey();
+               break;
+           }
+       }
+        return tuple;
     }
 }

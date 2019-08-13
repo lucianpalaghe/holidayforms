@@ -19,7 +19,8 @@ import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
-import ro.pss.holidayforms.gui.broadcast.BroadcastNewData;
+import ro.pss.holidayforms.gui.broadcast.BroadcastEvent;
+import ro.pss.holidayforms.gui.broadcast.Broadcaster;
 import ro.pss.holidayforms.gui.broadcast.UserUITuple;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
@@ -28,12 +29,12 @@ import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 @UIScope
 @Route(value = "approvals", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-buttons.css")
-public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver, BroadcastNewData.NewDataListener {
+public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
     private final Grid<ApprovalRequest> grid;
     private final ApprovalRequestRepository requestRepository;
     private final VerticalLayout container;
     private HolidayConfirmationDialog holidayConfDialog;
-    private String approverUserEmail = "Luminita.Petre@pss.ro";
+    private String approverUserEmail = "Luminita.Petre";
 
     public HolidayApprovalView(ApprovalRequestRepository repo) {
         this.requestRepository = repo;
@@ -56,7 +57,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         setAlignItems(Alignment.CENTER);
         add(container);
         setHeightFull();
-        BroadcastNewData.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
+        Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
         listApprovalRequests(approverUserEmail);
     }
 
@@ -116,13 +117,20 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         listApprovalRequests(approverUserEmail);
     }
 
-    @Override
-    public void onDataReceive(UserUITuple uit, String message) {
-        uit.getUi().access(() -> listApprovalRequests(approverUserEmail));
-    }
+//    @Override
+//    public void onDataReceive(UserUITuple uit, String message) {
+//        uit.getUi().access(() -> listApprovalRequests(approverUserEmail));
+//    }
 
     @Override
     protected void onDetach(DetachEvent detachEvent) {
-        BroadcastNewData.unregister(new UserUITuple(SecurityUtils.getLoggedInUser(), detachEvent.getUI()));
+        Broadcaster.unregister(SecurityUtils.getLoggedInUser().getEmail());
+    }
+
+    @Override
+    public void receiveBroadcast(UI ui, BroadcastEvent message) {
+        if (BroadcastEvent.BroadcastMessageType.APPROVE.equals(message.getType())) {
+            ui.access(() -> this.listApprovalRequests(message.getTargetUserId()));
+        }
     }
 }

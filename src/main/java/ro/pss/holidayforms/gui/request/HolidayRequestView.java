@@ -17,11 +17,8 @@ import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import com.vaadin.server.FileDownloader;
 import com.vaadin.server.StreamResource;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDFormContentStream;
-import org.vaadin.simplefiledownloader.SimpleFileDownloader;
 import org.springframework.security.core.context.SecurityContextHolder;
 import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.ApprovalRequest;
@@ -32,8 +29,9 @@ import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 
-import javax.xml.transform.stream.StreamSource;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;

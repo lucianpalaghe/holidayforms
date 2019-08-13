@@ -127,7 +127,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 
     @Override
     protected void onDetach(DetachEvent detachEvent) {
-        BroadcastNewData.unregister(new UserUITuple(SecurityUtils.getLoggedInUser(), detachEvent.getUI()));
+        Broadcaster.unregister(SecurityUtils.getLoggedInUser().getEmail());
     }
 
     @Override
