@@ -5,6 +5,7 @@ import com.vaadin.flow.shared.ApplicationConstants;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import ro.pss.holidayforms.domain.User;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.stream.Stream;
@@ -42,5 +43,9 @@ public final class SecurityUtils {
 		return authentication != null
 				&& !(authentication instanceof AnonymousAuthenticationToken)
 				&& authentication.isAuthenticated();
+	}
+
+	public static User getLoggedInUser() {
+		return ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
 	}
 }

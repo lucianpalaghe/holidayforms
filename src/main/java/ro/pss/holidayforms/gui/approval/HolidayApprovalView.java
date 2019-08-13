@@ -1,5 +1,7 @@
 package ro.pss.holidayforms.gui.approval;
 
+import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.Grid;
@@ -13,9 +15,12 @@ import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
+import ro.pss.holidayforms.gui.broadcast.BroadcastNewData;
+import ro.pss.holidayforms.gui.broadcast.UserUITuple;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 
@@ -23,11 +28,12 @@ import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 @UIScope
 @Route(value = "approvals", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-buttons.css")
-public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver {
+public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver, BroadcastNewData.NewDataListener {
     private final Grid<ApprovalRequest> grid;
     private final ApprovalRequestRepository requestRepository;
     private final VerticalLayout container;
     private HolidayConfirmationDialog holidayConfDialog;
+    private String approverUserEmail = "Luminita.Petre@pss.ro";
 
     public HolidayApprovalView(ApprovalRequestRepository repo) {
         this.requestRepository = repo;
@@ -50,12 +56,12 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         setAlignItems(Alignment.CENTER);
         add(container);
         setHeightFull();
-
-        listApprovalRequests();
+        BroadcastNewData.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
+        listApprovalRequests(approverUserEmail);
     }
 
-    private void listApprovalRequests() {
-        grid.setItems(requestRepository.findAllByApproverEmail("luminita.petre@pss.ro"));
+    private void listApprovalRequests(String userEmail) {
+        grid.setItems(requestRepository.findAllByApproverEmail(userEmail));
     }
 
     private HorizontalLayout getActionButtons(ApprovalRequest request) {
@@ -107,6 +113,16 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
-        listApprovalRequests();
+        listApprovalRequests(approverUserEmail);
+    }
+
+    @Override
+    public void onDataReceive(UserUITuple uit, String message) {
+        uit.getUi().access(() -> listApprovalRequests(approverUserEmail));
+    }
+
+    @Override
+    protected void onDetach(DetachEvent detachEvent) {
+        BroadcastNewData.unregister(new UserUITuple(SecurityUtils.getLoggedInUser(), detachEvent.getUI()));
     }
 }

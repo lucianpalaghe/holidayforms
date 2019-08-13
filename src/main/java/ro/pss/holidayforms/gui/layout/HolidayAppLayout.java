@@ -24,9 +24,9 @@ import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
-import ro.pss.holidayforms.gui.broadcast.BroadcastMessage;
-import ro.pss.holidayforms.gui.broadcast.BroadcastNewData;
+import ro.pss.holidayforms.gui.broadcast.BroadcastEvent;
 import ro.pss.holidayforms.gui.broadcast.Broadcaster;
+import ro.pss.holidayforms.gui.broadcast.UserUITuple;
 import ro.pss.holidayforms.gui.dashboard.DashboardView;
 import ro.pss.holidayforms.gui.planning.HolidayPlanningView;
 import ro.pss.holidayforms.gui.request.HolidayRequestView;
@@ -60,7 +60,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(user.getEmail(), SubstitutionRequest.Status.NEW).size());
 		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.4"); // TODO: get version from somewhere
 
-		Broadcaster.register(UI.getCurrent(), this);
+		Broadcaster.register(new UserUITuple(user,UI.getCurrent()), this);
 
 		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("preferencesTxt"), VaadinIcon.COG.create(),
 				clickEvent -> this.notifications.addNotification(new DefaultNotification("Whoops", MessageRetriever.get("notImplementedMsg")))
@@ -98,28 +98,24 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 				.build());
 	}
 
-	@Override
-	public void receiveBroadcast(UI ui, BroadcastMessage message) {
-		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		if (user.getEmail().equals(message.getTargetUserId())) {
-			ui.access(() -> {
-				String typeString = MessageRetriever.get("notification_" + message.getType());
-				BroadcastNewData.broadcast("new data!");
-				notifications.addNotification(new DefaultNotification(typeString, message.getMessage()));
-				BroadcastMessage.BroadcastMessageType type = message.getType();
-				switch (type) {
-					case SUBSTITUTE:
-						substitutionBadge.increase();
-						break;
-					case APPROVE:
-						approvalBadge.increase();
-						break;
-					default:
-						throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
-				}
-			});
-		}
-	}
+    @Override
+    public void receiveBroadcast(UI ui, BroadcastEvent message) {
+       ui.access(() -> {
+            String typeString = MessageRetriever.get("notification_" + message.getType());
+            notifications.addNotification(new DefaultNotification(typeString, message.getMessage()));
+            BroadcastEvent.BroadcastMessageType type = message.getType();
+            switch (type) {
+                case SUBSTITUTE:
+                    substitutionBadge.increase();
+                    break;
+                case APPROVE:
+                    approvalBadge.increase();
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
+            }
+        });
+    }
 
 }
 

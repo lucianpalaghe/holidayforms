@@ -20,8 +20,8 @@ public class PDFGenerator {
 
         try{
             String inputTemplate = "src/main/resources/static/pdf/PSSHolidayRequestForm.pdf";
-            String output = "src/main/resources/static/pdf/"
-                    + holidayRequest.getType() + "_" + user.getName() + "_" + holidayRequest.getDateFrom() + ".pdf";
+            //String output = "src/main/resources/static/pdf/"
+            //        + holidayRequest.getType() + "_" + user.getName() + "_" + holidayRequest.getDateFrom() + ".pdf";
 
             pdfDocument = PDDocument.load(new File(inputTemplate));
             PDAcroForm acroForm = pdfDocument.getDocumentCatalog().getAcroForm();
@@ -47,7 +47,7 @@ public class PDFGenerator {
                 field.setValue(holidayRequest.getApprovalRequests().get(1).getApprover().getName());
             }
 
-            pdfDocument.save(output);
+          //  pdfDocument.save(output);
 
         }catch (IOException e){
             e.printStackTrace();

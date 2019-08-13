@@ -21,7 +21,7 @@ import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
-import ro.pss.holidayforms.gui.broadcast.BroadcastMessage;
+import ro.pss.holidayforms.gui.broadcast.BroadcastEvent;
 import ro.pss.holidayforms.gui.broadcast.Broadcaster;
 import ro.pss.holidayforms.gui.components.daterange.DateRange;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
@@ -48,7 +48,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
 	private final HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
 	private final Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
-	private final List<String> approverIds = Arrays.asList("luminita.petre@pss.ro", "claudia.gican@pss.ro");
+	private final List<String> approverIds = Arrays.asList("Luminita.Petre", "Claudia.Gican");
 	private HolidayRequest holidayRequest;
 	private ChangeHandler changeHandler;
 	private final TempoService tempo;
@@ -168,8 +168,8 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 			changeHandler.onChange();
 //			tempo.postHolidayWorklog(holidayRequest);
 			Broadcaster.broadcast(
-					new BroadcastMessage(holidayRequest.getSubstitute().getEmail(),
-							BroadcastMessage.BroadcastMessageType.SUBSTITUTE,
+					new BroadcastEvent(holidayRequest.getSubstitute().getEmail(),
+							BroadcastEvent.BroadcastMessageType.SUBSTITUTE,
 							String.format(MessageRetriever.get("notificationSubstituteMessage"), holidayRequest.getRequester().getName())));
 		}
 	}

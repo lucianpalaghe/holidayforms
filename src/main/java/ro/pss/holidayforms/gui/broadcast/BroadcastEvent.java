@@ -8,7 +8,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter @Getter
-public class BroadcastMessage {
+public class BroadcastEvent {
     private String targetUserId;
 	private BroadcastMessageType type;
 	private String message;

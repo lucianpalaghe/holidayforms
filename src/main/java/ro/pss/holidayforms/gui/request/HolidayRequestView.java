@@ -17,6 +17,11 @@ import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import com.vaadin.server.FileDownloader;
+import com.vaadin.server.StreamResource;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDFormContentStream;
+import org.vaadin.simplefiledownloader.SimpleFileDownloader;
 import org.springframework.security.core.context.SecurityContextHolder;
 import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.ApprovalRequest;
@@ -27,7 +32,8 @@ import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 
-import java.io.IOException;
+import javax.xml.transform.stream.StreamSource;
+import java.io.*;
 import java.util.List;
 
 import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
@@ -138,7 +144,21 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 
 		Button btnPrint = new Button(MessageRetriever.get("printHoliday"), VaadinIcon.PRINT.create(), event -> {
 			try {
-				fillHolidayRequest(request, request.getRequester());
+				PDDocument doc = fillHolidayRequest(request, request.getRequester());
+			//	SimpleFileDownloader downloader = new SimpleFileDownloader();
+				final StreamResource resource = new StreamResource((StreamResource.StreamSource) () -> {
+					try {
+						ByteArrayOutputStream pdfBuffer = new ByteArrayOutputStream();
+						doc.save(pdfBuffer);
+						return new ByteArrayInputStream(pdfBuffer.toByteArray());
+					} catch (Exception e) {
+						e.printStackTrace();
+						return null;
+					}
+				}, "test.pdf");
+
+			//	downloader.setFileDownloadResource(resource);
+			//	downloader.download();
 
 				// Create the stream resource and give it a file name
 //				String filename = "CO_Lucian Palaghe_2019-08-14.pdf";
