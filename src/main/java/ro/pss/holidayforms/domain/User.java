@@ -3,6 +3,7 @@ package ro.pss.holidayforms.domain;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ro.pss.holidayforms.integrations.jira.JiraUserDetails;
 
 import javax.persistence.*;
 
@@ -18,12 +19,14 @@ public class User {
 	private String email;
 
 	@Getter
+	private String jiraAccountId;
+
+	@Getter
 	@Setter
 	@Enumerated(EnumType.STRING)
 	private Role role;
 
 	@Getter
-	@Setter
 	private String name;
 
 	@Getter
@@ -36,18 +39,26 @@ public class User {
 
 	@Getter
 	@Setter
-	private int regularVacationDays;
-
-	public static User EMPTY = new User("");
+	private int availableVacationDays;
 
 	public User(String name) {
 		this.name = name;
 	}
 
-	public User(String name, String email, String photo) {
+	public User(String name, String email, String jiraAccountId) {
 		this.name = name;
 		this.email = email;
-		this.photo = photo;
+		this.jiraAccountId = jiraAccountId;
+	}
+
+	public User(JiraUserDetails jiraDetails) {
+		this.email = jiraDetails.getName(); // TODO: replage with email after everyone sets their email addresses in JIRA
+		this.jiraAccountId = jiraDetails.getAccountId();
+		this.role = Role.USER;
+		this.name = jiraDetails.getDisplayName();
+		this.department = "IT"; // TODO: find out where to get this from
+		this.photo = jiraDetails.getAvatarUrls().getOrDefault("48x48", "");
+		this.availableVacationDays = 21; // TODO: find out where to get this from
 	}
 
 	@Override
@@ -56,6 +67,6 @@ public class User {
 	}
 
 	public enum Role {
-		USER, HR
+		USER, HR, TEAM_LEADER, MANAGER
 	}
 }

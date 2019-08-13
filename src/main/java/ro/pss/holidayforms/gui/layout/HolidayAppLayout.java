@@ -15,8 +15,11 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.page.Viewport;
+import org.springframework.security.core.context.SecurityContextHolder;
+import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
+import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
@@ -38,14 +41,14 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	private final DefaultNotificationHolder notifications;
 	private final DefaultBadgeHolder substitutionBadge;
 	private final DefaultBadgeHolder approvalBadge;
-	private final String userId = "lucian.palaghe@pss.ro";
 
 	public HolidayAppLayout(ApprovalRequestRepository approvalRepository, SubstitutionRequestRepository substitutionRepository)  {
 		this.notifications = new DefaultNotificationHolder();
 		this.substitutionBadge = new DefaultBadgeHolder();
 		this.approvalBadge = new DefaultBadgeHolder();
 
-		UserMenuItem userItem = new UserMenuItem("User Johnson", userId, "cat.jpg");
+		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+		UserMenuItem userItem = new UserMenuItem(user.getName(), user.getEmail(), user.getPhoto());
 		LeftNavigationItem holidayRequestsMenuEntry = new LeftNavigationItem(MessageRetriever.get("myHolidayRequests"), VaadinIcon.AIRPLANE.create(), HolidayRequestView.class);
 		LeftNavigationItem dashboardMenuEntry = new LeftNavigationItem(MessageRetriever.get("dashboard"), VaadinIcon.LINE_CHART.create(), DashboardView.class);
 		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem(MessageRetriever.get("asReplacer"), VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
@@ -54,7 +57,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		substitutionBadge.bind(substitutionMenuEntry.getBadge());
 		approvalBadge.bind(approvalMenuEntry.getBadge());
 		approvalBadge.setCount(approvalRepository.findAllByApproverEmailAndStatus("luminita.petre@pss.ro", ApprovalRequest.Status.NEW).size());
-		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(userId, SubstitutionRequest.Status.NEW).size());
+		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(user.getEmail(), SubstitutionRequest.Status.NEW).size());
 		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.4"); // TODO: get version from somewhere
 
 		Broadcaster.register(UI.getCurrent(), this);
@@ -97,9 +100,9 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 
 	@Override
 	public void receiveBroadcast(UI ui, BroadcastMessage message) {
-		if(userId.equals(message.getTargetUserId())) {
+		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+		if (user.getEmail().equals(message.getTargetUserId())) {
 			ui.access(() -> {
-				// TODO: after spring security implementation, compare message.getTargetUserId with logged in user
 				String typeString = MessageRetriever.get("notification_" + message.getType());
 				BroadcastNewData.broadcast("new data!");
 				notifications.addNotification(new DefaultNotification(typeString, message.getMessage()));

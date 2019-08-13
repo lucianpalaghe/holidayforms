@@ -14,13 +14,14 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
+import org.springframework.security.core.context.SecurityContextHolder;
+import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.HolidayPlanning;
 import ro.pss.holidayforms.domain.HolidayPlanningEntry;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
-import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
@@ -31,12 +32,9 @@ import java.util.*;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingInt;
 
-//import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
-
 @Route(value = "", layout = HolidayAppLayout.class)
 public class DashboardView extends HorizontalLayout implements AfterNavigationObserver {
 	private final HolidayRequestRepository requestRepository;
-	private final UserRepository userRepository;
 	private final HolidayPlanningRepository planningRepository;
 	private final H2 remainingDaysHeader = new H2();
 	private ChartJs holidaysChart;
@@ -44,22 +42,20 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 	private LineDataset chartHolidays;
 	private LineData chartLineData;
 	private LineOptions chartLineOptions;
-	private final String email = "lucian.palaghe@pss.ro";
 
-	public DashboardView(HolidayRequestRepository requestRepository, UserRepository userRepository,  HolidayPlanningRepository planningRepository) {
+	public DashboardView(HolidayRequestRepository requestRepository, HolidayPlanningRepository planningRepository) {
 		this.requestRepository = requestRepository;
-		this.userRepository = userRepository;
 		this.planningRepository = planningRepository;
 
 		VerticalLayout container = new VerticalLayout();
 		container.add(remainingDaysHeader);
 
-		User user = userRepository.findById(email).get();
-		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(email);
-		refreshHeader(user, requests);
+		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(user.getEmail());
+		refreshHeader(user.getAvailableVacationDays(), requests);
 
 		initializeChart();
-		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(email);
+		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(user.getEmail());
 		List<HolidayPlanningEntry> entries = new ArrayList<>();
 		byEmployeeEmail.ifPresent(holidayPlanning -> entries.addAll(holidayPlanning.getEntries()));
 		holidaysChart = getUpdatedChart(requests, entries);
@@ -78,13 +74,13 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 		setHeightFull();
 	}
 
-	private void refreshHeader(User user, List<HolidayRequest> requests) {
+	private void refreshHeader(int availableVacationDays, List<HolidayRequest> requests) {
 		int sumDaysTaken = requests.stream()
 				.filter(HolidayRequest::isCO)
 				.mapToInt(r -> DateUtils.getWorkingDays(r.getDateFrom(), r.getDateTo()))
 				.sum();
 
-		int days = user.getRegularVacationDays() - sumDaysTaken;//requestRepository.getRemainingDaysByUserEmail("lucian.palaghe@pss.ro");
+		int days = availableVacationDays - sumDaysTaken;//requestRepository.getRemainingDaysByUserEmail("lucian.palaghe@pss.ro");
 		remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeader"), days));
 	}
 
@@ -145,13 +141,13 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 
 	@Override
 	public void afterNavigation(AfterNavigationEvent event) {
-		User user = userRepository.findById(email).get();
-		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(email);
-		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(email);
+		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(user.getEmail());
+		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(user.getEmail());
 		List<HolidayPlanningEntry> entries = new ArrayList<>();
 		byEmployeeEmail.ifPresent(holidayPlanning -> entries.addAll(holidayPlanning.getEntries()));
 
-		refreshHeader(user, requests);
+		refreshHeader(user.getAvailableVacationDays(), requests);
 		holidaysChart = getUpdatedChart(requests, entries);
 	}
 }

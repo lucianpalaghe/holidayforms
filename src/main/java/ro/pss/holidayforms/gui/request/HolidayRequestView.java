@@ -17,9 +17,12 @@ import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import org.springframework.security.core.context.SecurityContextHolder;
+import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
+import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
@@ -41,7 +44,6 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 	private final Dialog dialog;
 	private final VerticalLayout container;
 	private final H2 heading;
-	private final String userId = "lucian.palaghe@pss.ro";
 
 	public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor) {
 		this.requestRepository = repo;
@@ -184,7 +186,8 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 	}
 
 	private void listHolidayRequests() {
-		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(userId);
+		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(user.getEmail());
 		if (requests.isEmpty()) {
 			grid.setVisible(false);
 			heading.setText(MessageRetriever.get("noHolidayRequest"));

@@ -61,7 +61,7 @@ public class HolidayPlanning {
 		}
 		// check if remaining holiday days are equal or greater than 0
 		int usedDays = entries.stream().mapToInt(HolidayPlanningEntry::getNumberOfDays).sum();
-		if(employee.getRegularVacationDays() - newEntry.getNumberOfDays() - usedDays < 0) {
+		if (employee.getAvailableVacationDays() - newEntry.getNumberOfDays() - usedDays < 0) {
 			return HolidayPlanningEntry.EntryValidityStatus.EXCEEDED_DAYS;
 		}
 		// check that the selected range is not in conflict with previous ranges

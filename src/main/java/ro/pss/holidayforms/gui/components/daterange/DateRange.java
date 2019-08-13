@@ -27,6 +27,6 @@ public class DateRange {
 	}
 
 	public boolean isOverlapping(LocalDate dateFrom, LocalDate dateTo) {
-		return (this.dateFrom.isBefore(dateTo) && this.dateTo.isAfter(dateFrom)) || dateFrom.isEqual(this.dateTo) || dateTo.isEqual(this.dateFrom);
+		return (this.dateFrom.isBefore(dateTo)) && (this.dateTo.isAfter(dateFrom)) || this.dateFrom.isEqual(dateFrom) || this.dateTo.isEqual(dateTo);
 	}
 }

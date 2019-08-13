@@ -13,6 +13,8 @@ import com.vaadin.flow.function.SerializablePredicate;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
@@ -23,11 +25,13 @@ import ro.pss.holidayforms.gui.broadcast.BroadcastMessage;
 import ro.pss.holidayforms.gui.broadcast.Broadcaster;
 import ro.pss.holidayforms.gui.components.daterange.DateRange;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
+import ro.pss.holidayforms.integrations.tempo.TempoService;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @SpringComponent
 @UIScope
@@ -44,16 +48,16 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
 	private final HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
 	private final Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
-	// TODO: remove, only used for testing without security implementation
-	private final String userId = "lucian.palaghe@pss.ro";
 	private final List<String> approverIds = Arrays.asList("luminita.petre@pss.ro", "claudia.gican@pss.ro");
 	private HolidayRequest holidayRequest;
 	private ChangeHandler changeHandler;
+	private final TempoService tempo;
 
 	@Autowired
-	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository) {
+	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository, TempoService tempo) {
 		this.holidayRepo = holidayRepository;
 		this.userRepo = userRepository;
+		this.tempo = tempo;
 		creationDate.setLocale(MessageRetriever.getLocale());
 		DatePicker.DatePickerI18n dp18n = new DatePicker.DatePickerI18n();
 		dp18n.setCalendar(MessageRetriever.get("calendarName"));
@@ -69,7 +73,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		dateRange.setForceNarrow(true);
 		type.setItems(HolidayRequest.Type.values());
-//		type.setItemLabelGenerator(i -> example.getDescription());
+		type.setItemLabelGenerator(i -> MessageRetriever.get("holidayType_" + i.toString()));
 		replacer.setItems(userRepo.findAll());
 		replacer.setWidthFull();
 		type.setWidthFull();
@@ -94,15 +98,17 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	}
 
 	private void addValidations() {
+		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+
 		binder.forField(replacer).asRequired(MessageRetriever.get("validationReplacer"))
 				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
-		List<HolidayRequest> allByRequesterEmail = holidayRepo.findAllByRequesterEmail(userId);
+		List<HolidayRequest> allByRequesterEmail = holidayRepo.findAllByRequesterEmail(user.getEmail());
 
 		Binder.Binding<HolidayRequest, DateRange> holidayRequestDateRangeBinding = binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
 				.withValidator(DateRange::hasWorkingDays, MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
 				.withValidator(hasEnoughHolidayDays(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft"))
-//				.withValidator(isPeriodNotOverlapping(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodOverlapping"))
+				.withValidator(isPeriodNotOverlapping(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodOverlapping"))
 				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
 
 		type.addValueChangeListener(event -> holidayRequestDateRangeBinding.validate());
@@ -114,25 +120,23 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 				.bind(HolidayRequest::getCreationDate, HolidayRequest::setCreationDate);
 	}
 
-//	private SerializablePredicate<? super DateRange> isPeriodNotOverlapping(List<HolidayRequest> requests) {
-//		return range -> {
-//			Optional<HolidayRequest> any = requests
-//					.stream()
-//					.filter(e -> range.isOverlapping(e.getDateFrom(), e.getDateTo()))
-//					.findAny();
-//			return any.isEmpty();
-//		};
-//	}
+	private SerializablePredicate<? super DateRange> isPeriodNotOverlapping(List<HolidayRequest> requests) {
+		return range -> {
+			List<HolidayRequest> notOverlapping = requests.stream()
+					.filter(e -> !range.isOverlapping(e.getDateFrom(), e.getDateTo()))
+					.collect(toList());
+			return requests.size() == notOverlapping.size();
+		};
+	}
 
 	private SerializablePredicate<DateRange> hasEnoughHolidayDays(List<HolidayRequest> requests) {
-		User u = userRepo.findById(userId).get();
-		int sumDaysTaken = requests.stream()
-				.filter(HolidayRequest::isCO)
-				.mapToInt(HolidayRequest::getNumberOfDays)
-				.sum();
-		int days = u.getRegularVacationDays() - sumDaysTaken;
-
 		return range -> {
+			User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+			int sumDaysTaken = requests.stream()
+					.filter(HolidayRequest::isCO)
+					.mapToInt(HolidayRequest::getNumberOfDays)
+					.sum();
+			int days = user.getAvailableVacationDays() - sumDaysTaken;
 			if (type.getValue() != null && type.getValue().equals(HolidayRequest.Type.CO)) {
 				return days - range.getNumberOfDays() >= 0;
 			}
@@ -145,10 +149,9 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		changeHandler.onChange();
 	}
 
-	//	void save(@UserPrincipal User loggedInUser) {
 	private void save() {
 		if (binder.validate().isOk()) {
-			User requester = userRepo.findById(userId).get();
+			User requester = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
 
 			if (holidayRequest.getApprovalRequests().size() > 0) { // if this request is edited, remove all previous approvals
 				holidayRequest.getApprovalRequests().clear();
@@ -157,12 +160,13 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 			List<ApprovalRequest> approvalRequests = approverIds.stream().map(a -> { // TODO: refactor
 				User approver = userRepo.getOne(a);
 				return new ApprovalRequest(approver, ApprovalRequest.Status.NEW);
-			}).collect(Collectors.toList());
+			}).collect(toList());
 			approvalRequests.forEach(a -> holidayRequest.addApproval(a));
 
 			holidayRequest.setRequester(requester);
 			holidayRequest = holidayRepo.save(holidayRequest);
 			changeHandler.onChange();
+//			tempo.postHolidayWorklog(holidayRequest);
 			Broadcaster.broadcast(
 					new BroadcastMessage(holidayRequest.getSubstitute().getEmail(),
 							BroadcastMessage.BroadcastMessageType.SUBSTITUTE,

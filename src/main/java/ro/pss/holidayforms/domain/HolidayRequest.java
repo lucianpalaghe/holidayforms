@@ -3,6 +3,7 @@ package ro.pss.holidayforms.domain;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import ro.pss.holidayforms.gui.components.daterange.DateRange;
 import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 
@@ -14,6 +15,7 @@ import java.util.List;
 
 @Entity
 @NoArgsConstructor
+@ToString
 public class HolidayRequest {
 	@Id
 	@GeneratedValue
@@ -108,6 +110,6 @@ public class HolidayRequest {
 	}
 
 	public enum Type {
-		CO, CM, CFP, CPIC
+		CO, CM, CFP, CIC, CP
 	}
 }

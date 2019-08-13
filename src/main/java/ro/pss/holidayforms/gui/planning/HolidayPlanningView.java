@@ -15,11 +15,12 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import org.springframework.security.core.context.SecurityContextHolder;
+import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.HolidayPlanning;
 import ro.pss.holidayforms.domain.HolidayPlanningEntry;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
-import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
@@ -35,22 +36,17 @@ import java.util.TreeSet;
 @StyleSheet("responsive-panels-beta.css")
 public class HolidayPlanningView extends HorizontalLayout implements AfterNavigationObserver, BeforeLeaveObserver {
 	private final HolidayPlanningRepository repository;
-	private final UserRepository userRepository;
 	private final HorizontalLayout container;
 	//	private final H2 heading;
 	private final DateRangePicker rangePicker;
 	private final Grid<HolidayPlanningEntry> grid;
-	// TODO: remove, only used for testing without security implementation
-	private final String userId = "lucian.palaghe@pss.ro";
 	private final Set<HolidayPlanningEntry> entries = new TreeSet<>();
-	private ListDataProvider<HolidayPlanningEntry> provider = new ListDataProvider(entries);
 
 	private HolidayPlanning holidayPlanning;
 	private final H3 remainingDaysHeader = new H3();
 
-	public HolidayPlanningView(HolidayPlanningRepository repo, UserRepository userRepo) {
+	public HolidayPlanningView(HolidayPlanningRepository repo) {
 		this.repository = repo;
-		this.userRepository = userRepo;
 		rangePicker = new DateRangePicker();
 		grid = new Grid<>();
 		grid.addColumn(HolidayPlanningEntry::getDateFrom).setHeader(MessageRetriever.get("gridColFromDate"));
@@ -58,46 +54,13 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		grid.addColumn(HolidayPlanningEntry::getNumberOfDays).setHeader(MessageRetriever.get("gridColDaysHeader"));
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(0);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
-		ListDataProvider<HolidayPlanningEntry> provider = new ListDataProvider(entries);
-		grid.setDataProvider(provider);
+		grid.setDataProvider(new ListDataProvider(entries));
 		listHolidayPlanningEntries();
 		container = new HorizontalLayout();
 		container.setWidth("100%");
 		container.setMaxWidth("80em");
-		// ****************************
-//		Div mainDiv = new Div();
-//		Div rowDiv = new Div();
-//		Div colDiv = new Div();
-//		Div colDiv2 = new Div();
-//		rowDiv.setClassName("row");
-//		colDiv.setClassName("column");
-//		colDiv2.setClassName("double-column");
-
-//		FlexLayout.cre
-//		rowDiv.getStyle().set("display","flex");
-//		rowDiv.getStyle().set("flex-direction","row");
-//		rowDiv.getStyle().set("flex-wrap","wrap");
-//		rowDiv.getStyle().set("width","100%");
-//
-//		colDiv.getStyle().set("display","flex");
-//		colDiv.getStyle().set("flex-direction","column");
-//		colDiv.getStyle().set("flex-basis","100%");
-//		colDiv.getStyle().set("flex","1");
-//
-//		colDiv2.getStyle().set("display","flex");
-//		colDiv2.getStyle().set("flex-direction","column");
-//		colDiv2.getStyle().set("flex-basis","100%");
-//		colDiv2.getStyle().set("flex","1");
-
-//		colDiv.add(rangePicker);
-//		colDiv2.add(grid);
-//		rowDiv.add(colDiv, colDiv2);
-//		mainDiv.add(rowDiv);
-//		container.add(mainDiv);
-
-
-		// *****************************
 		container.setHeightFull();
+
 		setJustifyContentMode(JustifyContentMode.CENTER);
 		setAlignItems(Alignment.CENTER);
 
@@ -157,7 +120,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 				message = MessageRetriever.get("rangeConflict");
 				break;
 			case EXCEEDED_DAYS:
-				message = String.format(MessageRetriever.get("exceededDays"), holidayPlanning.getEmployee().getRegularVacationDays());
+				message = String.format(MessageRetriever.get("exceededDays"), holidayPlanning.getEmployee().getAvailableVacationDays());
 				break;
 			default:
 				message = MessageRetriever.get("notImplementedMsg");
@@ -167,7 +130,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 
 	private void refreshRemainingDaysHeader() {
 		int usedDays = entries.stream().mapToInt(HolidayPlanningEntry::getNumberOfDays).sum();
-		int remainingDays = holidayPlanning.getEmployee().getRegularVacationDays()  - usedDays;
+		int remainingDays = holidayPlanning.getEmployee().getAvailableVacationDays() - usedDays;
 		if(remainingDays > 0) {
 			remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeader"), remainingDays));
 		}else {
@@ -187,13 +150,13 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	}
 
 	private void listHolidayPlanningEntries() {
-		Optional<HolidayPlanning> planning = repository.findByEmployeeEmail(userId);
-		User u = userRepository.findById(userId).get();
+		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+		Optional<HolidayPlanning> planning = repository.findByEmployeeEmail(user.getEmail());
 		if (planning.isPresent()) {
 			holidayPlanning = planning.get();
 			grid.setVisible(true);
 		} else {
-			holidayPlanning = new HolidayPlanning(u, new TreeSet<>());
+			holidayPlanning = new HolidayPlanning(user, new TreeSet<>());
 			grid.setVisible(true);
 		}
 		entries.clear();
@@ -216,7 +179,8 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	}
 
 	private boolean hasChanges() {
-		Optional<HolidayPlanning> original = repository.findByEmployeeEmail(userId);
+		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+		Optional<HolidayPlanning> original = repository.findByEmployeeEmail(user.getEmail());
 		if(original.isPresent()) {
 			HolidayPlanning holidayPlanning = original.get();
 			return !holidayPlanning.getEntries().equals(entries);
