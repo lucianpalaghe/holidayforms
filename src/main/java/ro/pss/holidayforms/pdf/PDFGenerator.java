@@ -18,7 +18,7 @@ public class PDFGenerator {
         if (holidayRequest == null || user == null)
             return null;
 
-        try{
+        try {
             String inputTemplate = "src/main/resources/static/pdf/PSSHolidayRequestForm.pdf";
             //String output = "src/main/resources/static/pdf/"
             //        + holidayRequest.getType() + "_" + user.getName() + "_" + holidayRequest.getDateFrom() + ".pdf";
@@ -46,14 +46,17 @@ public class PDFGenerator {
                 field = (PDTextField) acroForm.getField("Approver2");
                 field.setValue(holidayRequest.getApprovalRequests().get(1).getApprover().getName());
             }
+            //  pdfDocument.save(output);
 
-          //  pdfDocument.save(output);
-
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
-        }finally {
-            if (pdfDocument != null)
-                pdfDocument.close();
+        } finally {
+            if (pdfDocument != null) {
+                //sets to read only
+                pdfDocument.getDocumentCatalog().getAcroForm().flatten();
+
+                // pdfDocument.close();
+            }
         }
 
         return pdfDocument;

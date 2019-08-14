@@ -15,11 +15,13 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import com.vaadin.server.StreamResource;
+import com.vaadin.flow.server.StreamResource;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.vaadin.olli.FileDownloadWrapper;
 import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
@@ -33,6 +35,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 
@@ -42,195 +45,162 @@ import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 @StyleSheet("step-progress-bar.css")
 @StyleSheet("responsive-buttons.css")
 public class HolidayRequestView extends HorizontalLayout implements AfterNavigationObserver {
-	private final Grid<HolidayRequest> grid;
-	private final HolidayRequestRepository requestRepository;
-	private final HolidayRequestEditor editor;
-	private final Dialog dialog;
-	private final VerticalLayout container;
-	private final H2 heading;
+    private final Grid<HolidayRequest> grid;
+    private final HolidayRequestRepository requestRepository;
+    private final HolidayRequestEditor editor;
+    private final Dialog dialog;
+    private final VerticalLayout container;
+    private final H2 heading;
 
-	public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor) {
-		this.requestRepository = repo;
-		this.editor = editor;
-		this.editor.setChangeHandler(() -> {
-			this.editor.setVisible(false);
-			listHolidayRequests();
-			mountEditorInDialog(false);
-		});
+    public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor) {
+        this.requestRepository = repo;
+        this.editor = editor;
+        this.editor.setChangeHandler(() -> {
+            this.editor.setVisible(false);
+            listHolidayRequests();
+            mountEditorInDialog(false);
+        });
 
-		grid = new Grid<>();
-		grid.addColumn(HolidayRequest::getNumberOfDays).setHeader(MessageRetriever.get("gridColDaysHeader")).setWidth("min-content").setFlexGrow(1);
-		grid.addColumn(HolidayRequest::getType).setHeader(MessageRetriever.get("gridColType")).setFlexGrow(1);
-		grid.addColumn(HolidayRequest::getDateFrom).setHeader(MessageRetriever.get("gridColFromDate")).setFlexGrow(1);
-		grid.addColumn(HolidayRequest::getSubstitute).setHeader(MessageRetriever.get("gridColReplacer")).setFlexGrow(1);
-		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
-		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
-		grid.setItemDetailsRenderer(getRequestStatusRenderer());
+        grid = new Grid<>();
+        grid.addColumn(HolidayRequest::getNumberOfDays).setHeader(MessageRetriever.get("gridColDaysHeader")).setWidth("min-content").setFlexGrow(1);
+        grid.addColumn(HolidayRequest::getType).setHeader(MessageRetriever.get("gridColType")).setFlexGrow(1);
+        grid.addColumn(HolidayRequest::getDateFrom).setHeader(MessageRetriever.get("gridColFromDate")).setFlexGrow(1);
+        grid.addColumn(HolidayRequest::getSubstitute).setHeader(MessageRetriever.get("gridColReplacer")).setFlexGrow(1);
+        grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
+        grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
+        grid.setItemDetailsRenderer(getRequestStatusRenderer());
 
-		Button btnAdd = new Button(MessageRetriever.get("addHolidayRequest"), VaadinIcon.PLUS.create());
-		btnAdd.addClickListener(e -> {
-			this.editor.editHolidayRequest(new HolidayRequest());
-			mountEditorInDialog(true);
-		});
+        Button btnAdd = new Button(MessageRetriever.get("addHolidayRequest"), VaadinIcon.PLUS.create());
+        btnAdd.addClickListener(e -> {
+            this.editor.editHolidayRequest(new HolidayRequest());
+            mountEditorInDialog(true);
+        });
 
-		HorizontalLayout actions = new HorizontalLayout(btnAdd);
-		dialog = new Dialog(editor);
-		dialog.setCloseOnOutsideClick(false);
+        HorizontalLayout actions = new HorizontalLayout(btnAdd);
+        dialog = new Dialog(editor);
+        dialog.setCloseOnOutsideClick(false);
 
-		heading = new H2();
-		heading.setVisible(false);
+        heading = new H2();
+        heading.setVisible(false);
 
-		container = new VerticalLayout();
-		container.add(actions, heading, grid, this.editor);
-		container.setWidth("100%");
-		container.setMaxWidth("70em");
-		container.setHeightFull();
+        container = new VerticalLayout();
+        container.add(actions, heading, grid, this.editor);
+        container.setWidth("100%");
+        container.setMaxWidth("70em");
+        container.setHeightFull();
 
-		setJustifyContentMode(JustifyContentMode.CENTER);
-		setAlignItems(Alignment.CENTER);
-		add(container);
-		setHeightFull();
+        setJustifyContentMode(JustifyContentMode.CENTER);
+        setAlignItems(Alignment.CENTER);
+        add(container);
+        setHeightFull();
 
-		listHolidayRequests();
-	}
+        listHolidayRequests();
+    }
 
-	private ComponentRenderer<HorizontalLayout, HolidayRequest> getRequestStatusRenderer() {
-		return new ComponentRenderer<>(holidayRequest -> {
-			ListItem initialStep = new ListItem(MessageRetriever.get("created"));
-			initialStep.addClassName("active");
+    private ComponentRenderer<HorizontalLayout, HolidayRequest> getRequestStatusRenderer() {
+        return new ComponentRenderer<>(holidayRequest -> {
+            ListItem initialStep = new ListItem(MessageRetriever.get("created"));
+            initialStep.addClassName("active");
 
-			ListItem substituteStep = new ListItem(MessageRetriever.get("replacerName"));
-			if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED) {
-				substituteStep.addClassName("active");
-			} else if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.DENIED) {
-				substituteStep.addClassName("denied");
-			}
+            ListItem substituteStep = new ListItem(MessageRetriever.get("replacerName"));
+            if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED) {
+                substituteStep.addClassName("active");
+            } else if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.DENIED) {
+                substituteStep.addClassName("denied");
+            }
 
-			ListItem teamLeaderStep = new ListItem(MessageRetriever.get("teamLeader"));
-			if (holidayRequest.getApprovalRequests().get(0).getStatus() == ApprovalRequest.Status.APPROVED) {
-				teamLeaderStep.addClassName("active");
-			} else if (holidayRequest.getApprovalRequests().get(0).getStatus() == ApprovalRequest.Status.DENIED) {
-				teamLeaderStep.addClassName("denied");
-			}
+            ListItem teamLeaderStep = new ListItem(MessageRetriever.get("teamLeader"));
+            if (holidayRequest.getApprovalRequests().get(0).getStatus() == ApprovalRequest.Status.APPROVED) {
+                teamLeaderStep.addClassName("active");
+            } else if (holidayRequest.getApprovalRequests().get(0).getStatus() == ApprovalRequest.Status.DENIED) {
+                teamLeaderStep.addClassName("denied");
+            }
 
-			ListItem projectManagerStep = new ListItem(MessageRetriever.get("projectManager"));
-			if (holidayRequest.getApprovalRequests().get(1).getStatus() == ApprovalRequest.Status.APPROVED) {
-				projectManagerStep.addClassName("active");
-			} else if (holidayRequest.getApprovalRequests().get(1).getStatus() == ApprovalRequest.Status.DENIED) {
-				projectManagerStep.addClassName("denied");
-			}
+            ListItem projectManagerStep = new ListItem(MessageRetriever.get("projectManager"));
+            if (holidayRequest.getApprovalRequests().get(1).getStatus() == ApprovalRequest.Status.APPROVED) {
+                projectManagerStep.addClassName("active");
+            } else if (holidayRequest.getApprovalRequests().get(1).getStatus() == ApprovalRequest.Status.DENIED) {
+                projectManagerStep.addClassName("denied");
+            }
 
-			UnorderedList stepList = new UnorderedList(initialStep, substituteStep, teamLeaderStep, projectManagerStep);
-			stepList.setWidthFull();
-			stepList.setClassName("progressbar");
+            UnorderedList stepList = new UnorderedList(initialStep, substituteStep, teamLeaderStep, projectManagerStep);
+            stepList.setWidthFull();
+            stepList.setClassName("progressbar");
 
-			HorizontalLayout stepBarContainer = new HorizontalLayout(stepList);
-			stepBarContainer.setWidthFull();
-			stepBarContainer.setAlignItems(Alignment.CENTER);
-			stepBarContainer.setJustifyContentMode(JustifyContentMode.CENTER);
-			return stepBarContainer;
-		});
-	}
+            HorizontalLayout stepBarContainer = new HorizontalLayout(stepList);
+            stepBarContainer.setWidthFull();
+            stepBarContainer.setAlignItems(Alignment.CENTER);
+            stepBarContainer.setJustifyContentMode(JustifyContentMode.CENTER);
+            return stepBarContainer;
+        });
+    }
 
-	private HorizontalLayout getActionButtons(HolidayRequest request) {
-		Button btnEdit = new Button(MessageRetriever.get("editHoliday"), VaadinIcon.EDIT.create(), e -> {
-			editor.editHolidayRequest(request);
-			mountEditorInDialog(true);
-		});
-		btnEdit.addClassName("responsive");
-		btnEdit.addClassName("responsive");
+    private HorizontalLayout getActionButtons(HolidayRequest request) {
+        Button btnEdit = new Button(MessageRetriever.get("editHoliday"), VaadinIcon.EDIT.create(), e -> {
+            editor.editHolidayRequest(request);
+            mountEditorInDialog(true);
+        });
+        btnEdit.addClassName("responsive");
+        btnEdit.addClassName("responsive");
+        Button btnSave = new Button(MessageRetriever.get("saveHoliday"), VaadinIcon.PRINT.create(), event -> {
+        });
+		btnSave.addThemeName("success");
+		btnSave.addThemeName("primary");
+		btnSave.addClassName("responsive");
 
-		Button btnPrint = new Button(MessageRetriever.get("printHoliday"), VaadinIcon.PRINT.create(), event -> {
+        HorizontalLayout horizontalLayout = new HorizontalLayout();
+//		horizontalLayout.setSpacing(false);
+        if (request.isStillEditable()) {
+            horizontalLayout.add(btnEdit);
+        } else {
+			FileDownloadWrapper saveButtonWrapper = null;
 			try {
 				PDDocument doc = fillHolidayRequest(request, request.getRequester());
-			//	SimpleFileDownloader downloader = new SimpleFileDownloader();
-				final StreamResource resource = new StreamResource((StreamResource.StreamSource) () -> {
-					try {
-						ByteArrayOutputStream pdfBuffer = new ByteArrayOutputStream();
-						doc.save(pdfBuffer);
-						return new ByteArrayInputStream(pdfBuffer.toByteArray());
-					} catch (Exception e) {
-						e.printStackTrace();
-						return null;
-					}
-				}, "test.pdf");
-
-			//	downloader.setFileDownloadResource(resource);
-			//	downloader.download();
-
-				// Create the stream resource and give it a file name
-//				String filename = "CO_Lucian Palaghe_2019-08-14.pdf";
-//				StreamResource resource = new StreamResource(filename, () -> {
-//					try {
-//						return new FileInputStream(filename);
-//					} catch (FileNotFoundException e) {
-//						e.printStackTrace();
-//					}
-//				});
-//
-//				// These settings are not usually necessary. MIME type
-//				// is detected automatically from the file name, but
-//				// setting it explicitly may be necessary if the file
-//				// suffix is not ".pdf".
-//				resource.setContentType("application/pdf");
-//				resource.getStream().setParameter(
-//						"Content-Disposition",
-//						"attachment; filename="+filename);
-//
-//				// Extend the print button with an opener
-//				// for the PDF resource
-//				BrowserWindowOpener opener = new BrowserWindowOpener(resource);
-//				opener.extend(print);
-//
-//				name.setEnabled(false);
-//				ok.setEnabled(false);
-//				print.setEnabled(true);
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				doc.getCurrentAccessPermission().setReadOnly();
+				doc.save(baos);
+				baos.close();
+				String filename =  request.getType() + "_" + request.getRequester().getName().replace(" ", "_") + "_" + request.getDateFrom() + ".pdf";
+				StreamResource res = new StreamResource(filename,
+						(InputStreamFactory) () -> new ByteArrayInputStream(baos.toByteArray()));
+				saveButtonWrapper = (new FileDownloadWrapper(res));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		});
-		btnPrint.addThemeName("success");
-		btnPrint.addThemeName("primary");
-		btnPrint.addClassName("responsive");
+			saveButtonWrapper.wrapComponent(btnSave); // wrap the save btn
+            horizontalLayout.add(saveButtonWrapper);
+        }
+        return horizontalLayout;
+    }
 
-		HorizontalLayout horizontalLayout = new HorizontalLayout();
-//		horizontalLayout.setSpacing(false);
-		if (request.isStillEditable()) {
-			horizontalLayout.add(btnEdit);
-		} else {
-			horizontalLayout.add(btnPrint);
-		}
-		return horizontalLayout;
-	}
-
-	private void listHolidayRequests() {
-		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(user.getEmail());
-		if (requests.isEmpty()) {
-			grid.setVisible(false);
-			heading.setText(MessageRetriever.get("noHolidayRequest"));
-			heading.setVisible(true);
-		} else {
-			heading.setVisible(false);
-			grid.setVisible(true);
-			grid.setItems(requests);
+    private void listHolidayRequests() {
+        User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+        List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(user.getEmail());
+        if (requests.isEmpty()) {
+            grid.setVisible(false);
+            heading.setText(MessageRetriever.get("noHolidayRequest"));
+            heading.setVisible(true);
+        } else {
+            heading.setVisible(false);
+            grid.setVisible(true);
+            grid.setItems(requests);
 //			grid.setDetailsVisible(requests.get(0), true);
-		}
-	}
+        }
+    }
 
-	private void mountEditorInDialog(boolean mount) {
-		if (mount && editor.isVisible()) {
-			dialog.removeAll();
-			dialog.addComponentAsFirst(this.editor);
-			dialog.open();
-		} else {
-			dialog.close();
-			dialog.removeAll();
-		}
-	}
+    private void mountEditorInDialog(boolean mount) {
+        if (mount && editor.isVisible()) {
+            dialog.removeAll();
+            dialog.addComponentAsFirst(this.editor);
+            dialog.open();
+        } else {
+            dialog.close();
+            dialog.removeAll();
+        }
+    }
 
-	@Override
-	public void afterNavigation(AfterNavigationEvent event) {
-		listHolidayRequests();
-	}
+    @Override
+    public void afterNavigation(AfterNavigationEvent event) {
+        listHolidayRequests();
+    }
 }
