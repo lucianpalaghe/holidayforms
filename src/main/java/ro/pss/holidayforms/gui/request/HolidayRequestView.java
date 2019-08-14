@@ -169,6 +169,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
             doc.getCurrentAccessPermission().setReadOnly();
             doc.save(baos);
             baos.close();
+            doc.close();
             String filename = request.getType() + "_" + request.getRequester().getName().replace(" ", "_") + "_" + request.getDateFrom() + ".pdf";
             res = new StreamResource(filename,
                     (InputStreamFactory) () -> new ByteArrayInputStream(baos.toByteArray()));

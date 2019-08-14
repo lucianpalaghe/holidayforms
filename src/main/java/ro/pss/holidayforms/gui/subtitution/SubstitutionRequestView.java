@@ -1,6 +1,6 @@
 package ro.pss.holidayforms.gui.subtitution;
 
-import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
@@ -21,7 +21,6 @@ import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.broadcast.BroadcastEvent;
-import ro.pss.holidayforms.gui.broadcast.BroadcastNewData;
 import ro.pss.holidayforms.gui.broadcast.Broadcaster;
 import ro.pss.holidayforms.gui.broadcast.UserUITuple;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
@@ -59,7 +58,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 
         User user = SecurityUtils.getLoggedInUser();
         listSubstitutionRequests(user.getEmail());
-        Broadcaster.register(new UserUITuple(user, UI.getCurrent()), this);
+      //  Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
     }
 
     private void listSubstitutionRequests(String userEmail) {
@@ -116,6 +115,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
         listSubstitutionRequests(SecurityUtils.getLoggedInUser().getEmail());
+
     }
 
 //    @Override
@@ -126,13 +126,20 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 //    }
 
     @Override
-    protected void onDetach(DetachEvent detachEvent) {
-        Broadcaster.unregister(SecurityUtils.getLoggedInUser().getEmail());
+    protected void onAttach(AttachEvent attachEvent) {
+        Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
     }
+//    @Override
+//    protected void onDetach(DetachEvent detachEvent) {
+//        Broadcaster.unregister(SecurityUtils.getLoggedInUser().getEmail(), UI.getCurrent().getUIId());
+//    }
 
     @Override
     public void receiveBroadcast(UI ui, BroadcastEvent message) {
-        if (BroadcastEvent.BroadcastMessageType.SUBSTITUTE.equals(message.getType())) {
+        if (BroadcastEvent.Type.SUBSTITUTE_ADDED.equals(message.getType())
+                || BroadcastEvent.Type.SUBSTITUTE_CHANGED.equals(message.getType())
+                || BroadcastEvent.Type.SUBSTITUTE_DELETED.equals(message.getType())
+        ) {
             ui.access(() -> this.listSubstitutionRequests(message.getTargetUserId()));
         }
     }

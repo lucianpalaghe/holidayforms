@@ -41,6 +41,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	private final DefaultNotificationHolder notifications;
 	private final DefaultBadgeHolder substitutionBadge;
 	private final DefaultBadgeHolder approvalBadge;
+	private final String approverEmail = "Luminita.Petre";
 
 	public HolidayAppLayout(ApprovalRequestRepository approvalRepository, SubstitutionRequestRepository substitutionRepository)  {
 		this.notifications = new DefaultNotificationHolder();
@@ -56,12 +57,10 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("toApprove"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
 		substitutionBadge.bind(substitutionMenuEntry.getBadge());
 		approvalBadge.bind(approvalMenuEntry.getBadge());
-		approvalBadge.setCount(approvalRepository.findAllByApproverEmailAndStatus("luminita.petre@pss.ro", ApprovalRequest.Status.NEW).size());
+		approvalBadge.setCount(approvalRepository.findAllByApproverEmailAndStatus(approverEmail, ApprovalRequest.Status.NEW).size());
 		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(user.getEmail(), SubstitutionRequest.Status.NEW).size());
 		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.4"); // TODO: get version from somewhere
-
-		Broadcaster.register(new UserUITuple(user,UI.getCurrent()), this);
-
+		Broadcaster.register(new UserUITuple(user, UI.getCurrent()), this);
 		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("preferencesTxt"), VaadinIcon.COG.create(),
 				clickEvent -> this.notifications.addNotification(new DefaultNotification("Whoops", MessageRetriever.get("notImplementedMsg")))
 		);
@@ -103,19 +102,33 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
        ui.access(() -> {
             String typeString = MessageRetriever.get("notification_" + message.getType());
             notifications.addNotification(new DefaultNotification(typeString, message.getMessage()));
-            BroadcastEvent.BroadcastMessageType type = message.getType();
+            BroadcastEvent.Type type = message.getType();
             switch (type) {
-                case SUBSTITUTE:
-                    substitutionBadge.increase();
+				case SUBSTITUTE_ADDED:
+					substitutionBadge.increase();
                     break;
-                case APPROVE:
+				case SUBSTITUTE_DELETED:
+					substitutionBadge.decrease();
+					break;
+				case APPROVE_ADDED:
                     approvalBadge.increase();
                     break;
+				case APPROVE_DELETED:
+					approvalBadge.decrease();
+					break;
+				case SUBSTITUTE_CHANGED:
+				case APPROVE_CHANGED:
+					break;
                 default:
                     throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
             }
         });
     }
+
+//	@Override
+//	public Registration addDetachListener(ComponentEventListener<DetachEvent> listener) {
+//		return (Registration) () -> Broadcaster.unregister(SecurityUtils.getLoggedInUser().getEmail(), UI.getCurrent().getUIId());
+//	}
 
 }
 

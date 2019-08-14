@@ -1,6 +1,6 @@
 package ro.pss.holidayforms.gui.approval;
 
-import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
@@ -57,8 +57,8 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         setAlignItems(Alignment.CENTER);
         add(container);
         setHeightFull();
-        Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
         listApprovalRequests(approverUserEmail);
+       // Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
     }
 
     private void listApprovalRequests(String userEmail) {
@@ -117,19 +117,20 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         listApprovalRequests(approverUserEmail);
     }
 
+    @Override
+    protected void onAttach(AttachEvent attachEvent) {
+       Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
+    }
 //    @Override
-//    public void onDataReceive(UserUITuple uit, String message) {
-//        uit.getUi().access(() -> listApprovalRequests(approverUserEmail));
+//    protected void onDetach(DetachEvent detachEvent) {
+//        Broadcaster.unregister(SecurityUtils.getLoggedInUser().getEmail(), UI.getCurrent().getUIId());
 //    }
 
     @Override
-    protected void onDetach(DetachEvent detachEvent) {
-        Broadcaster.unregister(SecurityUtils.getLoggedInUser().getEmail());
-    }
-
-    @Override
     public void receiveBroadcast(UI ui, BroadcastEvent message) {
-        if (BroadcastEvent.BroadcastMessageType.APPROVE.equals(message.getType())) {
+        if (BroadcastEvent.Type.APPROVE_ADDED.equals(message.getType())
+                || BroadcastEvent.Type.APPROVE_CHANGED.equals(message.getType())
+                 || BroadcastEvent.Type.APPROVE_DELETED.equals(message.getType())    ) {
             ui.access(() -> this.listApprovalRequests(message.getTargetUserId()));
         }
     }

@@ -1,10 +1,15 @@
 package ro.pss.holidayforms.config.security;
 
+import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 /**
  * Configures spring security, doing the following:
@@ -46,7 +51,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				.failureUrl(LOGIN_FAILURE_URL)
 
 				// Configure logout
-				.and().logout().logoutSuccessUrl(LOGOUT_SUCCESS_URL);
+				.and().logout().logoutSuccessUrl(LOGOUT_SUCCESS_URL)
+				.and().sessionManagement().maximumSessions(1).sessionRegistry(sessionRegistry());
 	}
 
 //	@Bean
@@ -92,4 +98,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				// (production mode) static resources
 				"/frontend-es5/**", "/frontend-es6/**");
 	}
+	@Bean
+	public SessionRegistry sessionRegistry() {
+		return new SessionRegistryImpl();
+	}
+	@Bean
+	public ServletListenerRegistrationBean<HttpSessionEventPublisher> httpSessionEventPublisher() {
+		return new ServletListenerRegistrationBean<HttpSessionEventPublisher>(new HttpSessionEventPublisher());
+	}
+
 }

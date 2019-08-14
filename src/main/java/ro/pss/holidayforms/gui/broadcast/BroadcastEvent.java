@@ -10,10 +10,10 @@ import lombok.Setter;
 @Setter @Getter
 public class BroadcastEvent {
     private String targetUserId;
-	private BroadcastMessageType type;
+	private Type type;
 	private String message;
 
-    public enum BroadcastMessageType {
-		SUBSTITUTE, APPROVE, REQUEST
+    public enum Type {
+		SUBSTITUTE_ADDED, APPROVE_ADDED, SUBSTITUTE_CHANGED, APPROVE_CHANGED, SUBSTITUTE_DELETED, APPROVE_DELETED
     }
 }
