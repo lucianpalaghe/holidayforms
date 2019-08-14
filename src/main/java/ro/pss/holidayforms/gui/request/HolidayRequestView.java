@@ -19,6 +19,7 @@ import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import com.vaadin.flow.server.StreamResource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.vaadin.olli.FileDownloadWrapper;
@@ -41,6 +42,7 @@ import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 
 @SpringComponent
 @UIScope
+@Slf4j
 @Route(value = "requests", layout = HolidayAppLayout.class)
 @StyleSheet("step-progress-bar.css")
 @StyleSheet("responsive-buttons.css")
@@ -153,24 +155,31 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
         if (request.isStillEditable()) {
             horizontalLayout.add(btnEdit);
         } else {
-			FileDownloadWrapper saveButtonWrapper = null;
-			try {
-				PDDocument doc = fillHolidayRequest(request, request.getRequester());
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				doc.getCurrentAccessPermission().setReadOnly();
-				doc.save(baos);
-				baos.close();
-				String filename =  request.getType() + "_" + request.getRequester().getName().replace(" ", "_") + "_" + request.getDateFrom() + ".pdf";
-				StreamResource res = new StreamResource(filename,
-						(InputStreamFactory) () -> new ByteArrayInputStream(baos.toByteArray()));
-				saveButtonWrapper = (new FileDownloadWrapper(res));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			saveButtonWrapper.wrapComponent(btnSave); // wrap the save btn
-            horizontalLayout.add(saveButtonWrapper);
+            horizontalLayout.add(getButtonWrapperWithPdfDocument(btnSave, request));
         }
         return horizontalLayout;
+    }
+
+    private FileDownloadWrapper getButtonWrapperWithPdfDocument(Button btn, HolidayRequest request) {
+        FileDownloadWrapper buttonWrapper = null;
+        StreamResource res = null;
+        try {
+            PDDocument doc = fillHolidayRequest(request);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            doc.getCurrentAccessPermission().setReadOnly();
+            doc.save(baos);
+            baos.close();
+            String filename = request.getType() + "_" + request.getRequester().getName().replace(" ", "_") + "_" + request.getDateFrom() + ".pdf";
+            res = new StreamResource(filename,
+                    (InputStreamFactory) () -> new ByteArrayInputStream(baos.toByteArray()));
+
+        } catch (IOException e) {
+            log.debug("Error getting the wrapper for save pdf button", e);
+        }
+        buttonWrapper = (new FileDownloadWrapper(res));
+        buttonWrapper.wrapComponent(btn);
+        return buttonWrapper;
+
     }
 
     private void listHolidayRequests() {
