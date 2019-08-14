@@ -1,8 +1,8 @@
 package ro.pss.holidayforms.gui.broadcast;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Component;
 import ro.pss.holidayforms.config.security.CustomUserPrincipal;
@@ -10,36 +10,28 @@ import ro.pss.holidayforms.domain.User;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Component
+@Slf4j
 public class BroadcasterUserRemoval {
     @Autowired
     private SessionRegistry sessionRegistry;
 
-    @Scheduled(fixedRate = 9000000) // every 15 minutes
-    public void listLoggedInUsers() {
+    @Scheduled(cron = "${remove.users.from.broadcaster.cron}")
+    public void removeLoggedOffUsersFromBroadcaster() {
+        log.info("removeLoggedOffUsersFromBroadcaster()");
         final List<Object> allPrincipals = sessionRegistry.getAllPrincipals();
         if (allPrincipals.isEmpty()) {
             Broadcaster.unregisterAllUsers();
         } else {
-            List<User> usersToRemove = new ArrayList<>();
+            List<String> loggedUsersEmail = new ArrayList<>();
             for (final Object principal : allPrincipals) {
                 if (principal instanceof CustomUserPrincipal) {
                     final User user = ((CustomUserPrincipal) principal).getUser();
-                    List<SessionInformation> activeUserSessions = sessionRegistry.getAllSessions(principal, /* includeExpiredSessions */ false); // Should not return null;
-                    if (activeUserSessions.isEmpty()) {
-                        usersToRemove.add(user);
-                    }
+                    loggedUsersEmail.add(user.getEmail());
                 }
             }
-            for (User user : usersToRemove) {
-                for (Map.Entry<UserUITuple, Broadcaster.BroadcastListener> entry : Broadcaster.getListeners().entrySet()) {
-                    if (entry.getKey().getUser().getEmail().equals(user.getEmail())) {
-                        Broadcaster.getListeners().remove(entry);
-                    }
-                }
-            }
+            Broadcaster.getListeners().entrySet().removeIf(e -> !loggedUsersEmail.contains(e.getKey().getUser().getEmail()));
         }
     }
 }
