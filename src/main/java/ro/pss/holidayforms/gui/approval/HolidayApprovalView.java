@@ -57,7 +57,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
         setAlignItems(Alignment.CENTER);
         add(container);
         setHeightFull();
-        listApprovalRequests(approverUserEmail);
+        listApprovalRequests(SecurityUtils.getLoggedInUser().getEmail());
        // Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
     }
 
@@ -114,7 +114,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
-        listApprovalRequests(approverUserEmail);
+        listApprovalRequests(SecurityUtils.getLoggedInUser().getEmail());
     }
 
     @Override

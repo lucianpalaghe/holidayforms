@@ -13,7 +13,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.List;
 

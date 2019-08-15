@@ -2,18 +2,37 @@ package ro.pss.holidayforms.gui.broadcast;
 
 import com.vaadin.flow.component.UI;
 import lombok.Getter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import ro.pss.holidayforms.domain.notification.Notification;
+import ro.pss.holidayforms.domain.repo.NotificationRepository;
 
+import javax.annotation.PostConstruct;
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@Service
 public class Broadcaster implements Serializable {
+    private static NotificationRepository notificationRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepositoryAutowired;
+
+
+    @PostConstruct
+    private void init() {
+        this.notificationRepository = this.notificationRepositoryAutowired;
+    }
+
     private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
     @Getter
     private static final Map<UserUITuple, BroadcastListener> listeners = new ConcurrentHashMap<>();
-
     public static synchronized void register(UserUITuple uit, BroadcastListener listener) {
         if(listeners.containsValue(listener)) {
             return;
@@ -42,6 +61,10 @@ public class Broadcaster implements Serializable {
 //   }
 
     public static synchronized void broadcast(final BroadcastEvent message) {
+        Instant instant = LocalDateTime.now().toInstant(ZoneOffset.ofTotalSeconds(0));
+        Notification savedNotification = notificationRepository.save(new Notification(instant, null, message.getType().name(),
+                message.getMessage(), message.getTargetUserId(), message.getType(), Notification.Status.NEW, Notification.Priority.RED));
+        message.setNotification(savedNotification);
         for (final Map.Entry<UserUITuple, BroadcastListener> entry : listeners.entrySet()) {
             if (entry.getKey().getUser().getEmail().equals(message.getTargetUserId())) {
                 executorService.execute(() -> entry.getValue().receiveBroadcast(entry.getKey().getUi(), message));
