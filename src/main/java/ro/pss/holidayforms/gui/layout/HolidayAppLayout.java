@@ -8,7 +8,9 @@ import com.github.appreciated.app.layout.component.menu.left.items.LeftClickable
 import com.github.appreciated.app.layout.component.menu.left.items.LeftNavigationItem;
 import com.github.appreciated.app.layout.entity.DefaultBadgeHolder;
 import com.github.appreciated.app.layout.notification.DefaultNotificationHolder;
+import com.github.appreciated.app.layout.notification.NotificationsChangeListener;
 import com.github.appreciated.app.layout.notification.component.AppBarNotificationButton;
+import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.github.appreciated.app.layout.router.AppLayoutRouterLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -115,7 +117,17 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 			notifications.addNotification(holidayNotification);
 		}
 
+		notifications.addNotificationsChangeListener(new NotificationsChangeListener<DefaultNotification>() {
+			@Override
+			public void onNotificationRemoved(DefaultNotification notification) {
+				notificationRepository.delete(((HolidayNotification) notification).getNotification());
+			}
+		});
 		notifications.addClickListener(defaultNotification -> {
+			if (defaultNotification.isRead()) {
+				return;
+			}
+
 			HolidayNotification holidayNotification = (HolidayNotification) defaultNotification;
 			Notification notification = notificationRepository.findById(holidayNotification.getNotification().getId()).get();
 			notification.setChangedDateTime(LocalDateTime.now());

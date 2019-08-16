@@ -1,3 +1,6 @@
+/*
+Removed because redundant for now, might return in the future.
+
 package ro.pss.holidayforms.scheduled;
 
 import lombok.extern.slf4j.Slf4j;
@@ -21,3 +24,4 @@ public class NotificationRemoval {
         notificationRepository.deleteAllByStatusEquals(Notification.Status.READ);
     }
 }
+*/
