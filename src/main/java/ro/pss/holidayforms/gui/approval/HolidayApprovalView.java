@@ -1,6 +1,7 @@
 package ro.pss.holidayforms.gui.approval;
 
 import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
@@ -102,14 +103,18 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 
     private void confirmHolidayApproval(ApprovalRequest request) {
         request.approve();
-        requestRepository.save(request);
+        ApprovalRequest savedRequest = requestRepository.save(request);
+        broadcastActionOnRequest(savedRequest, BroadcastEvent.Type.APPROVER_ACCEPTED);
         grid.getDataProvider().refreshItem(request);
+        ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseApprovalBadgeCount();
     }
 
     private void rejectHolidayApproval(ApprovalRequest request) {
         request.deny();
-        requestRepository.save(request);
+        ApprovalRequest savedRequest = requestRepository.save(request);
+        broadcastActionOnRequest(savedRequest, BroadcastEvent.Type.APPROVER_DENIED);
         grid.getDataProvider().refreshItem(request);
+        ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseApprovalBadgeCount();
     }
 
     @Override
@@ -121,10 +126,6 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
     protected void onAttach(AttachEvent attachEvent) {
        Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
     }
-//    @Override
-//    protected void onDetach(DetachEvent detachEvent) {
-//        Broadcaster.unregister(SecurityUtils.getLoggedInUser().getEmail(), UI.getCurrent().getUIId());
-//    }
 
     @Override
     public void receiveBroadcast(UI ui, BroadcastEvent message) {
@@ -133,5 +134,18 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
                  || BroadcastEvent.Type.APPROVE_DELETED.equals(message.getType())    ) {
             ui.access(() -> this.listApprovalRequests(message.getTargetUserId()));
         }
+    }
+
+    private void broadcastActionOnRequest(ApprovalRequest request, BroadcastEvent.Type eventType) {
+        String msg = "";
+        switch (eventType) {
+            case APPROVER_ACCEPTED:
+                msg = String.format(MessageRetriever.get("notificationApproverAccepted"), SecurityUtils.getLoggedInUser().getName());
+                break;
+            case APPROVER_DENIED:
+                msg = String.format(MessageRetriever.get("notificationApproverDenied"), SecurityUtils.getLoggedInUser().getName());
+        }
+        BroadcastEvent event = new BroadcastEvent(request.getRequest().getRequester().getEmail(), eventType, msg);
+        Broadcaster.broadcast(event);
     }
 }

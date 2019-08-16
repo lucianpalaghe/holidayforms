@@ -12,6 +12,8 @@ import com.github.appreciated.app.layout.notification.NotificationsChangeListene
 import com.github.appreciated.app.layout.notification.component.AppBarNotificationButton;
 import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.github.appreciated.app.layout.router.AppLayoutRouterLayout;
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.page.Push;
@@ -50,6 +52,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 
 	public HolidayAppLayout(ApprovalRequestRepository approvalRepository, SubstitutionRequestRepository substitutionRepository,
 							NotificationRepository notificationRepository) {
+		ComponentUtil.setData(UI.getCurrent(), HolidayAppLayout.class, this);
 		this.notificationRepository = notificationRepository;
 		this.notifications = new DefaultNotificationHolder();
 		this.substitutionBadge = new DefaultBadgeHolder();
@@ -101,7 +104,6 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 						.addToSection(versionItem, FOOTER)
 						.build())
 				.build());
-
 	}
 
 	private void loadUserNotifications() {
@@ -117,19 +119,18 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 			notifications.addNotification(holidayNotification);
 		}
 
-		notifications.addNotificationsChangeListener(new NotificationsChangeListener<DefaultNotification>() {
+		notifications.addNotificationsChangeListener(new NotificationsChangeListener<>() {
 			@Override
 			public void onNotificationRemoved(DefaultNotification notification) {
 				notificationRepository.delete(((HolidayNotification) notification).getNotification());
 			}
 		});
 		notifications.addClickListener(defaultNotification -> {
-			if (defaultNotification.isRead()) {
-				return;
-			}
-
 			HolidayNotification holidayNotification = (HolidayNotification) defaultNotification;
 			Notification notification = notificationRepository.findById(holidayNotification.getNotification().getId()).get();
+			if (notification.getStatus().equals(Notification.Status.READ)) {
+				return;
+			}
 			notification.setChangedDateTime(LocalDateTime.now());
 			notification.setStatus(Notification.Status.READ);
 			notificationRepository.save(notification);
@@ -158,6 +159,10 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 				case APPROVE_DELETED:
 					approvalBadge.decrease();
 					break;
+				case SUBSTITUTE_ACCEPTED:
+				case SUBSTITUTE_DENIED:
+				case APPROVER_ACCEPTED:
+				case APPROVER_DENIED:
 				case SUBSTITUTE_CHANGED:
 				case APPROVE_CHANGED:
 					break;
@@ -165,6 +170,20 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 					throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
 			}
 		});
+	}
+
+	public void decreaseSubsitutionBadgeCount() {
+		this.substitutionBadge.decrease();
+	}
+
+	public void decreaseApprovalBadgeCount() {
+		this.approvalBadge.decrease();
+	}
+
+	@Override
+	protected void onAttach(AttachEvent attachEvent) {
+		super.onAttach(attachEvent);
+		ComponentUtil.setData(UI.getCurrent(), HolidayAppLayout.class, this);
 	}
 }
 

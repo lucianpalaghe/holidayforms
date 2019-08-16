@@ -16,7 +16,7 @@ import ro.pss.holidayforms.domain.repo.UserRepository;
 import java.io.IOException;
 import java.util.List;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j

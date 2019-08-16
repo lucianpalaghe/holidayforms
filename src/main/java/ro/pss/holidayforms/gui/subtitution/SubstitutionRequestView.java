@@ -1,6 +1,7 @@
 package ro.pss.holidayforms.gui.subtitution;
 
 import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
@@ -35,7 +36,6 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
     private final SubstitutionRequestRepository requestRepository;
     private final VerticalLayout container;
     private HolidayConfirmationDialog holidayConfDialog;
-
     public SubstitutionRequestView(SubstitutionRequestRepository repo) {
         this.requestRepository = repo;
         this.grid = new Grid<>();
@@ -58,7 +58,6 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 
         User user = SecurityUtils.getLoggedInUser();
         listSubstitutionRequests(user.getEmail());
-      //  Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
     }
 
     private void listSubstitutionRequests(String userEmail) {
@@ -102,14 +101,18 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 
     private void rejectHolidaySubstitution(SubstitutionRequest request) {
         request.deny();
-        requestRepository.save(request);
+        SubstitutionRequest savedRequest = requestRepository.save(request);
+        broadcastActionOnRequest(savedRequest, BroadcastEvent.Type.SUBSTITUTE_DENIED);
         grid.getDataProvider().refreshItem(request);
+        ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubsitutionBadgeCount();
     }
 
     private void confirmHolidaySubstitution(SubstitutionRequest request) {
         request.approve();
-        requestRepository.save(request);
+        SubstitutionRequest savedRequest = requestRepository.save(request);
+        broadcastActionOnRequest(savedRequest, BroadcastEvent.Type.SUBSTITUTE_ACCEPTED);
         grid.getDataProvider().refreshItem(request);
+        ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubsitutionBadgeCount();
     }
 
     @Override
@@ -118,21 +121,10 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 
     }
 
-//    @Override
-//    public void onDataReceive(UserUITuple uit, String message) {
-//    	if(message.equals(BroadcastMessage.BroadcastMessageType.SUBSTITUTE)) {
-//			uit.getUi().access(() -> listSubstitutionRequests(uit.getUser().getEmail()));
-//		}
-//    }
-
     @Override
     protected void onAttach(AttachEvent attachEvent) {
         Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
     }
-//    @Override
-//    protected void onDetach(DetachEvent detachEvent) {
-//        Broadcaster.unregister(SecurityUtils.getLoggedInUser().getEmail(), UI.getCurrent().getUIId());
-//    }
 
     @Override
     public void receiveBroadcast(UI ui, BroadcastEvent message) {
@@ -142,5 +134,18 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
         ) {
             ui.access(() -> this.listSubstitutionRequests(message.getTargetUserId()));
         }
+    }
+
+    private void broadcastActionOnRequest(SubstitutionRequest request, BroadcastEvent.Type eventType) {
+        String msg = "";
+        switch (eventType) {
+            case SUBSTITUTE_ACCEPTED:
+                msg = String.format(MessageRetriever.get("notificationSubstituteAccepted"), SecurityUtils.getLoggedInUser().getName());
+                break;
+            case SUBSTITUTE_DENIED:
+                msg = String.format(MessageRetriever.get("notificationSubstituteDenied"), SecurityUtils.getLoggedInUser().getName());
+        }
+        BroadcastEvent event = new BroadcastEvent(request.getRequest().getRequester().getEmail(), eventType, msg);
+        Broadcaster.broadcast(event);
     }
 }
