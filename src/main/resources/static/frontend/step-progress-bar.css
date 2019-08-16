@@ -1,17 +1,15 @@
   .progressbar {
-      counter-reset: step;
       padding-inline-start: 0;
       margin-inline-start: 0px;
   }
 
   .progressbar li {
       list-style-type: none;
-      width: 25%;
+      width: 20%;
       float: left;
       font-size: 20px;
       position: relative;
       text-align: center;
-      text-transform: uppercase;
       color: #7d7d7d;
   }
   .progressbar li:before {
@@ -19,7 +17,6 @@
       height: 30px;
       font-family: lumo-icons;
       content: '\ea14';
-      counter-increment: step;
       line-height: 30px;
       border: 2px solid #7d7d7d;
       display: block;

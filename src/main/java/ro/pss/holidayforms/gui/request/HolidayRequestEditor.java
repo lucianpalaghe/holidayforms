@@ -48,7 +48,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
     private final Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
     private final HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
     private final Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
-    private final List<String> approverIds = Arrays.asList("luminita.petre", "claudia.gican");
+    private final List<String> approverIds = Arrays.asList("lucian.palaghe", "claudia.gican", "luminita.petre");
     private HolidayRequest holidayRequest;
     private ChangeHandler changeHandler;
     private final TempoService tempo;

@@ -103,28 +103,38 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
             ListItem initialStep = new ListItem(MessageRetriever.get("created"));
             initialStep.addClassName("active");
 
-            ListItem substituteStep = new ListItem(MessageRetriever.get("replacerName"));
+			ListItem substituteStep = new ListItem(holidayRequest.getSubstitutionRequest().getSubstitute().getName());
             if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED) {
                 substituteStep.addClassName("active");
             } else if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.DENIED) {
                 substituteStep.addClassName("denied");
             }
 
-            ListItem teamLeaderStep = new ListItem(MessageRetriever.get("teamLeader"));
-            if (holidayRequest.getApprovalRequests().get(0).getStatus() == ApprovalRequest.Status.APPROVED) {
+			ApprovalRequest approvalRequest = holidayRequest.getApprovalRequests().get(0);
+			ListItem teamLeaderStep = new ListItem(approvalRequest.getApprover().getName());
+			if (approvalRequest.getStatus() == ApprovalRequest.Status.APPROVED) {
                 teamLeaderStep.addClassName("active");
-            } else if (holidayRequest.getApprovalRequests().get(0).getStatus() == ApprovalRequest.Status.DENIED) {
+			} else if (approvalRequest.getStatus() == ApprovalRequest.Status.DENIED) {
                 teamLeaderStep.addClassName("denied");
             }
 
-            ListItem projectManagerStep = new ListItem(MessageRetriever.get("projectManager"));
-            if (holidayRequest.getApprovalRequests().get(1).getStatus() == ApprovalRequest.Status.APPROVED) {
+			ApprovalRequest approvalRequest2 = holidayRequest.getApprovalRequests().get(1);
+			ListItem projectManagerStep = new ListItem(approvalRequest2.getApprover().getName());
+			if (approvalRequest2.getStatus() == ApprovalRequest.Status.APPROVED) {
                 projectManagerStep.addClassName("active");
-            } else if (holidayRequest.getApprovalRequests().get(1).getStatus() == ApprovalRequest.Status.DENIED) {
+			} else if (approvalRequest2.getStatus() == ApprovalRequest.Status.DENIED) {
                 projectManagerStep.addClassName("denied");
             }
 
-            UnorderedList stepList = new UnorderedList(initialStep, substituteStep, teamLeaderStep, projectManagerStep);
+			ApprovalRequest approvalRequest3 = holidayRequest.getApprovalRequests().get(2);
+			ListItem hrStep = new ListItem(approvalRequest3.getApprover().getName());
+			if (approvalRequest3.getStatus() == ApprovalRequest.Status.APPROVED) {
+				hrStep.addClassName("active");
+			} else if (approvalRequest3.getStatus() == ApprovalRequest.Status.DENIED) {
+				hrStep.addClassName("denied");
+			}
+
+			UnorderedList stepList = new UnorderedList(initialStep, substituteStep, teamLeaderStep, projectManagerStep, hrStep);
             stepList.setWidthFull();
             stepList.setClassName("progressbar");
 
