@@ -9,8 +9,9 @@ import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.gui.broadcast.Broadcaster;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import static java.util.stream.Collectors.*;
 
 @Component
 @Slf4j
@@ -25,13 +26,12 @@ public class BroadcasterUserRemoval {
         if (allPrincipals.isEmpty()) {
             Broadcaster.unregisterAllUsers();
         } else {
-            List<String> loggedUsersEmail = new ArrayList<>();
-            for (final Object principal : allPrincipals) {
-                if (principal instanceof CustomUserPrincipal) {
-                    final User user = ((CustomUserPrincipal) principal).getUser();
-                    loggedUsersEmail.add(user.getEmail());
-                }
-            }
+			List<String> loggedUsersEmail = allPrincipals.stream()
+					.filter(principal -> principal instanceof CustomUserPrincipal)
+					.map(principal -> ((CustomUserPrincipal) principal).getUser())
+					.map(User::getEmail)
+					.collect(toList());
+
             Broadcaster.getListeners().entrySet().removeIf(e -> !loggedUsersEmail.contains(e.getKey().getUser().getEmail()));
         }
     }

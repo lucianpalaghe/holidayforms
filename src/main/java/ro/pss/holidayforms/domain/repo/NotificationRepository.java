@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     List<Notification> findAllByTargetUserEmailAndStatus(String targetUserEmail, Notification.Status status);
-   // Notification findByCreationDateTimeAndTargetUserEmail(Instant creationDateTime, String targetUserEmail);
+
+	List<Notification> findAllByTargetUserEmailOrderByStatusAscCreationDateTimeDesc(String targetUserEmail);
     void deleteAllByStatusEquals(Notification.Status status);
 }

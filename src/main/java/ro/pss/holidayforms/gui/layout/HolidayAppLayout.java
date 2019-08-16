@@ -33,7 +33,6 @@ import ro.pss.holidayforms.gui.request.HolidayRequestView;
 import ro.pss.holidayforms.gui.subtitution.SubstitutionRequestView;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 import static com.github.appreciated.app.layout.entity.Section.FOOTER;
@@ -45,11 +44,10 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	private final DefaultNotificationHolder notifications;
 	private final DefaultBadgeHolder substitutionBadge;
 	private final DefaultBadgeHolder approvalBadge;
-	private final String approverEmail = "Luminita.Petre";
 	private NotificationRepository notificationRepository;
 
 	public HolidayAppLayout(ApprovalRequestRepository approvalRepository, SubstitutionRequestRepository substitutionRepository,
-	NotificationRepository notificationRepository)  {
+							NotificationRepository notificationRepository) {
 		this.notificationRepository = notificationRepository;
 		this.notifications = new DefaultNotificationHolder();
 		this.substitutionBadge = new DefaultBadgeHolder();
@@ -65,39 +63,19 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		approvalBadge.bind(approvalMenuEntry.getBadge());
 		approvalBadge.setCount(approvalRepository.findAllByApproverEmailAndStatus(user.getEmail(), ApprovalRequest.Status.NEW).size());
 		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(user.getEmail(), SubstitutionRequest.Status.NEW).size());
-		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.4"); // TODO: get version from somewhere
+		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.5"); // TODO: get version from somewhere
 		Broadcaster.register(new UserUITuple(user, UI.getCurrent()), this);
-		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("preferencesTxt"), VaadinIcon.COG.create(),
-				clickEvent -> {/*this.notifications.addNotification(new DefaultNotification("Whoops", MessageRetriever.get("notImplementedMsg"))*/});
+		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("preferencesTxt"), VaadinIcon.COG.create(), clickEvent -> {
+		});
 
 		LeftClickableItem languageMenuEntry = new LeftClickableItem(MessageRetriever.get("changeLanguage"), VaadinIcon.FLAG.create(),
 				clickEvent -> {
 					MessageRetriever.switchLocale();
 					UI.getCurrent().getPage().reload();
 				}
-
 		);
 
-		List<Notification> unreadNotifications = getUserNotifications(SecurityUtils.getLoggedInUser().getEmail(), Notification.Status.NEW);
-		for(Notification notification : unreadNotifications) {
-			String typeString = MessageRetriever.get("notification_" + notification.getType());
-			//DefaultNotification defaultNotification = new DefaultNotification(typeString, notification.getMessage());
-			HolidayNotification holidayNotification = new HolidayNotification(typeString, notification.getMessage(), notification);
-			 holidayNotification.setNotification(notification);
-			//defaultNotification.setCreationTime(LocalDateTime.ofInstant(notification.getCreationDateTime(), ZoneOffset.ofTotalSeconds(0)));
-			//notifications.addNotification(defaultNotification);
-			notifications.addNotification(holidayNotification);
-		}
-		notifications.addClickListener(defaultNotification -> {
-			HolidayNotification holidayNotification = (HolidayNotification) defaultNotification;
-			//Notification notification = notificationRepository.findByCreationDateTimeAndTargetUserEmail(defaultNotification.getCreationTime().toInstant(ZoneOffset.ofTotalSeconds(0)), SecurityUtils.getLoggedInUser().getEmail());
-			Notification notification = notificationRepository.findById(holidayNotification.getNotification().getId()).get();
-			notification.setChangedDateTime(LocalDateTime.now().toInstant(ZoneOffset.ofTotalSeconds(0)));
-			notification.setStatus(Notification.Status.READ);
-			notificationRepository.save(notification);
-			defaultNotification.setRead(true);
-			notifications.removeNotification(defaultNotification);
-		});
+		loadUserNotifications();
 
 		init(AppLayoutBuilder
 				.get(Behaviour.LEFT_RESPONSIVE)
@@ -124,49 +102,57 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 
 	}
 
-    @Override
-    public void receiveBroadcast(UI ui, BroadcastEvent message) {
-       ui.access(() -> {
-            String typeString = MessageRetriever.get("notification_" + message.getType());
-           // DefaultNotification defaultNotification = new DefaultNotification(typeString, message.getMessage());
-           // defaultNotification.setCreationTime(LocalDateTime.ofInstant(message.getNotification().getCreationDateTime(), ZoneOffset.ofTotalSeconds(0)));
-            //notifications.addNotification(defaultNotification);
-		   HolidayNotification holidayNotification = new HolidayNotification(typeString, message.getMessage(), message.getNotification());
-		  // holidayNotification.setCreationTime(LocalDateTime.ofInstant(message.getNotification().getCreationDateTime(), ZoneOffset.ofTotalSeconds(0)));
-		   notifications.addNotification(holidayNotification);
+	private void loadUserNotifications() {
+		List<Notification> userNotifications = notificationRepository.findAllByTargetUserEmailOrderByStatusAscCreationDateTimeDesc(SecurityUtils.getLoggedInUser().getEmail());
+		for (Notification notification : userNotifications) {
+			String typeString = MessageRetriever.get("notification_" + notification.getType());
+			HolidayNotification holidayNotification = new HolidayNotification(typeString, notification.getMessage(), notification);
+			holidayNotification.setNotification(notification);
+			holidayNotification.setCreationTime(notification.getCreationDateTime());
+			if (notification.getStatus().equals(Notification.Status.READ)) {
+				holidayNotification.setRead(true);
+			}
+			notifications.addNotification(holidayNotification);
+		}
 
-            BroadcastEvent.Type type = message.getType();
-            switch (type) {
+		notifications.addClickListener(defaultNotification -> {
+			HolidayNotification holidayNotification = (HolidayNotification) defaultNotification;
+			Notification notification = notificationRepository.findById(holidayNotification.getNotification().getId()).get();
+			notification.setChangedDateTime(LocalDateTime.now());
+			notification.setStatus(Notification.Status.READ);
+			notificationRepository.save(notification);
+			defaultNotification.setRead(true);
+		});
+	}
+
+	@Override
+	public void receiveBroadcast(UI ui, BroadcastEvent message) {
+		ui.access(() -> {
+			String typeString = MessageRetriever.get("notification_" + message.getType());
+			HolidayNotification holidayNotification = new HolidayNotification(typeString, message.getMessage(), message.getNotification());
+			notifications.addNotification(holidayNotification);
+
+			BroadcastEvent.Type type = message.getType();
+			switch (type) {
 				case SUBSTITUTE_ADDED:
 					substitutionBadge.increase();
-                    break;
+					break;
 				case SUBSTITUTE_DELETED:
 					substitutionBadge.decrease();
 					break;
 				case APPROVE_ADDED:
-                    approvalBadge.increase();
-                    break;
+					approvalBadge.increase();
+					break;
 				case APPROVE_DELETED:
 					approvalBadge.decrease();
 					break;
 				case SUBSTITUTE_CHANGED:
 				case APPROVE_CHANGED:
 					break;
-                default:
-                    throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
-            }
-        });
-    }
-
-    private List<Notification> getUserNotifications(String targetUserEmail, Notification.Status status) {
-		List<Notification> result = notificationRepository.findAllByTargetUserEmailAndStatus(targetUserEmail, status);
-		return result;
+				default:
+					throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
+			}
+		});
 	}
-
-//	@Override
-//	public Registration addDetachListener(ComponentEventListener<DetachEvent> listener) {
-//		return (Registration) () -> Broadcaster.unregister(SecurityUtils.getLoggedInUser().getEmail(), UI.getCurrent().getUIId());
-//	}
-
 }
 

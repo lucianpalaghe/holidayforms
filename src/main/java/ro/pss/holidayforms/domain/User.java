@@ -52,7 +52,7 @@ public class User {
 	}
 
 	public User(JiraUserDetails jiraDetails) {
-		this.email = jiraDetails.getName(); // TODO: replage with email after everyone sets their email addresses in JIRA
+		this.email = jiraDetails.getName().toLowerCase(); // TODO: replace with email after everyone sets their email addresses in JIRA
 		this.jiraAccountId = jiraDetails.getAccountId();
 		this.role = Role.USER;
 		this.name = jiraDetails.getDisplayName();

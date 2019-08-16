@@ -11,18 +11,21 @@ public class HolidayNotification extends DefaultNotification {
     private Notification notification;
 
     public HolidayNotification(String title, String description, Notification notification) {
-        super(title, description);
+        super(title, description, getPriority(notification.getPriority()));
         this.notification = notification;
     }
 
-    public HolidayNotification(String title, String description, Priority priority, Notification notification) {
-        super(title, description, priority);
-        this.notification = notification;
-    }
-
-    public HolidayNotification(String title, String description, Priority priority, boolean isSticky, Notification notification) {
-        super(title, description, priority, isSticky);
-        this.notification = notification;
+    private static Priority getPriority(Notification.Priority priority) {
+        switch (priority) {
+            case HIGH:
+                return Priority.ERROR;
+            case MEDIUM:
+                return Priority.WARNING;
+            case LOW:
+                return Priority.LOW;
+            default:
+                return Priority.MEDIUM;
+        }
     }
 
 }

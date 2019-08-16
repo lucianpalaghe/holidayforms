@@ -7,12 +7,12 @@ import ro.pss.holidayforms.gui.broadcast.BroadcastEvent;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @NoArgsConstructor
 @Entity
 public class Notification {
-    public Notification(Instant creationDateTime, Instant changedDateTime, String title,
+    public Notification(LocalDateTime creationDateTime, LocalDateTime changedDateTime, String title,
                         String message, String targetUserEmail, BroadcastEvent.Type type, Status status, Priority priority) {
         this.creationDateTime = creationDateTime;
         this.changedDateTime = changedDateTime;
@@ -29,24 +29,24 @@ public class Notification {
     @Getter
     private Long id;
 
-    @Getter @Setter
+    @Getter
     @NotNull
-    private Instant creationDateTime;
+    private LocalDateTime creationDateTime;
 
     @Getter @Setter
-    private Instant changedDateTime;
+    private LocalDateTime changedDateTime;
 
-    @Getter @Setter
+    @Getter
     private String title;
 
-    @Getter @Setter
+    @Getter
     private String message;
 
-    @Getter @Setter
+    @Getter
     private String targetUserEmail;
 
     @Enumerated(EnumType.STRING)
-    @Getter @Setter
+    @Getter
     private BroadcastEvent.Type type;
 
     @Enumerated(EnumType.STRING)
@@ -62,6 +62,6 @@ public class Notification {
     }
 
     public enum Priority {
-        RED, ORANGE, GREEN
+        HIGH, MEDIUM, LOW
     }
 }

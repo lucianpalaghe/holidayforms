@@ -9,9 +9,7 @@ import ro.pss.holidayforms.domain.repo.NotificationRepository;
 
 import javax.annotation.PostConstruct;
 import java.io.Serializable;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -61,9 +59,8 @@ public class Broadcaster implements Serializable {
 //   }
 
     public static synchronized void broadcast(final BroadcastEvent message) {
-        Instant instant = LocalDateTime.now().toInstant(ZoneOffset.ofTotalSeconds(0));
-        Notification savedNotification = notificationRepository.save(new Notification(instant, null, message.getType().name(),
-                message.getMessage(), message.getTargetUserId(), message.getType(), Notification.Status.NEW, Notification.Priority.RED));
+        Notification savedNotification = notificationRepository.save(new Notification(LocalDateTime.now(), null, message.getType().name(),
+                message.getMessage(), message.getTargetUserId(), message.getType(), Notification.Status.NEW, Notification.Priority.HIGH));
         message.setNotification(savedNotification);
         for (final Map.Entry<UserUITuple, BroadcastListener> entry : listeners.entrySet()) {
             if (entry.getKey().getUser().getEmail().equals(message.getTargetUserId())) {
