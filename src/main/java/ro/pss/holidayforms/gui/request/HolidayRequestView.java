@@ -16,9 +16,9 @@ import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.InputStreamFactory;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import com.vaadin.flow.server.StreamResource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,7 +36,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 
@@ -171,16 +170,13 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
             baos.close();
             doc.close();
             String filename = request.getType() + "_" + request.getRequester().getName().replace(" ", "_") + "_" + request.getDateFrom() + ".pdf";
-            res = new StreamResource(filename,
-                    (InputStreamFactory) () -> new ByteArrayInputStream(baos.toByteArray()));
-
+            res = new StreamResource(filename, (InputStreamFactory) () -> new ByteArrayInputStream(baos.toByteArray()));
         } catch (IOException e) {
             log.debug("Error getting the wrapper for save pdf button", e);
         }
         buttonWrapper = (new FileDownloadWrapper(res));
         buttonWrapper.wrapComponent(btn);
         return buttonWrapper;
-
     }
 
     private void listHolidayRequests() {

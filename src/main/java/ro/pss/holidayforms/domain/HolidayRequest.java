@@ -110,6 +110,6 @@ public class HolidayRequest {
 	}
 
 	public enum Type {
-		CO, CM, CFP, CIC, CP
+		CO, CM, CFP, CIC, CP, CR
 	}
 }

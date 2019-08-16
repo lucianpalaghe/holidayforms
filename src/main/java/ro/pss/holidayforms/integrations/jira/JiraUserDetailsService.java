@@ -16,7 +16,7 @@ import ro.pss.holidayforms.domain.repo.UserRepository;
 import java.io.IOException;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
 @Service
 @Slf4j
@@ -51,7 +51,7 @@ public class JiraUserDetailsService {
 		log.info(String.format("GETting JSON from: %s", getUrl));
 		ResponseEntity<String> response = restTemplate.exchange(getUrl, HttpMethod.GET, httpEntity, String.class);
 		if (response.getStatusCode() != HttpStatus.OK) {
-			log.error(String.format("Response from JIRA is: %d %s", response.getStatusCode(), response.getBody()));
+			log.error(String.format("Response from JIRA is: %s %s", response.getStatusCode(), response.getBody()));
 			return;
 		}
 		log.info(String.format("Response from %s: %s", jiraUsersApiUrl, response));
