@@ -1,12 +1,9 @@
 package ro.pss.holidayforms.gui.notification.broadcast;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
 import ro.pss.holidayforms.domain.notification.Notification;
 
-@NoArgsConstructor
-@Setter @Getter
+@Data
 public class BroadcastEvent {
     private String targetUserId;
     private String userIdentifier;

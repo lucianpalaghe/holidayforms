@@ -18,6 +18,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.page.Viewport;
+import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
@@ -36,6 +37,7 @@ import ro.pss.holidayforms.gui.planning.HolidayPlanningView;
 import ro.pss.holidayforms.gui.request.HolidayRequestView;
 import ro.pss.holidayforms.gui.subtitution.SubstitutionRequestView;
 
+import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -48,29 +50,32 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	private final DefaultNotificationHolder notifications;
 	private final DefaultBadgeHolder substitutionBadge;
 	private final DefaultBadgeHolder approvalBadge;
-	private NotificationRepository notificationRepository;
 
-	public HolidayAppLayout(ApprovalRequestRepository approvalRepository, SubstitutionRequestRepository substitutionRepository,
-							NotificationRepository notificationRepository) {
+	@Autowired
+	private NotificationRepository notificationRepository;
+	@Autowired
+	private ApprovalRequestRepository approvalRepository;
+	@Autowired
+	private SubstitutionRequestRepository substitutionRepository;
+
+	public HolidayAppLayout() {
 		ComponentUtil.setData(UI.getCurrent(), HolidayAppLayout.class, this);
-		this.notificationRepository = notificationRepository;
 		this.notifications = new DefaultNotificationHolder();
 		this.substitutionBadge = new DefaultBadgeHolder();
 		this.approvalBadge = new DefaultBadgeHolder();
 		User user = SecurityUtils.getLoggedInUser();
 		UserMenuItem userItem = new UserMenuItem(user.getName(), user.getEmail(), user.getPhoto());
 		LeftNavigationItem holidayRequestsMenuEntry = new LeftNavigationItem(MessageRetriever.get("myHolidayRequests"), VaadinIcon.AIRPLANE.create(), HolidayRequestView.class);
-		LeftNavigationItem dashboardMenuEntry = new LeftNavigationItem(MessageRetriever.get("dashboard"), VaadinIcon.LINE_CHART.create(), DashboardView.class);
-		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem(MessageRetriever.get("asReplacer"), VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
-		LeftNavigationItem planningMenuEntry = new LeftNavigationItem(MessageRetriever.get("planningTxt"), VaadinIcon.EDIT.create(), HolidayPlanningView.class);
-		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("toApprove"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
+		LeftNavigationItem dashboardMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuDashboard"), VaadinIcon.LINE_CHART.create(), DashboardView.class);
+		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuSubstitutions"), VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
+		LeftNavigationItem planningMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPlanning"), VaadinIcon.EDIT.create(), HolidayPlanningView.class);
+		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuApprovals"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
 		substitutionBadge.bind(substitutionMenuEntry.getBadge());
 		approvalBadge.bind(approvalMenuEntry.getBadge());
-		approvalBadge.setCount(approvalRepository.findAllByApproverEmailAndStatus(user.getEmail(), ApprovalRequest.Status.NEW).size());
-		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(user.getEmail(), SubstitutionRequest.Status.NEW).size());
-		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.5"); // TODO: get version from somewhere
+
+		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.6"); // TODO: get version from somewhere
 		Broadcaster.register(new UserUITuple(user, UI.getCurrent()), this);
-		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("preferencesTxt"), VaadinIcon.COG.create(), clickEvent -> {
+		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("menuPreferences"), VaadinIcon.COG.create(), clickEvent -> {
 		});
 
 		LeftClickableItem languageMenuEntry = new LeftClickableItem(MessageRetriever.get("changeLanguage"), VaadinIcon.FLAG.create(),
@@ -79,8 +84,6 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 					UI.getCurrent().getPage().reload();
 				}
 		);
-
-		loadUserNotifications();
 
 		init(AppLayoutBuilder
 				.get(Behaviour.LEFT_RESPONSIVE)
@@ -104,6 +107,14 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 						.addToSection(versionItem, FOOTER)
 						.build())
 				.build());
+	}
+
+	@PostConstruct
+	void postConstruct() {
+		User user = SecurityUtils.getLoggedInUser();
+		approvalBadge.setCount(approvalRepository.findAllByApproverEmailAndStatus(user.getEmail(), ApprovalRequest.Status.NEW).size());
+		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(user.getEmail(), SubstitutionRequest.Status.NEW).size());
+		loadUserNotifications();
 	}
 
 	private void loadUserNotifications() {

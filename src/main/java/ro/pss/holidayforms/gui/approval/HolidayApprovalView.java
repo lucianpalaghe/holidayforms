@@ -16,6 +16,7 @@ import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
@@ -27,27 +28,30 @@ import ro.pss.holidayforms.gui.notification.NotificationService;
 import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
 import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 
+import javax.annotation.PostConstruct;
+
 @SpringComponent
 @UIScope
 @Route(value = "approvals", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-buttons.css")
 public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
 	private final Grid<ApprovalRequest> grid;
-	private final ApprovalRequestRepository requestRepository;
 	private final VerticalLayout container;
 	private HolidayConfirmationDialog holidayConfDialog;
-	private final NotificationService notificationService;
 
-	public HolidayApprovalView(ApprovalRequestRepository repo, NotificationService notificationService) {
-		this.requestRepository = repo;
-		this.notificationService = notificationService;
+	@Autowired
+	private NotificationService notificationService;
+	@Autowired
+	private ApprovalRequestRepository approvalRepo;
+
+	public HolidayApprovalView() {
 		this.grid = new Grid<>();
-		grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
-		grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(1);
-		grid.addColumn(r -> r.getRequest().getSubstitute()).setHeader(MessageRetriever.get("appViewGridHeaderSubstitute")).setFlexGrow(1);
-		grid.addColumn(r -> r.getRequest().getType()).setHeader(MessageRetriever.get("gridColType")).setFlexGrow(1);
-		grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart")).setFlexGrow(1);
-		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
+		grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho"));
+		grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(0);//.setWidth("auto");
+		grid.addColumn(r -> r.getRequest().getSubstitute()).setHeader(MessageRetriever.get("appViewGridHeaderSubstitute"));
+		grid.addColumn(r -> r.getRequest().getType()).setHeader(MessageRetriever.get("gridColType")).setFlexGrow(0);//.setWidth("auto");
+		grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart"));
+		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(3);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 
 		container = new VerticalLayout();
@@ -60,11 +64,15 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		setAlignItems(Alignment.CENTER);
 		add(container);
 		setHeightFull();
+	}
+
+	@PostConstruct
+	private void postConstruct() {
 		listApprovalRequests(SecurityUtils.getLoggedInUser().getEmail());
 	}
 
 	private void listApprovalRequests(String userEmail) {
-		grid.setItems(requestRepository.findAllByApproverEmail(userEmail));
+		grid.setItems(approvalRepo.findAllByApproverEmail(userEmail));
 	}
 
 	private HorizontalLayout getActionButtons(ApprovalRequest request) {
@@ -110,7 +118,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 
 	private void confirmHolidayApproval(ApprovalRequest request) {
 		request.approve();
-		requestRepository.save(request);
+		approvalRepo.save(request);
 		notificationService.approvalAccepted(request);
 		grid.getDataProvider().refreshItem(request);
 		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseApprovalBadgeCount();
@@ -118,7 +126,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 
 	private void rejectHolidayApproval(ApprovalRequest request) {
 		request.deny();
-		requestRepository.save(request);
+		approvalRepo.save(request);
 		notificationService.approvalDenied(request);
 		grid.getDataProvider().refreshItem(request);
 		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseApprovalBadgeCount();

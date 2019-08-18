@@ -82,7 +82,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 			 */
 			//repo.save(savedPlanning);
 
-			Notification.show(MessageRetriever.get("planningSaved"),3000, Notification.Position.TOP_CENTER);
+			Notification.show(MessageRetriever.get("planningSaved"), 3000, Notification.Position.TOP_CENTER);
 		});
 		btnSave.getStyle().set("margin-left", "auto");
 		VerticalLayout saveLayout = new VerticalLayout(grid, btnSave);
@@ -94,46 +94,24 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 			HolidayPlanningEntry planningEntry = new HolidayPlanningEntry(r.getDateFrom(), r.getDateTo());
 			planningEntry.setPlanning(holidayPlanning);
 			HolidayPlanningEntry.EntryValidityStatus status = holidayPlanning.addPlanningEntry(planningEntry);
-			if(status.equals(HolidayPlanningEntry.EntryValidityStatus.VALID)) {
+			if (status.equals(HolidayPlanningEntry.EntryValidityStatus.VALID)) {
 				entries.add(planningEntry);
 				grid.getDataProvider().refreshAll();
 				refreshRemainingDaysHeader();
-			}else {
-				Notification.show(getMessageFromEntryStatus(status),3000, Notification.Position.TOP_CENTER);
+			} else {
+				Notification.show(MessageRetriever.get("planningValidity_" + status), 3000, Notification.Position.TOP_CENTER);
 			}
 			rangePicker.setValue(null);
 		});
-
-//		setJustifyContentMode(JustifyContentMode.CENTER);
-//		setAlignItems(Alignment.CENTER);
 		add(container);
-//		setHeightFull();
-	}
-
-	private String getMessageFromEntryStatus(HolidayPlanningEntry.EntryValidityStatus status) {
-		String message;
-		switch(status) {
-			case NO_WORKING_DAYS:
-				message = MessageRetriever.get("noWorkingDay");
-				break;
-			case RANGE_CONFLICT:
-				message = MessageRetriever.get("rangeConflict");
-				break;
-			case EXCEEDED_DAYS:
-				message = String.format(MessageRetriever.get("exceededDays"), holidayPlanning.getEmployee().getAvailableVacationDays());
-				break;
-			default:
-				message = MessageRetriever.get("notImplementedMsg");
-		}
-		return message;
 	}
 
 	private void refreshRemainingDaysHeader() {
 		int usedDays = entries.stream().mapToInt(HolidayPlanningEntry::getNumberOfDays).sum();
 		int remainingDays = holidayPlanning.getEmployee().getAvailableVacationDays() - usedDays;
-		if(remainingDays > 0) {
+		if (remainingDays > 0) {
 			remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeader"), remainingDays));
-		}else {
+		} else {
 			remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeaderNoDays"), remainingDays));
 		}
 	}
@@ -181,7 +159,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	private boolean hasChanges() {
 		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
 		Optional<HolidayPlanning> original = repository.findByEmployeeEmail(user.getEmail());
-		if(original.isPresent()) {
+		if (original.isPresent()) {
 			HolidayPlanning holidayPlanning = original.get();
 			return !holidayPlanning.getEntries().equals(entries);
 		} else {

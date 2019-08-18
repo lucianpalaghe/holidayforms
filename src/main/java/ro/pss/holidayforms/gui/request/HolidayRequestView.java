@@ -193,7 +193,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(user.getEmail());
 		if (requests.isEmpty()) {
 			grid.setVisible(false);
-			heading.setText(MessageRetriever.get("noHolidayRequest"));
+			heading.setText(MessageRetriever.get("noHolidayRequests"));
 			heading.setVisible(true);
 		} else {
 			heading.setVisible(false);

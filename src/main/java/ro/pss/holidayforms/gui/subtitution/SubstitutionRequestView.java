@@ -16,6 +16,7 @@ import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.User;
@@ -37,11 +38,12 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	private final SubstitutionRequestRepository requestRepository;
 	private final VerticalLayout container;
 	private HolidayConfirmationDialog holidayConfDialog;
-	private final NotificationService notificationService;
 
-	public SubstitutionRequestView(SubstitutionRequestRepository repo, NotificationService notificationService) {
+	@Autowired
+	private NotificationService notificationService;
+
+	public SubstitutionRequestView(SubstitutionRequestRepository repo) {
 		this.requestRepository = repo;
-		this.notificationService = notificationService;
 		this.grid = new Grid<>();
 		grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
 		grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(1);

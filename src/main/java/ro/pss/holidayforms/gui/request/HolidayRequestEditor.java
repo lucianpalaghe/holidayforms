@@ -37,7 +37,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final HolidayRequestRepository holidayRepo;
 	private final UserRepository userRepo;
 
-	private final ComboBox<User> replacer = new ComboBox<>(MessageRetriever.get("replacerName"));
+	private final ComboBox<User> substitute = new ComboBox<>(MessageRetriever.get("substituteName"));
 	private final DateRangePicker dateRange = new DateRangePicker();
 	private final ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
 	private final DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
@@ -49,13 +49,14 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final List<String> approverIds = Arrays.asList("lucian.palaghe", "claudia.gican", "luminita.petre");
 	private HolidayRequest holidayRequest;
 	private ChangeHandler changeHandler;
-	private final NotificationService notificationService;
 
 	@Autowired
-	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository, NotificationService notificationService) {
+	private NotificationService notificationService;
+
+	@Autowired
+	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository) {
 		this.holidayRepo = holidayRepository;
 		this.userRepo = userRepository;
-		this.notificationService = notificationService;
 		creationDate.setLocale(MessageRetriever.getLocale());
 		DatePicker.DatePickerI18n dp18n = new DatePicker.DatePickerI18n();
 		dp18n.setCalendar(MessageRetriever.get("calendarName"));
@@ -72,8 +73,8 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		dateRange.setForceNarrow(true);
 		type.setItems(HolidayRequest.Type.values());
 		type.setItemLabelGenerator(i -> MessageRetriever.get("holidayType_" + i.toString()));
-		replacer.setItems(userRepo.findAll());
-		replacer.setWidthFull();
+		substitute.setItems(userRepo.findAll());
+		substitute.setWidthFull();
 		type.setWidthFull();
 		creationDate.setWidthFull();
 		creationDate.setLocale(new Locale("ro", "RO"));
@@ -88,7 +89,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		setJustifyContentMode(JustifyContentMode.CENTER);
 		setAlignItems(Alignment.CENTER);
-		add(replacer, dateRange, type, creationDate, actions);
+		add(substitute, dateRange, type, creationDate, actions);
 		addKeyPressListener(Key.ENTER, e -> save());
 		addValidations();
 		setSpacing(true);
@@ -98,7 +99,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private void addValidations() {
 		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
 
-		binder.forField(replacer).asRequired(MessageRetriever.get("validationReplacer"))
+		binder.forField(substitute).asRequired(MessageRetriever.get("validationSubstitute"))
 				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
 		List<HolidayRequest> allByRequesterEmail = holidayRepo.findAllByRequesterEmail(user.getEmail());
