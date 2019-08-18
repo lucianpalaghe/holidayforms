@@ -110,7 +110,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		List<Notification> userNotifications = notificationRepository.findAllByTargetUserEmailOrderByStatusAscCreationDateTimeDesc(SecurityUtils.getLoggedInUser().getEmail());
 		for (Notification notification : userNotifications) {
 			String title = MessageRetriever.get("notification_" + notification.getType());
-			String description = getDescriptionFromMessageEventType(notification.getType(), notification.getUserIdentifier());
+			String description = String.format(MessageRetriever.get("notificationBody_" + notification.getType()), notification.getUserIdentifier());
 			HolidayNotification holidayNotification = new HolidayNotification(title, description, notification);
 			holidayNotification.setNotification(notification);
 			holidayNotification.setCreationTime(notification.getCreationDateTime());
@@ -128,7 +128,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		});
 		notifications.addClickListener(defaultNotification -> {
 			HolidayNotification holidayNotification = (HolidayNotification) defaultNotification;
-			Notification notification = notificationRepository.findById(holidayNotification.getNotification().getId()).get();
+			Notification notification = notificationRepository.findById(holidayNotification.getNotification().getId()).orElseThrow();
 			if (notification.getStatus().equals(Notification.Status.READ)) {
 				return;
 			}
@@ -142,8 +142,8 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	@Override
 	public void receiveBroadcast(UI ui, BroadcastEvent event) {
 		ui.access(() -> {
-			String title = MessageRetriever.get("notification_" + event.getType());
-			String description = getDescriptionFromMessageEventType(event.getType(), event.getUserIdentifier());
+			String title = MessageRetriever.get("notificationTitle_" + event.getType());
+			String description = String.format(MessageRetriever.get("notificationBody_" + event.getType()), event.getUserIdentifier());
 			HolidayNotification holidayNotification = new HolidayNotification(title, description, event.getNotification());
 			notifications.addNotification(holidayNotification);
 
@@ -191,46 +191,5 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		super.onAttach(attachEvent);
 		ComponentUtil.setData(UI.getCurrent(), HolidayAppLayout.class, this);
 	}
-
-	private String getDescriptionFromMessageEventType(BroadcastEvent.Type type, String userIdentifier) {
-		String key;
-		switch (type) {
-			case APPROVER_ACCEPTED:
-				key = "notificationApproverAccepted";
-				break;
-			case APPROVER_DENIED:
-				key = "notificationApproverDenied";
-				break;
-			case SUBSTITUTE_ACCEPTED:
-				key = "notificationSubstituteAccepted";
-				break;
-			case SUBSTITUTE_DENIED:
-				key = "notificationSubstituteDenied";
-				break;
-			case SUBSTITUTE_CHANGED:
-				key = "notificationSubstituteChangedMessage";
-				break;
-			case APPROVE_CHANGED:
-				key = "notificationApproveChangedMessage";
-				break;
-			case SUBSTITUTE_DELETED:
-				key = "notificationSubstituteDeletedMessage" ;
-				break;
-			case APPROVE_DELETED:
-				key = "notificationApproveDeletedMessage";
-				break;
-			case SUBSTITUTE_ADDED:
-				key = "notificationSubstituteMessage";
-				break;
-			case APPROVE_ADDED:
-				key = "notificationApproveMessage";
-				break;
-			default:
-				key = "notImplementedMsg";
-
-		}
-		return String.format(MessageRetriever.get(key), userIdentifier);
-	}
-
 }
 

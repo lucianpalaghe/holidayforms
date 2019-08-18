@@ -64,7 +64,7 @@ public class Broadcaster implements Serializable {
 
     static synchronized void broadcast(final BroadcastEvent message) {
         Notification savedNotification = notificationRepository.save(new Notification(LocalDateTime.now(), null, message.getType().name(),
-                message.getMessage(), message.getTargetUserId(), SecurityUtils.getLoggedInUser().getName(), message.getType(), Notification.Status.NEW, Notification.Priority.HIGH));
+               message.getTargetUserId(), SecurityUtils.getLoggedInUser().getName(), message.getType(), Notification.Status.NEW, Notification.Priority.HIGH));
         message.setNotification(savedNotification);
         for (final Map.Entry<UserUITuple, BroadcastListener> entry : listeners.entrySet()) {
             if (entry.getKey().getUser().getEmail().equals(message.getTargetUserId())) {

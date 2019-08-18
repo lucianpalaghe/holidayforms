@@ -11,14 +11,12 @@ public class BroadcastEvent {
     private String targetUserId;
     private String userIdentifier;
     private Type type;
-    private String message;
     private Notification notification;   
 
-    public BroadcastEvent(String targetUserId, Type type, String message, String userIdentifier) {
+    public BroadcastEvent(String targetUserId, Type type, String userIdentifier) {
         this.targetUserId = targetUserId;
         this.userIdentifier = userIdentifier;
         this.type = type;
-        this.message = message;
     }
 
     public enum Type {

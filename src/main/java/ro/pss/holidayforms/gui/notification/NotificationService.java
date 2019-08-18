@@ -29,8 +29,7 @@ public class NotificationService {
 		Broadcaster.broadcast(
 				new BroadcastEvent(holidayRequest.getSubstitute().getEmail(),
 						substituteAdded,
-						String.format(notificationSubstituteMessage,
-								holidayRequest.getRequester().getName())));
+						holidayRequest.getRequester().getName()));
 	}
 
 	private void notifyApprovers(HolidayRequest holidayRequest, BroadcastEvent.Type approveAdded, String notificationApproveMessage) {
@@ -38,31 +37,31 @@ public class NotificationService {
 			Broadcaster.broadcast(
 					new BroadcastEvent(approvalRequest.getApprover().getEmail(),
 							approveAdded,
-							String.format(notificationApproveMessage, holidayRequest.getRequester().getName())));
+							holidayRequest.getRequester().getName()));
 		}
 	}
 
 	public void approvalAccepted(ApprovalRequest approvalRequest) {
 		Broadcaster.broadcast(new BroadcastEvent(approvalRequest.getRequest().getRequester().getEmail(),
 				BroadcastEvent.Type.APPROVER_ACCEPTED,
-				String.format(MessageRetriever.get("notificationApproverAccepted"), SecurityUtils.getLoggedInUser().getName())));
+				SecurityUtils.getLoggedInUser().getName()));
 	}
 
 	public void approvalDenied(ApprovalRequest approvalRequest) {
 		Broadcaster.broadcast(new BroadcastEvent(approvalRequest.getRequest().getRequester().getEmail(),
 				BroadcastEvent.Type.APPROVER_DENIED,
-				String.format(MessageRetriever.get("notificationApproverDenied"), SecurityUtils.getLoggedInUser().getName())));
+				SecurityUtils.getLoggedInUser().getName()));
 	}
 
 	public void substitutionAccepted(SubstitutionRequest substitutionRequest) {
 		Broadcaster.broadcast(new BroadcastEvent(substitutionRequest.getRequest().getRequester().getEmail(),
 				BroadcastEvent.Type.SUBSTITUTE_ACCEPTED,
-				String.format(MessageRetriever.get("notificationSubstituteAccepted"), SecurityUtils.getLoggedInUser().getName())));
+				SecurityUtils.getLoggedInUser().getName()));
 	}
 
 	public void substitutionDenied(SubstitutionRequest substitutionRequest) {
 		Broadcaster.broadcast(new BroadcastEvent(substitutionRequest.getRequest().getRequester().getEmail(),
 				BroadcastEvent.Type.SUBSTITUTE_DENIED,
-				String.format(MessageRetriever.get("notificationSubstituteDenied"), SecurityUtils.getLoggedInUser().getName())));
+				SecurityUtils.getLoggedInUser().getName()));
 	}
 }
