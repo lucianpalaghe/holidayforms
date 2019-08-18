@@ -28,10 +28,10 @@ import ro.pss.holidayforms.domain.repo.NotificationRepository;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
-import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
-import ro.pss.holidayforms.gui.notification.Broadcaster;
-import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 import ro.pss.holidayforms.gui.dashboard.DashboardView;
+import ro.pss.holidayforms.gui.notification.Broadcaster;
+import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
+import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 import ro.pss.holidayforms.gui.planning.HolidayPlanningView;
 import ro.pss.holidayforms.gui.request.HolidayRequestView;
 import ro.pss.holidayforms.gui.subtitution.SubstitutionRequestView;
@@ -109,7 +109,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	private void loadUserNotifications() {
 		List<Notification> userNotifications = notificationRepository.findAllByTargetUserEmailOrderByStatusAscCreationDateTimeDesc(SecurityUtils.getLoggedInUser().getEmail());
 		for (Notification notification : userNotifications) {
-			String title = MessageRetriever.get("notification_" + notification.getType());
+			String title = MessageRetriever.get("notificationTitle_" + notification.getType());
 			String description = String.format(MessageRetriever.get("notificationBody_" + notification.getType()), notification.getUserIdentifier());
 			HolidayNotification holidayNotification = new HolidayNotification(title, description, notification);
 			holidayNotification.setNotification(notification);
