@@ -1,6 +1,4 @@
-package ro.pss.holidayforms.gui.broadcast;
-
-import com.vaadin.flow.component.UI;
+package ro.pss.holidayforms.gui.notification.broadcast;
 
 import java.io.Serializable;
 import java.util.HashMap;

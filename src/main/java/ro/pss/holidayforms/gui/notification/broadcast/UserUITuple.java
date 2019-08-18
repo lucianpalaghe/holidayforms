@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.gui.broadcast;
+package ro.pss.holidayforms.gui.notification.broadcast;
 
 import com.vaadin.flow.component.UI;
 import lombok.AllArgsConstructor;

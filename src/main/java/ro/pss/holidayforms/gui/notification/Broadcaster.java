@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.gui.broadcast;
+package ro.pss.holidayforms.gui.notification;
 
 import com.vaadin.flow.component.UI;
 import lombok.Getter;
@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ro.pss.holidayforms.domain.notification.Notification;
 import ro.pss.holidayforms.domain.repo.NotificationRepository;
+import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
+import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 
 import javax.annotation.PostConstruct;
 import java.io.Serializable;
@@ -28,9 +30,10 @@ public class Broadcaster implements Serializable {
         this.notificationRepository = this.notificationRepositoryAutowired;
     }
 
-    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
     @Getter
     private static final Map<UserUITuple, BroadcastListener> listeners = new ConcurrentHashMap<>();
+    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
+
     public static synchronized void register(UserUITuple uit, BroadcastListener listener) {
         if(listeners.containsValue(listener)) {
             return;
@@ -46,7 +49,7 @@ public class Broadcaster implements Serializable {
         }
    }
 
-   public static synchronized void unregisterAllUsers() {
+   static synchronized void unregisterAllUsers() {
         listeners.clear();
    }
 
@@ -58,7 +61,7 @@ public class Broadcaster implements Serializable {
 //       }
 //   }
 
-    public static synchronized void broadcast(final BroadcastEvent message) {
+    static synchronized void broadcast(final BroadcastEvent message) {
         Notification savedNotification = notificationRepository.save(new Notification(LocalDateTime.now(), null, message.getType().name(),
                 message.getMessage(), message.getTargetUserId(), message.getType(), Notification.Status.NEW, Notification.Priority.HIGH));
         message.setNotification(savedNotification);

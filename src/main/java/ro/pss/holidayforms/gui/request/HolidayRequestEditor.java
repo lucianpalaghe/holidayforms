@@ -21,11 +21,9 @@ import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
-import ro.pss.holidayforms.gui.broadcast.BroadcastEvent;
-import ro.pss.holidayforms.gui.broadcast.Broadcaster;
 import ro.pss.holidayforms.gui.components.daterange.DateRange;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
-import ro.pss.holidayforms.integrations.tempo.TempoService;
+import ro.pss.holidayforms.gui.notification.NotificationService;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,218 +34,173 @@ import static java.util.stream.Collectors.*;
 @SpringComponent
 @UIScope
 public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier {
-    private final HolidayRequestRepository holidayRepo;
-    private final UserRepository userRepo;
+	private final HolidayRequestRepository holidayRepo;
+	private final UserRepository userRepo;
 
-    private final ComboBox<User> replacer = new ComboBox<>(MessageRetriever.get("replacerName"));
-    private final DateRangePicker dateRange = new DateRangePicker();
-    private final ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
-    private final DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
-    private final Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.CHECK.create());
-    private final Button btnCancel = new Button(MessageRetriever.get("btnCancelLbl"));
-    private final Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
-    private final HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
-    private final Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
-    private final List<String> approverIds = Arrays.asList("lucian.palaghe", "claudia.gican", "luminita.petre");
-    private HolidayRequest holidayRequest;
-    private ChangeHandler changeHandler;
-    private final TempoService tempo;
+	private final ComboBox<User> replacer = new ComboBox<>(MessageRetriever.get("replacerName"));
+	private final DateRangePicker dateRange = new DateRangePicker();
+	private final ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
+	private final DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
+	private final Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.CHECK.create());
+	private final Button btnCancel = new Button(MessageRetriever.get("btnCancelLbl"));
+	private final Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
+	private final HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
+	private final Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
+	private final List<String> approverIds = Arrays.asList("lucian.palaghe", "claudia.gican", "luminita.petre");
+	private HolidayRequest holidayRequest;
+	private ChangeHandler changeHandler;
+	private final NotificationService notificationService;
 
-    @Autowired
-    public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository, TempoService tempo) {
-        this.holidayRepo = holidayRepository;
-        this.userRepo = userRepository;
-        this.tempo = tempo;
-        creationDate.setLocale(MessageRetriever.getLocale());
-        DatePicker.DatePickerI18n dp18n = new DatePicker.DatePickerI18n();
-        dp18n.setCalendar(MessageRetriever.get("calendarName"));
-        dp18n.setFirstDayOfWeek(0);
-        dp18n.setCancel(MessageRetriever.get("cancelName"));
-        dp18n.setClear(MessageRetriever.get("clearName"));
-        dp18n.setToday(MessageRetriever.get("todayName"));
-        dp18n.setWeek(MessageRetriever.get("weekName"));
-        dp18n.setWeekdays(Arrays.asList(MessageRetriever.get("daysNamesLong").split(",")));
-        dp18n.setWeekdaysShort(Arrays.asList(MessageRetriever.get("daysNamesShort").split(",")));
-        dp18n.setMonthNames(Arrays.asList(MessageRetriever.get("monthsNamesLong").split(",")));
-        creationDate.setI18n(dp18n);
+	@Autowired
+	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository, NotificationService notificationService) {
+		this.holidayRepo = holidayRepository;
+		this.userRepo = userRepository;
+		this.notificationService = notificationService;
+		creationDate.setLocale(MessageRetriever.getLocale());
+		DatePicker.DatePickerI18n dp18n = new DatePicker.DatePickerI18n();
+		dp18n.setCalendar(MessageRetriever.get("calendarName"));
+		dp18n.setFirstDayOfWeek(0);
+		dp18n.setCancel(MessageRetriever.get("cancelName"));
+		dp18n.setClear(MessageRetriever.get("clearName"));
+		dp18n.setToday(MessageRetriever.get("todayName"));
+		dp18n.setWeek(MessageRetriever.get("weekName"));
+		dp18n.setWeekdays(Arrays.asList(MessageRetriever.get("daysNamesLong").split(",")));
+		dp18n.setWeekdaysShort(Arrays.asList(MessageRetriever.get("daysNamesShort").split(",")));
+		dp18n.setMonthNames(Arrays.asList(MessageRetriever.get("monthsNamesLong").split(",")));
+		creationDate.setI18n(dp18n);
 
-        dateRange.setForceNarrow(true);
-        type.setItems(HolidayRequest.Type.values());
-        type.setItemLabelGenerator(i -> MessageRetriever.get("holidayType_" + i.toString()));
-        replacer.setItems(userRepo.findAll());
-        replacer.setWidthFull();
-        type.setWidthFull();
-        creationDate.setWidthFull();
-        creationDate.setLocale(new Locale("ro", "RO"));
+		dateRange.setForceNarrow(true);
+		type.setItems(HolidayRequest.Type.values());
+		type.setItemLabelGenerator(i -> MessageRetriever.get("holidayType_" + i.toString()));
+		replacer.setItems(userRepo.findAll());
+		replacer.setWidthFull();
+		type.setWidthFull();
+		creationDate.setWidthFull();
+		creationDate.setLocale(new Locale("ro", "RO"));
 
-        binder.bindInstanceFields(this);
+		binder.bindInstanceFields(this);
 
-        btnSave.getElement().getThemeList().add("primary");
-        btnDelete.getElement().getThemeList().add("error");
-        btnSave.addClickListener(e -> save());
-        btnDelete.addClickListener(e -> delete());
-        btnCancel.addClickListener(e -> cancelEdit());
+		btnSave.getElement().getThemeList().add("primary");
+		btnDelete.getElement().getThemeList().add("error");
+		btnSave.addClickListener(e -> save());
+		btnDelete.addClickListener(e -> delete());
+		btnCancel.addClickListener(e -> cancelEdit());
 
-        setJustifyContentMode(JustifyContentMode.CENTER);
-        setAlignItems(Alignment.CENTER);
-        add(replacer, dateRange, type, creationDate, actions);
-        addKeyPressListener(Key.ENTER, e -> save());
-        addValidations();
-        setSpacing(true);
-        setVisible(false);
-    }
+		setJustifyContentMode(JustifyContentMode.CENTER);
+		setAlignItems(Alignment.CENTER);
+		add(replacer, dateRange, type, creationDate, actions);
+		addKeyPressListener(Key.ENTER, e -> save());
+		addValidations();
+		setSpacing(true);
+		setVisible(false);
+	}
 
-    private void addValidations() {
-        User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+	private void addValidations() {
+		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
 
-        binder.forField(replacer).asRequired(MessageRetriever.get("validationReplacer"))
-                .bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
+		binder.forField(replacer).asRequired(MessageRetriever.get("validationReplacer"))
+				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
-        List<HolidayRequest> allByRequesterEmail = holidayRepo.findAllByRequesterEmail(user.getEmail());
+		List<HolidayRequest> allByRequesterEmail = holidayRepo.findAllByRequesterEmail(user.getEmail());
 
-        Binder.Binding<HolidayRequest, DateRange> holidayRequestDateRangeBinding = binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
-                .withValidator(DateRange::hasWorkingDays, MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
-                .withValidator(hasEnoughHolidayDays(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft"))
-                .withValidator(isPeriodNotOverlapping(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodOverlapping"))
-                .bind(HolidayRequest::getRange, HolidayRequest::setRange);
+		Binder.Binding<HolidayRequest, DateRange> holidayRequestDateRangeBinding = binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
+				.withValidator(DateRange::hasWorkingDays, MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
+				.withValidator(hasEnoughHolidayDays(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft"))
+				.withValidator(isPeriodNotOverlapping(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodOverlapping"))
+				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
 
-        type.addValueChangeListener(event -> holidayRequestDateRangeBinding.validate());
+		type.addValueChangeListener(event -> holidayRequestDateRangeBinding.validate());
 
-        binder.forField(type).asRequired(MessageRetriever.get("validationHolidayType"))
-                .bind(HolidayRequest::getType, HolidayRequest::setType);
+		binder.forField(type).asRequired(MessageRetriever.get("validationHolidayType"))
+				.bind(HolidayRequest::getType, HolidayRequest::setType);
 
-        binder.forField(creationDate).asRequired(MessageRetriever.get("validationDate"))
-                .bind(HolidayRequest::getCreationDate, HolidayRequest::setCreationDate);
-    }
+		binder.forField(creationDate).asRequired(MessageRetriever.get("validationDate"))
+				.bind(HolidayRequest::getCreationDate, HolidayRequest::setCreationDate);
+	}
 
-    private SerializablePredicate<? super DateRange> isPeriodNotOverlapping(List<HolidayRequest> requests) {
-        return range -> {
-            List<HolidayRequest> notOverlapping = requests.stream()
-                    .filter(e -> !range.isOverlapping(e.getDateFrom(), e.getDateTo()))
-                    .collect(toList());
-            return requests.size() == notOverlapping.size();
-        };
-    }
+	private SerializablePredicate<? super DateRange> isPeriodNotOverlapping(List<HolidayRequest> requests) {
+		return range -> {
+			List<HolidayRequest> notOverlapping = requests.stream()
+					.filter(e -> !range.isOverlapping(e.getDateFrom(), e.getDateTo()))
+					.collect(toList());
+			return requests.size() == notOverlapping.size();
+		};
+	}
 
-    private SerializablePredicate<DateRange> hasEnoughHolidayDays(List<HolidayRequest> requests) {
-        return range -> {
-            User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-            int sumDaysTaken = requests.stream()
-                    .filter(HolidayRequest::isCO)
-                    .mapToInt(HolidayRequest::getNumberOfDays)
-                    .sum();
-            int days = user.getAvailableVacationDays() - sumDaysTaken;
-            if (type.getValue() != null && type.getValue().equals(HolidayRequest.Type.CO)) {
-                return days - range.getNumberOfDays() >= 0;
-            }
-            return true;
-        };
-    }
-
-    private void delete() {
-        holidayRepo.delete(holidayRequest);
-		broadcastDeletedRequest(holidayRequest);
-        changeHandler.onChange();
-    }
-
-    private void save() {
-        if (binder.validate().isOk()) {
-            User requester = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-
-            if (holidayRequest.getApprovalRequests().size() > 0) { // if this request is edited, remove all previous approvals
-                holidayRequest.getApprovalRequests().clear();
-            }
-
-            List<ApprovalRequest> approvalRequests = approverIds.stream().map(a -> { // TODO: refactor
-                User approver = userRepo.getOne(a);
-                return new ApprovalRequest(approver, ApprovalRequest.Status.NEW);
-            }).collect(toList());
-            approvalRequests.forEach(a -> holidayRequest.addApproval(a));
-
-            holidayRequest.setRequester(requester);
-            boolean isHolidayRequestNew = holidayRequest.getId() == null;
-            holidayRequest = holidayRepo.save(holidayRequest);
-            changeHandler.onChange();
-//			tempo.postHolidayWorklog(holidayRequest);
-			if (isHolidayRequestNew) {
-				broadcastNewRequest(holidayRequest);
-			}else {
-				broadcastChangedRequest(holidayRequest);
+	private SerializablePredicate<DateRange> hasEnoughHolidayDays(List<HolidayRequest> requests) {
+		return range -> {
+			User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+			int sumDaysTaken = requests.stream()
+					.filter(HolidayRequest::isCO)
+					.mapToInt(HolidayRequest::getNumberOfDays)
+					.sum();
+			int days = user.getAvailableVacationDays() - sumDaysTaken;
+			if (type.getValue() != null && type.getValue().equals(HolidayRequest.Type.CO)) {
+				return days - range.getNumberOfDays() >= 0;
 			}
-        }
-    }
+			return true;
+		};
+	}
 
-    private void broadcastChangedRequest(HolidayRequest holidayRequest) {
-    	// broadcast event to the substitute
-		Broadcaster.broadcast(
-				new BroadcastEvent(holidayRequest.getSubstitute().getEmail(),
-						BroadcastEvent.Type.SUBSTITUTE_CHANGED,
-						String.format(MessageRetriever.get("notificationSubstituteChangedMessage"), holidayRequest.getRequester().getName())));
-		// broadcast event for each approver
-		for (ApprovalRequest approvalRequest : holidayRequest.getApprovalRequests()) {
-			Broadcaster.broadcast(
-					new BroadcastEvent(approvalRequest.getApprover().getEmail(),
-							BroadcastEvent.Type.APPROVE_CHANGED,
-							String.format(MessageRetriever.get("notificationApproveChangedMessage"), holidayRequest.getRequester().getName())));
+	private void delete() {
+		holidayRepo.delete(holidayRequest);
+		notificationService.requestDeleted(holidayRequest);
+		changeHandler.onChange();
+	}
+
+	private void save() {
+		if (binder.validate().isOk()) {
+			User requester = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+			holidayRequest.setRequester(requester);
+
+			if (holidayRequest.getApprovalRequests().size() > 0) { // if this request is edited, remove all previous approvals
+				holidayRequest.getApprovalRequests().clear();
+			}
+
+			List<ApprovalRequest> approvalRequests = approverIds.stream().map(a -> { // TODO: refactor
+				User approver = userRepo.getOne(a);
+				return new ApprovalRequest(approver, ApprovalRequest.Status.NEW);
+			}).collect(toList());
+			approvalRequests.forEach(a -> holidayRequest.addApproval(a));
+
+			changeHandler.onChange();
+			boolean isNewRequest = holidayRequest.getId() == null;
+			if (isNewRequest) {
+				notificationService.requestCreated(holidayRequest);
+			} else {
+                notificationService.requestEdited(holidayRequest);
+			}
+
+			holidayRepo.save(holidayRequest);
 		}
 	}
 
-	private void broadcastDeletedRequest(HolidayRequest holidayRequest) {
-		// broadcast event to the substitute
-		Broadcaster.broadcast(
-				new BroadcastEvent(holidayRequest.getSubstitute().getEmail(),
-						BroadcastEvent.Type.SUBSTITUTE_DELETED,
-						String.format(MessageRetriever.get("notificationSubstituteDeletedMessage"), holidayRequest.getRequester().getName())));
-		// broadcast event for each approver
-		for (ApprovalRequest approvalRequest : holidayRequest.getApprovalRequests()) {
-			Broadcaster.broadcast(
-					new BroadcastEvent(approvalRequest.getApprover().getEmail(),
-							BroadcastEvent.Type.APPROVE_DELETED,
-							String.format(MessageRetriever.get("notificationApproveDeletedMessage"), holidayRequest.getRequester().getName())));
+	final void editHolidayRequest(HolidayRequest c) {
+		if (c == null) {
+			setVisible(false);
+			return;
 		}
+		final boolean persisted = c.getId() != null;
+		if (persisted) {
+			holidayRequest = holidayRepo.findById(c.getId()).orElseThrow();
+		} else {
+			holidayRequest = c;
+		}
+
+		btnDelete.setVisible(persisted);
+		binder.setBean(holidayRequest);
+		setVisible(true);
 	}
 
-    private void broadcastNewRequest(HolidayRequest holidayRequest) {
-    	// broadcast event to the substitute
-        Broadcaster.broadcast(
-                new BroadcastEvent(holidayRequest.getSubstitute().getEmail(),
-                        BroadcastEvent.Type.SUBSTITUTE_ADDED,
-                        String.format(MessageRetriever.get("notificationSubstituteMessage"), holidayRequest.getRequester().getName())));
-        // broadcast event for each approver
-        for (ApprovalRequest approvalRequest : holidayRequest.getApprovalRequests()) {
-            Broadcaster.broadcast(
-                    new BroadcastEvent(approvalRequest.getApprover().getEmail(),
-                            BroadcastEvent.Type.APPROVE_ADDED,
-                            String.format(MessageRetriever.get("notificationApproveMessage"), holidayRequest.getRequester().getName())));
-        }
-    }
+	private void cancelEdit() {
+		changeHandler.onChange();
+	}
 
-    final void editHolidayRequest(HolidayRequest c) {
-        if (c == null) {
-            setVisible(false);
-            return;
-        }
-        final boolean persisted = c.getId() != null;
-        if (persisted) {
-            holidayRequest = holidayRepo.findById(c.getId()).get();
-        } else {
-            holidayRequest = c;
-        }
+	void setChangeHandler(ChangeHandler h) {
+		changeHandler = h;
+	}
 
-        btnDelete.setVisible(persisted);
-        binder.setBean(holidayRequest);
-        setVisible(true);
-    }
-
-    private void cancelEdit() {
-        changeHandler.onChange();
-    }
-
-    void setChangeHandler(ChangeHandler h) {
-        changeHandler = h;
-    }
-
-    public interface ChangeHandler {
-        void onChange();
-    }
+	public interface ChangeHandler {
+		void onChange();
+	}
 }

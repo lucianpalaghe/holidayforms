@@ -21,131 +21,121 @@ import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
-import ro.pss.holidayforms.gui.broadcast.BroadcastEvent;
-import ro.pss.holidayforms.gui.broadcast.Broadcaster;
-import ro.pss.holidayforms.gui.broadcast.UserUITuple;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
+import ro.pss.holidayforms.gui.notification.Broadcaster;
+import ro.pss.holidayforms.gui.notification.NotificationService;
+import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
+import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 
 @SpringComponent
 @UIScope
 @Route(value = "substitutions", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-buttons.css")
 public class SubstitutionRequestView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
-    private final Grid<SubstitutionRequest> grid;
-    private final SubstitutionRequestRepository requestRepository;
-    private final VerticalLayout container;
-    private HolidayConfirmationDialog holidayConfDialog;
-    public SubstitutionRequestView(SubstitutionRequestRepository repo) {
-        this.requestRepository = repo;
-        this.grid = new Grid<>();
-        grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
-        grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(1);
-        grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart")).setFlexGrow(1);
-        grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
-        grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
+	private final Grid<SubstitutionRequest> grid;
+	private final SubstitutionRequestRepository requestRepository;
+	private final VerticalLayout container;
+	private HolidayConfirmationDialog holidayConfDialog;
+	private final NotificationService notificationService;
 
-        container = new VerticalLayout();
-        container.add(grid);
-        container.setWidth("100%");
-        container.setMaxWidth("70em");
-        container.setHeightFull();
+	public SubstitutionRequestView(SubstitutionRequestRepository repo, NotificationService notificationService) {
+		this.requestRepository = repo;
+		this.notificationService = notificationService;
+		this.grid = new Grid<>();
+		grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
+		grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(1);
+		grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart")).setFlexGrow(1);
+		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
+		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 
-        setJustifyContentMode(JustifyContentMode.CENTER);
-        setAlignItems(Alignment.CENTER);
-        add(container);
-        setHeightFull();
+		container = new VerticalLayout();
+		container.add(grid);
+		container.setWidth("100%");
+		container.setMaxWidth("70em");
+		container.setHeightFull();
 
-        User user = SecurityUtils.getLoggedInUser();
-        listSubstitutionRequests(user.getEmail());
-    }
+		setJustifyContentMode(JustifyContentMode.CENTER);
+		setAlignItems(Alignment.CENTER);
+		add(container);
+		setHeightFull();
 
-    private void listSubstitutionRequests(String userEmail) {
-        grid.setItems(requestRepository.findAllBySubstituteEmail(userEmail));
-    }
+		User user = SecurityUtils.getLoggedInUser();
+		listSubstitutionRequests(user.getEmail());
+	}
 
-    private HorizontalLayout getActionButtons(SubstitutionRequest request) {
-        Button btnApprove = new Button(MessageRetriever.get("substituteTxt"), VaadinIcon.CHECK_CIRCLE.create(), event -> {
-            String message = String.format(MessageRetriever.get("msgApproveRequestSubst"), request.getRequest().getRequester().getName(), request.getRequest().getType());
-            holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.APPROVAL, () -> confirmHolidaySubstitution(request), MessageRetriever.get("confDialogHeaderApproveSubst"), message, MessageRetriever.get("approveTxt"), MessageRetriever.get("backTxt"));
-            holidayConfDialog.open();
-        });
-        btnApprove.addThemeName("success");
-        btnApprove.addThemeName("primary");
-        btnApprove.addClassName("responsive");
+	private void listSubstitutionRequests(String userEmail) {
+		grid.setItems(requestRepository.findAllBySubstituteEmail(userEmail));
+	}
 
-        Button btnDeny = new Button(MessageRetriever.get("denyTxt"), VaadinIcon.CLOSE_CIRCLE.create(), event -> {
-            String message = String.format(MessageRetriever.get("msgDenyRequestSubst"), request.getRequest().getRequester().getName(), request.getRequest().getType());
-            holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.DENIAL, () -> rejectHolidaySubstitution(request), MessageRetriever.get("confDialogHeaderDenySubst"), message, MessageRetriever.get("denyTxt"), MessageRetriever.get("backTxt"));
-            holidayConfDialog.open();
-        });
-        btnDeny.addThemeName("error");
-        btnDeny.addClassName("responsive");
+	private HorizontalLayout getActionButtons(SubstitutionRequest request) {
+		Button btnApprove = new Button(MessageRetriever.get("substituteTxt"), VaadinIcon.CHECK_CIRCLE.create(), event -> {
+			String message = String.format(MessageRetriever.get("msgApproveRequestSubst"), request.getRequest().getRequester().getName(), request.getRequest().getType());
+			holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.APPROVAL, () -> confirmHolidaySubstitution(request), MessageRetriever.get("confDialogHeaderApproveSubst"), message, MessageRetriever.get("approveTxt"), MessageRetriever.get("backTxt"));
+			holidayConfDialog.open();
+		});
+		btnApprove.addThemeName("success");
+		btnApprove.addThemeName("primary");
+		btnApprove.addClassName("responsive");
 
-        if (request.getStatus() == SubstitutionRequest.Status.NEW) {
-            return new HorizontalLayout(btnApprove, btnDeny);
-        }
+		Button btnDeny = new Button(MessageRetriever.get("denyTxt"), VaadinIcon.CLOSE_CIRCLE.create(), event -> {
+			String message = String.format(MessageRetriever.get("msgDenyRequestSubst"), request.getRequest().getRequester().getName(), request.getRequest().getType());
+			holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.DENIAL, () -> rejectHolidaySubstitution(request), MessageRetriever.get("confDialogHeaderDenySubst"), message, MessageRetriever.get("denyTxt"), MessageRetriever.get("backTxt"));
+			holidayConfDialog.open();
+		});
+		btnDeny.addThemeName("error");
+		btnDeny.addClassName("responsive");
 
-        if (request.getStatus() == SubstitutionRequest.Status.APPROVED) {
-            btnDeny.setEnabled(false);
-            btnApprove.setEnabled(false);
-            btnApprove.setText(MessageRetriever.get("approvedTxt"));
-            return new HorizontalLayout(btnApprove);
-        } else {
-            btnApprove.setEnabled(false);
-            btnDeny.setEnabled(false);
-            btnDeny.setText(MessageRetriever.get("deniedTxt"));
-            return new HorizontalLayout(btnDeny);
-        }
-    }
+		if (request.getStatus() == SubstitutionRequest.Status.NEW) {
+			return new HorizontalLayout(btnApprove, btnDeny);
+		}
 
-    private void rejectHolidaySubstitution(SubstitutionRequest request) {
-        request.deny();
-        SubstitutionRequest savedRequest = requestRepository.save(request);
-        broadcastActionOnRequest(savedRequest, BroadcastEvent.Type.SUBSTITUTE_DENIED);
-        grid.getDataProvider().refreshItem(request);
-        ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubsitutionBadgeCount();
-    }
+		if (request.getStatus() == SubstitutionRequest.Status.APPROVED) {
+			btnDeny.setEnabled(false);
+			btnApprove.setEnabled(false);
+			btnApprove.setText(MessageRetriever.get("approvedTxt"));
+			return new HorizontalLayout(btnApprove);
+		} else {
+			btnApprove.setEnabled(false);
+			btnDeny.setEnabled(false);
+			btnDeny.setText(MessageRetriever.get("deniedTxt"));
+			return new HorizontalLayout(btnDeny);
+		}
+	}
 
-    private void confirmHolidaySubstitution(SubstitutionRequest request) {
-        request.approve();
-        SubstitutionRequest savedRequest = requestRepository.save(request);
-        broadcastActionOnRequest(savedRequest, BroadcastEvent.Type.SUBSTITUTE_ACCEPTED);
-        grid.getDataProvider().refreshItem(request);
-        ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubsitutionBadgeCount();
-    }
+	private void rejectHolidaySubstitution(SubstitutionRequest request) {
+		request.deny();
+		requestRepository.save(request);
+		notificationService.substitutionDenied(request);
+		grid.getDataProvider().refreshItem(request);
+		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubstitutionBadgeCount();
+	}
 
-    @Override
-    public void afterNavigation(AfterNavigationEvent event) {
-        listSubstitutionRequests(SecurityUtils.getLoggedInUser().getEmail());
+	private void confirmHolidaySubstitution(SubstitutionRequest request) {
+		request.approve();
+		requestRepository.save(request);
+		notificationService.substitutionAccepted(request);
+		grid.getDataProvider().refreshItem(request);
+		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubstitutionBadgeCount();
+	}
 
-    }
+	@Override
+	public void afterNavigation(AfterNavigationEvent event) {
+		listSubstitutionRequests(SecurityUtils.getLoggedInUser().getEmail());
 
-    @Override
-    protected void onAttach(AttachEvent attachEvent) {
-        Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
-    }
+	}
 
-    @Override
-    public void receiveBroadcast(UI ui, BroadcastEvent message) {
-        if (BroadcastEvent.Type.SUBSTITUTE_ADDED.equals(message.getType())
-                || BroadcastEvent.Type.SUBSTITUTE_CHANGED.equals(message.getType())
-                || BroadcastEvent.Type.SUBSTITUTE_DELETED.equals(message.getType())
-        ) {
-            ui.access(() -> this.listSubstitutionRequests(message.getTargetUserId()));
-        }
-    }
+	@Override
+	protected void onAttach(AttachEvent attachEvent) {
+		Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
+	}
 
-    private void broadcastActionOnRequest(SubstitutionRequest request, BroadcastEvent.Type eventType) {
-        String msg = "";
-        switch (eventType) {
-            case SUBSTITUTE_ACCEPTED:
-                msg = String.format(MessageRetriever.get("notificationSubstituteAccepted"), SecurityUtils.getLoggedInUser().getName());
-                break;
-            case SUBSTITUTE_DENIED:
-                msg = String.format(MessageRetriever.get("notificationSubstituteDenied"), SecurityUtils.getLoggedInUser().getName());
-        }
-        BroadcastEvent event = new BroadcastEvent(request.getRequest().getRequester().getEmail(), eventType, msg);
-        Broadcaster.broadcast(event);
-    }
+	@Override
+	public void receiveBroadcast(UI ui, BroadcastEvent message) {
+		if (BroadcastEvent.Type.SUBSTITUTE_ADDED.equals(message.getType())
+				|| BroadcastEvent.Type.SUBSTITUTE_CHANGED.equals(message.getType())
+				|| BroadcastEvent.Type.SUBSTITUTE_DELETED.equals(message.getType())) {
+			ui.access(() -> this.listSubstitutionRequests(message.getTargetUserId()));
+		}
+	}
 }

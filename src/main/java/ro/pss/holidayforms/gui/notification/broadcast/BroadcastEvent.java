@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.gui.broadcast;
+package ro.pss.holidayforms.gui.notification.broadcast;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

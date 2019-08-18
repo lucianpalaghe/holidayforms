@@ -1,4 +1,4 @@
-package ro.pss.holidayforms.scheduled;
+package ro.pss.holidayforms.gui.notification;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +7,6 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Component;
 import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.User;
-import ro.pss.holidayforms.gui.broadcast.Broadcaster;
 
 import java.util.List;
 

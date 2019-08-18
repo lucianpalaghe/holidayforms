@@ -3,7 +3,7 @@ package ro.pss.holidayforms.domain.notification;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ro.pss.holidayforms.gui.broadcast.BroadcastEvent;
+import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;

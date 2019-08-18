@@ -28,9 +28,9 @@ import ro.pss.holidayforms.domain.repo.NotificationRepository;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
-import ro.pss.holidayforms.gui.broadcast.BroadcastEvent;
-import ro.pss.holidayforms.gui.broadcast.Broadcaster;
-import ro.pss.holidayforms.gui.broadcast.UserUITuple;
+import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
+import ro.pss.holidayforms.gui.notification.Broadcaster;
+import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 import ro.pss.holidayforms.gui.dashboard.DashboardView;
 import ro.pss.holidayforms.gui.planning.HolidayPlanningView;
 import ro.pss.holidayforms.gui.request.HolidayRequestView;
@@ -145,34 +145,38 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 			HolidayNotification holidayNotification = new HolidayNotification(typeString, message.getMessage(), message.getNotification());
 			notifications.addNotification(holidayNotification);
 
-			BroadcastEvent.Type type = message.getType();
-			switch (type) {
-				case SUBSTITUTE_ADDED:
-					substitutionBadge.increase();
-					break;
-				case SUBSTITUTE_DELETED:
-					substitutionBadge.decrease();
-					break;
-				case APPROVE_ADDED:
-					approvalBadge.increase();
-					break;
-				case APPROVE_DELETED:
-					approvalBadge.decrease();
-					break;
-				case SUBSTITUTE_ACCEPTED:
-				case SUBSTITUTE_DENIED:
-				case APPROVER_ACCEPTED:
-				case APPROVER_DENIED:
-				case SUBSTITUTE_CHANGED:
-				case APPROVE_CHANGED:
-					break;
-				default:
-					throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
-			}
+			updateBadges(message);
 		});
 	}
 
-	public void decreaseSubsitutionBadgeCount() {
+	private void updateBadges(BroadcastEvent message) {
+		BroadcastEvent.Type type = message.getType();
+		switch (type) {
+			case SUBSTITUTE_ADDED:
+				substitutionBadge.increase();
+				break;
+			case SUBSTITUTE_DELETED:
+				substitutionBadge.decrease();
+				break;
+			case APPROVE_ADDED:
+				approvalBadge.increase();
+				break;
+			case APPROVE_DELETED:
+				approvalBadge.decrease();
+				break;
+			case SUBSTITUTE_ACCEPTED:
+			case SUBSTITUTE_DENIED:
+			case APPROVER_ACCEPTED:
+			case APPROVER_DENIED:
+			case SUBSTITUTE_CHANGED:
+			case APPROVE_CHANGED:
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
+		}
+	}
+
+	public void decreaseSubstitutionBadgeCount() {
 		this.substitutionBadge.decrease();
 	}
 
