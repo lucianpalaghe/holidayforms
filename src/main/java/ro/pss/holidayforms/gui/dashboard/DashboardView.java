@@ -14,28 +14,28 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.HolidayPlanning;
 import ro.pss.holidayforms.domain.HolidayPlanningEntry;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
-import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
-import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
+import ro.pss.holidayforms.service.DashboardService;
 
+import javax.annotation.PostConstruct;
 import java.time.Month;
 import java.util.*;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.summingInt;
+import static java.util.stream.Collectors.*;
 
 @Route(value = "", layout = HolidayAppLayout.class)
 public class DashboardView extends HorizontalLayout implements AfterNavigationObserver {
-	private final HolidayRequestRepository requestRepository;
-	private final HolidayPlanningRepository planningRepository;
+	@Autowired
+	private DashboardService service;
 	private final H2 remainingDaysHeader = new H2();
 	private ChartJs holidaysChart;
 	private LineDataset chartPlannedDays;
@@ -43,22 +43,10 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 	private LineData chartLineData;
 	private LineOptions chartLineOptions;
 
-	public DashboardView(HolidayRequestRepository requestRepository, HolidayPlanningRepository planningRepository) {
-		this.requestRepository = requestRepository;
-		this.planningRepository = planningRepository;
-
+	public DashboardView() {
 		VerticalLayout container = new VerticalLayout();
 		container.add(remainingDaysHeader);
 
-		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(user.getEmail());
-		refreshHeader(user.getAvailableVacationDays(), requests);
-
-		initializeChart();
-		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(user.getEmail());
-		List<HolidayPlanningEntry> entries = new ArrayList<>();
-		byEmployeeEmail.ifPresent(holidayPlanning -> entries.addAll(holidayPlanning.getEntries()));
-		holidaysChart = getUpdatedChart(requests, entries);
 		Div chartContainer = new Div();
 		chartContainer.setWidthFull();
 		chartContainer.add(holidaysChart);
@@ -74,14 +62,16 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 		setHeightFull();
 	}
 
-	private void refreshHeader(int availableVacationDays, List<HolidayRequest> requests) {
-		int sumDaysTaken = requests.stream()
-				.filter(HolidayRequest::isCO)
-				.mapToInt(r -> DateUtils.getWorkingDays(r.getDateFrom(), r.getDateTo()))
-				.sum();
+	@PostConstruct
+	private void postConstruct() {
+		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+		remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeader"), service.getRemainingVacationDays(user.getEmail())));
 
-		int days = availableVacationDays - sumDaysTaken;//requestRepository.getRemainingDaysByUserEmail("lucian.palaghe@pss.ro");
-		remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeader"), days));
+		initializeChart();
+		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(user.getEmail());
+		List<HolidayPlanningEntry> entries = new ArrayList<>();
+		byEmployeeEmail.ifPresent(holidayPlanning -> entries.addAll(holidayPlanning.getEntries()));
+		holidaysChart = getUpdatedChart(requests, entries);
 	}
 
 	private void initializeChart() {

@@ -15,16 +15,14 @@ import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import ro.pss.holidayforms.config.security.CustomUserPrincipal;
-import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
-import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
-import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.DateRange;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
-import ro.pss.holidayforms.gui.notification.NotificationService;
+import ro.pss.holidayforms.service.HolidayRequestService;
 
+import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -34,29 +32,20 @@ import static java.util.stream.Collectors.*;
 @SpringComponent
 @UIScope
 public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier {
-	private final HolidayRequestRepository holidayRepo;
-	private final UserRepository userRepo;
+	@Autowired
+	private HolidayRequestService requestsService;
 
 	private final ComboBox<User> substitute = new ComboBox<>(MessageRetriever.get("substituteName"));
 	private final DateRangePicker dateRange = new DateRangePicker();
 	private final ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
 	private final DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
-	private final Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.CHECK.create());
-	private final Button btnCancel = new Button(MessageRetriever.get("btnCancelLbl"));
 	private final Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
-	private final HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
 	private final Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
-	private final List<String> approverIds = Arrays.asList("lucian.palaghe", "claudia.gican", "luminita.petre");
 	private HolidayRequest holidayRequest;
 	private ChangeHandler changeHandler;
 
 	@Autowired
-	private NotificationService notificationService;
-
-	@Autowired
-	public HolidayRequestEditor(HolidayRequestRepository holidayRepository, UserRepository userRepository) {
-		this.holidayRepo = holidayRepository;
-		this.userRepo = userRepository;
+	public HolidayRequestEditor() {
 		creationDate.setLocale(MessageRetriever.getLocale());
 		DatePicker.DatePickerI18n dp18n = new DatePicker.DatePickerI18n();
 		dp18n.setCalendar(MessageRetriever.get("calendarName"));
@@ -73,7 +62,6 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		dateRange.setForceNarrow(true);
 		type.setItems(HolidayRequest.Type.values());
 		type.setItemLabelGenerator(i -> MessageRetriever.get("holidayType_" + i.toString()));
-		substitute.setItems(userRepo.findAll());
 		substitute.setWidthFull();
 		type.setWidthFull();
 		creationDate.setWidthFull();
@@ -81,19 +69,27 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		binder.bindInstanceFields(this);
 
+		Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.CHECK.create());
 		btnSave.getElement().getThemeList().add("primary");
 		btnDelete.getElement().getThemeList().add("error");
 		btnSave.addClickListener(e -> save());
 		btnDelete.addClickListener(e -> delete());
+		Button btnCancel = new Button(MessageRetriever.get("btnCancelLbl"));
 		btnCancel.addClickListener(e -> cancelEdit());
 
 		setJustifyContentMode(JustifyContentMode.CENTER);
 		setAlignItems(Alignment.CENTER);
+		HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
 		add(substitute, dateRange, type, creationDate, actions);
 		addKeyPressListener(Key.ENTER, e -> save());
 		addValidations();
 		setSpacing(true);
 		setVisible(false);
+	}
+
+	@PostConstruct
+	private void postConstruct() {
+		substitute.setItems(requestsService.getAvailableSubstitutes());
 	}
 
 	private void addValidations() {
@@ -102,7 +98,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		binder.forField(substitute).asRequired(MessageRetriever.get("validationSubstitute"))
 				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
-		List<HolidayRequest> allByRequesterEmail = holidayRepo.findAllByRequesterEmail(user.getEmail());
+		List<HolidayRequest> allByRequesterEmail = requestsService.getHolidayRequests(user.getEmail());
 
 		Binder.Binding<HolidayRequest, DateRange> holidayRequestDateRangeBinding = binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
 				.withValidator(DateRange::hasWorkingDays, MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
@@ -144,8 +140,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	}
 
 	private void delete() {
-		holidayRepo.delete(holidayRequest);
-		notificationService.requestDeleted(holidayRequest);
+		requestsService.remove(holidayRequest);
 		changeHandler.onChange();
 	}
 
@@ -153,40 +148,24 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		if (binder.validate().isOk()) {
 			User requester = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
 			holidayRequest.setRequester(requester);
-
-			if (holidayRequest.getApprovalRequests().size() > 0) { // if this request is edited, remove all previous approvals
-				holidayRequest.getApprovalRequests().clear();
-			}
-
-			List<ApprovalRequest> approvalRequests = approverIds.stream().map(a -> { // TODO: refactor
-				User approver = userRepo.getOne(a);
-				return new ApprovalRequest(approver, ApprovalRequest.Status.NEW);
-			}).collect(toList());
-			approvalRequests.forEach(a -> holidayRequest.addApproval(a));
+			requestsService.createRequest(holidayRequest);
 
 			changeHandler.onChange();
-			boolean isNewRequest = holidayRequest.getId() == null;
-			if (isNewRequest) {
-				notificationService.requestCreated(holidayRequest);
-			} else {
-                notificationService.requestEdited(holidayRequest);
-			}
-
-			holidayRepo.save(holidayRequest);
 		}
 	}
 
-	final void editHolidayRequest(HolidayRequest c) {
-		if (c == null) {
+	final void editHolidayRequest(HolidayRequest request) {
+		if (request == null) {
 			setVisible(false);
 			return;
 		}
-		final boolean persisted = c.getId() != null;
-		if (persisted) {
-			holidayRequest = holidayRepo.findById(c.getId()).orElseThrow();
-		} else {
-			holidayRequest = c;
-		}
+		final boolean persisted = request.getId() != null;
+		holidayRequest = request;
+//		if (persisted) { TODO: see if this is still required
+//			holidayRequest = requestsService.findById(request.getId()).orElseThrow();
+//		} else {
+//			holidayRequest = request;
+//		}
 
 		btnDelete.setVisible(persisted);
 		binder.setBean(holidayRequest);

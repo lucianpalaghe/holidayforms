@@ -21,6 +21,7 @@ import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.vaadin.olli.FileDownloadWrapper;
 import ro.pss.holidayforms.config.security.CustomUserPrincipal;
@@ -28,10 +29,11 @@ import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.User;
-import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
+import ro.pss.holidayforms.service.HolidayRequestService;
 
+import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -46,15 +48,14 @@ import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 @StyleSheet("step-progress-bar.css")
 @StyleSheet("responsive-buttons.css")
 public class HolidayRequestView extends HorizontalLayout implements AfterNavigationObserver {
+	@Autowired
+	private HolidayRequestService service;
 	private final Grid<HolidayRequest> grid;
-	private final HolidayRequestRepository requestRepository;
 	private final HolidayRequestEditor editor;
 	private final Dialog dialog;
-	private final VerticalLayout container;
 	private final H2 heading;
 
-	public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor) {
-		this.requestRepository = repo;
+	public HolidayRequestView(HolidayRequestEditor editor) {
 		this.editor = editor;
 		this.editor.setChangeHandler(() -> {
 			this.editor.setVisible(false);
@@ -84,7 +85,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		heading = new H2();
 		heading.setVisible(false);
 
-		container = new VerticalLayout();
+		VerticalLayout container = new VerticalLayout();
 		container.add(actions, heading, grid, this.editor);
 		container.setWidth("100%");
 		container.setMaxWidth("70em");
@@ -94,7 +95,10 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		setAlignItems(Alignment.CENTER);
 		add(container);
 		setHeightFull();
+	}
 
+	@PostConstruct
+	private void postConstruct() {
 		listHolidayRequests();
 	}
 
@@ -169,7 +173,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 	}
 
 	private FileDownloadWrapper getButtonWrapperWithPdfDocument(Button btn, HolidayRequest request) {
-		FileDownloadWrapper buttonWrapper = null;
+		FileDownloadWrapper buttonWrapper;
 		StreamResource res = null;
 		try {
 			PDDocument doc = fillHolidayRequest(request);
@@ -190,7 +194,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 
 	private void listHolidayRequests() {
 		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(user.getEmail());
+		List<HolidayRequest> requests = service.getHolidayRequests(user.getEmail());
 		if (requests.isEmpty()) {
 			grid.setVisible(false);
 			heading.setText(MessageRetriever.get("noHolidayRequests"));

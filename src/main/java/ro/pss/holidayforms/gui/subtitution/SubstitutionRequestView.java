@@ -19,31 +19,27 @@ import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
-import ro.pss.holidayforms.domain.User;
-import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 import ro.pss.holidayforms.gui.notification.Broadcaster;
-import ro.pss.holidayforms.gui.notification.NotificationService;
 import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
 import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
+import ro.pss.holidayforms.service.HolidaySubstitutionService;
+
+import javax.annotation.PostConstruct;
 
 @SpringComponent
 @UIScope
 @Route(value = "substitutions", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-buttons.css")
 public class SubstitutionRequestView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
+	@Autowired
+	private HolidaySubstitutionService service;
 	private final Grid<SubstitutionRequest> grid;
-	private final SubstitutionRequestRepository requestRepository;
-	private final VerticalLayout container;
 	private HolidayConfirmationDialog holidayConfDialog;
 
-	@Autowired
-	private NotificationService notificationService;
-
-	public SubstitutionRequestView(SubstitutionRequestRepository repo) {
-		this.requestRepository = repo;
+	public SubstitutionRequestView() {
 		this.grid = new Grid<>();
 		grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
 		grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(1);
@@ -51,7 +47,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 
-		container = new VerticalLayout();
+		VerticalLayout container = new VerticalLayout();
 		container.add(grid);
 		container.setWidth("100%");
 		container.setMaxWidth("70em");
@@ -61,13 +57,15 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 		setAlignItems(Alignment.CENTER);
 		add(container);
 		setHeightFull();
+	}
 
-		User user = SecurityUtils.getLoggedInUser();
-		listSubstitutionRequests(user.getEmail());
+	@PostConstruct
+	private void postConstruct() {
+		listSubstitutionRequests(SecurityUtils.getLoggedInUser().getEmail());
 	}
 
 	private void listSubstitutionRequests(String userEmail) {
-		grid.setItems(requestRepository.findAllBySubstituteEmail(userEmail));
+		grid.setItems(service.getSubstitutionRequests(userEmail));
 	}
 
 	private HorizontalLayout getActionButtons(SubstitutionRequest request) {
@@ -76,8 +74,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 			holidayConfDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.APPROVAL, () -> confirmHolidaySubstitution(request), MessageRetriever.get("confDialogHeaderApproveSubst"), message, MessageRetriever.get("approveTxt"), MessageRetriever.get("backTxt"));
 			holidayConfDialog.open();
 		});
-		btnApprove.addThemeName("success");
-		btnApprove.addThemeName("primary");
+		btnApprove.addThemeNames("success", "primary");
 		btnApprove.addClassName("responsive");
 
 		Button btnDeny = new Button(MessageRetriever.get("denyTxt"), VaadinIcon.CLOSE_CIRCLE.create(), event -> {
@@ -106,17 +103,13 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	}
 
 	private void rejectHolidaySubstitution(SubstitutionRequest request) {
-		request.deny();
-		requestRepository.save(request);
-		notificationService.substitutionDenied(request);
+		service.approveRequest(request);
 		grid.getDataProvider().refreshItem(request);
 		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubstitutionBadgeCount();
 	}
 
 	private void confirmHolidaySubstitution(SubstitutionRequest request) {
-		request.approve();
-		requestRepository.save(request);
-		notificationService.substitutionAccepted(request);
+		service.denyRequest(request);
 		grid.getDataProvider().refreshItem(request);
 		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubstitutionBadgeCount();
 	}
@@ -124,7 +117,6 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	@Override
 	public void afterNavigation(AfterNavigationEvent event) {
 		listSubstitutionRequests(SecurityUtils.getLoggedInUser().getEmail());
-
 	}
 
 	@Override

@@ -15,17 +15,19 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import ro.pss.holidayforms.config.security.CustomUserPrincipal;
 import ro.pss.holidayforms.domain.HolidayPlanning;
 import ro.pss.holidayforms.domain.HolidayPlanningEntry;
 import ro.pss.holidayforms.domain.User;
-import ro.pss.holidayforms.domain.repo.HolidayPlanningRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
+import ro.pss.holidayforms.service.HolidayPlanningService;
 
+import javax.annotation.PostConstruct;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -35,9 +37,9 @@ import java.util.TreeSet;
 @Route(value = "planning", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-panels-beta.css")
 public class HolidayPlanningView extends HorizontalLayout implements AfterNavigationObserver, BeforeLeaveObserver {
-	private final HolidayPlanningRepository repository;
-	private final HorizontalLayout container;
-	//	private final H2 heading;
+	@Autowired
+	private HolidayPlanningService planningService;
+
 	private final DateRangePicker rangePicker;
 	private final Grid<HolidayPlanningEntry> grid;
 	private final Set<HolidayPlanningEntry> entries = new TreeSet<>();
@@ -45,8 +47,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	private HolidayPlanning holidayPlanning;
 	private final H3 remainingDaysHeader = new H3();
 
-	public HolidayPlanningView(HolidayPlanningRepository repo) {
-		this.repository = repo;
+	public HolidayPlanningView() {
 		rangePicker = new DateRangePicker();
 		grid = new Grid<>();
 		grid.addColumn(HolidayPlanningEntry::getDateFrom).setHeader(MessageRetriever.get("gridColFromDate"));
@@ -55,8 +56,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(0);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 		grid.setDataProvider(new ListDataProvider(entries));
-		listHolidayPlanningEntries();
-		container = new HorizontalLayout();
+		HorizontalLayout container = new HorizontalLayout();
 		container.setWidth("100%");
 		container.setMaxWidth("80em");
 		container.setHeightFull();
@@ -73,15 +73,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.LOCK.create(), event -> {
 			holidayPlanning.getEntries().clear();
 			holidayPlanning.setEntries(entries);
-
-			repo.save(holidayPlanning);
-			/*
-			 * Unexpected JPA behaviour when trying to save, it only deletes all the entities, without insert command afterwards.
-			 * Strangely enough, it returns all the entities as they were saved. So, save once again in order to actually execute the
-			 * insert command.
-			 */
-			//repo.save(savedPlanning);
-
+			planningService.savePlanning(holidayPlanning);
 			Notification.show(MessageRetriever.get("planningSaved"), 3000, Notification.Position.TOP_CENTER);
 		});
 		btnSave.getStyle().set("margin-left", "auto");
@@ -104,6 +96,11 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 			rangePicker.setValue(null);
 		});
 		add(container);
+	}
+
+	@PostConstruct
+	private void postConstruct() {
+		listHolidayPlanningEntries();
 	}
 
 	private void refreshRemainingDaysHeader() {
@@ -129,16 +126,11 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 
 	private void listHolidayPlanningEntries() {
 		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		Optional<HolidayPlanning> planning = repository.findByEmployeeEmail(user.getEmail());
-		if (planning.isPresent()) {
-			holidayPlanning = planning.get();
-			grid.setVisible(true);
-		} else {
-			holidayPlanning = new HolidayPlanning(user, new TreeSet<>());
-			grid.setVisible(true);
-		}
+		Optional<HolidayPlanning> planning = planningService.getHolidayPlanning(user.getEmail());
+		this.holidayPlanning = planning.orElseGet(() -> new HolidayPlanning(user, new TreeSet<>()));
+		grid.setVisible(true);
 		entries.clear();
-		entries.addAll(holidayPlanning.getEntries());
+		entries.addAll(this.holidayPlanning.getEntries());
 	}
 
 	@Override
@@ -158,7 +150,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 
 	private boolean hasChanges() {
 		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		Optional<HolidayPlanning> original = repository.findByEmployeeEmail(user.getEmail());
+		Optional<HolidayPlanning> original = planningService.getHolidayPlanning(user.getEmail());
 		if (original.isPresent()) {
 			HolidayPlanning holidayPlanning = original.get();
 			return !holidayPlanning.getEntries().equals(entries);
