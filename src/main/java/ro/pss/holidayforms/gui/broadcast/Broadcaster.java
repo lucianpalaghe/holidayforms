@@ -4,6 +4,7 @@ import com.vaadin.flow.component.UI;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.notification.Notification;
 import ro.pss.holidayforms.domain.repo.NotificationRepository;
 
@@ -60,7 +61,7 @@ public class Broadcaster implements Serializable {
 
     public static synchronized void broadcast(final BroadcastEvent message) {
         Notification savedNotification = notificationRepository.save(new Notification(LocalDateTime.now(), null, message.getType().name(),
-                message.getMessage(), message.getTargetUserId(), message.getType(), Notification.Status.NEW, Notification.Priority.HIGH));
+                message.getMessage(), message.getTargetUserId(), SecurityUtils.getLoggedInUser().getName(), message.getType(), Notification.Status.NEW, Notification.Priority.HIGH));
         message.setNotification(savedNotification);
         for (final Map.Entry<UserUITuple, BroadcastListener> entry : listeners.entrySet()) {
             if (entry.getKey().getUser().getEmail().equals(message.getTargetUserId())) {

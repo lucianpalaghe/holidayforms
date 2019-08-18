@@ -104,7 +104,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
         SubstitutionRequest savedRequest = requestRepository.save(request);
         broadcastActionOnRequest(savedRequest, BroadcastEvent.Type.SUBSTITUTE_DENIED);
         grid.getDataProvider().refreshItem(request);
-        ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubsitutionBadgeCount();
+        ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubstitutionBadgeCount();
     }
 
     private void confirmHolidaySubstitution(SubstitutionRequest request) {
@@ -112,7 +112,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
         SubstitutionRequest savedRequest = requestRepository.save(request);
         broadcastActionOnRequest(savedRequest, BroadcastEvent.Type.SUBSTITUTE_ACCEPTED);
         grid.getDataProvider().refreshItem(request);
-        ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubsitutionBadgeCount();
+        ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubstitutionBadgeCount();
     }
 
     @Override
@@ -137,15 +137,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
     }
 
     private void broadcastActionOnRequest(SubstitutionRequest request, BroadcastEvent.Type eventType) {
-        String msg = "";
-        switch (eventType) {
-            case SUBSTITUTE_ACCEPTED:
-                msg = String.format(MessageRetriever.get("notificationSubstituteAccepted"), SecurityUtils.getLoggedInUser().getName());
-                break;
-            case SUBSTITUTE_DENIED:
-                msg = String.format(MessageRetriever.get("notificationSubstituteDenied"), SecurityUtils.getLoggedInUser().getName());
-        }
-        BroadcastEvent event = new BroadcastEvent(request.getRequest().getRequester().getEmail(), eventType, msg);
+        BroadcastEvent event = new BroadcastEvent(request.getRequest().getRequester().getEmail(), eventType, "", SecurityUtils.getLoggedInUser().getName());
         Broadcaster.broadcast(event);
     }
 }

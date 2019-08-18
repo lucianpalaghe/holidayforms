@@ -137,15 +137,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
     }
 
     private void broadcastActionOnRequest(ApprovalRequest request, BroadcastEvent.Type eventType) {
-        String msg = "";
-        switch (eventType) {
-            case APPROVER_ACCEPTED:
-                msg = String.format(MessageRetriever.get("notificationApproverAccepted"), SecurityUtils.getLoggedInUser().getName());
-                break;
-            case APPROVER_DENIED:
-                msg = String.format(MessageRetriever.get("notificationApproverDenied"), SecurityUtils.getLoggedInUser().getName());
-        }
-        BroadcastEvent event = new BroadcastEvent(request.getRequest().getRequester().getEmail(), eventType, msg);
+        BroadcastEvent event = new BroadcastEvent(request.getRequest().getRequester().getEmail(), eventType, "", SecurityUtils.getLoggedInUser().getName());
         Broadcaster.broadcast(event);
     }
 }

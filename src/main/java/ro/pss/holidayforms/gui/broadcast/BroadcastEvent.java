@@ -9,12 +9,14 @@ import ro.pss.holidayforms.domain.notification.Notification;
 @Setter @Getter
 public class BroadcastEvent {
     private String targetUserId;
+    private String userIdentifier;
     private Type type;
     private String message;
-    private Notification notification;
+    private Notification notification;   
 
-    public BroadcastEvent(String targetUserId, Type type, String message) {
+    public BroadcastEvent(String targetUserId, Type type, String message, String userIdentifier) {
         this.targetUserId = targetUserId;
+        this.userIdentifier = userIdentifier;
         this.type = type;
         this.message = message;
     }

@@ -13,12 +13,13 @@ import java.time.LocalDateTime;
 @Entity
 public class Notification {
     public Notification(LocalDateTime creationDateTime, LocalDateTime changedDateTime, String title,
-                        String message, String targetUserEmail, BroadcastEvent.Type type, Status status, Priority priority) {
+                        String message, String targetUserEmail, String userIdentifier, BroadcastEvent.Type type, Status status, Priority priority) {
         this.creationDateTime = creationDateTime;
         this.changedDateTime = changedDateTime;
         this.title = title;
         this.message = message;
         this.targetUserEmail = targetUserEmail;
+        this.userIdentifier = userIdentifier;
         this.type = type;
         this.status = status;
         this.priority = priority;
@@ -44,6 +45,9 @@ public class Notification {
 
     @Getter
     private String targetUserEmail;
+
+    @Getter
+    private String userIdentifier;
 
     @Enumerated(EnumType.STRING)
     @Getter

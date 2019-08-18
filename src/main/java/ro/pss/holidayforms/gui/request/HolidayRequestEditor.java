@@ -181,14 +181,12 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
     	// broadcast event to the substitute
 		Broadcaster.broadcast(
 				new BroadcastEvent(holidayRequest.getSubstitute().getEmail(),
-						BroadcastEvent.Type.SUBSTITUTE_CHANGED,
-						String.format(MessageRetriever.get("notificationSubstituteChangedMessage"), holidayRequest.getRequester().getName())));
+						BroadcastEvent.Type.SUBSTITUTE_CHANGED,	"", holidayRequest.getRequester().getName()));
 		// broadcast event for each approver
 		for (ApprovalRequest approvalRequest : holidayRequest.getApprovalRequests()) {
 			Broadcaster.broadcast(
 					new BroadcastEvent(approvalRequest.getApprover().getEmail(),
-							BroadcastEvent.Type.APPROVE_CHANGED,
-							String.format(MessageRetriever.get("notificationApproveChangedMessage"), holidayRequest.getRequester().getName())));
+							BroadcastEvent.Type.APPROVE_CHANGED,"", holidayRequest.getRequester().getName()));
 		}
 	}
 
@@ -196,14 +194,12 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		// broadcast event to the substitute
 		Broadcaster.broadcast(
 				new BroadcastEvent(holidayRequest.getSubstitute().getEmail(),
-						BroadcastEvent.Type.SUBSTITUTE_DELETED,
-						String.format(MessageRetriever.get("notificationSubstituteDeletedMessage"), holidayRequest.getRequester().getName())));
+						BroadcastEvent.Type.SUBSTITUTE_DELETED,	"", holidayRequest.getRequester().getName()));
 		// broadcast event for each approver
 		for (ApprovalRequest approvalRequest : holidayRequest.getApprovalRequests()) {
 			Broadcaster.broadcast(
 					new BroadcastEvent(approvalRequest.getApprover().getEmail(),
-							BroadcastEvent.Type.APPROVE_DELETED,
-							String.format(MessageRetriever.get("notificationApproveDeletedMessage"), holidayRequest.getRequester().getName())));
+							BroadcastEvent.Type.APPROVE_DELETED,"", holidayRequest.getRequester().getName()));
 		}
 	}
 
@@ -211,14 +207,12 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
     	// broadcast event to the substitute
         Broadcaster.broadcast(
                 new BroadcastEvent(holidayRequest.getSubstitute().getEmail(),
-                        BroadcastEvent.Type.SUBSTITUTE_ADDED,
-                        String.format(MessageRetriever.get("notificationSubstituteMessage"), holidayRequest.getRequester().getName())));
+                        BroadcastEvent.Type.SUBSTITUTE_ADDED,"", holidayRequest.getRequester().getName()));
         // broadcast event for each approver
         for (ApprovalRequest approvalRequest : holidayRequest.getApprovalRequests()) {
             Broadcaster.broadcast(
                     new BroadcastEvent(approvalRequest.getApprover().getEmail(),
-                            BroadcastEvent.Type.APPROVE_ADDED,
-                            String.format(MessageRetriever.get("notificationApproveMessage"), holidayRequest.getRequester().getName())));
+                            BroadcastEvent.Type.APPROVE_ADDED,"", holidayRequest.getRequester().getName()));
         }
     }
 

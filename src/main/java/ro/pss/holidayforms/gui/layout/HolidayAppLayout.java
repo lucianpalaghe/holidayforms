@@ -109,8 +109,9 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	private void loadUserNotifications() {
 		List<Notification> userNotifications = notificationRepository.findAllByTargetUserEmailOrderByStatusAscCreationDateTimeDesc(SecurityUtils.getLoggedInUser().getEmail());
 		for (Notification notification : userNotifications) {
-			String typeString = MessageRetriever.get("notification_" + notification.getType());
-			HolidayNotification holidayNotification = new HolidayNotification(typeString, notification.getMessage(), notification);
+			String title = MessageRetriever.get("notification_" + notification.getType());
+			String description = getDescriptionFromMessageEventType(notification.getType(), notification.getUserIdentifier());
+			HolidayNotification holidayNotification = new HolidayNotification(title, description, notification);
 			holidayNotification.setNotification(notification);
 			holidayNotification.setCreationTime(notification.getCreationDateTime());
 			if (notification.getStatus().equals(Notification.Status.READ)) {
@@ -139,13 +140,14 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	}
 
 	@Override
-	public void receiveBroadcast(UI ui, BroadcastEvent message) {
+	public void receiveBroadcast(UI ui, BroadcastEvent event) {
 		ui.access(() -> {
-			String typeString = MessageRetriever.get("notification_" + message.getType());
-			HolidayNotification holidayNotification = new HolidayNotification(typeString, message.getMessage(), message.getNotification());
+			String title = MessageRetriever.get("notification_" + event.getType());
+			String description = getDescriptionFromMessageEventType(event.getType(), event.getUserIdentifier());
+			HolidayNotification holidayNotification = new HolidayNotification(title, description, event.getNotification());
 			notifications.addNotification(holidayNotification);
 
-			BroadcastEvent.Type type = message.getType();
+			BroadcastEvent.Type type = event.getType();
 			switch (type) {
 				case SUBSTITUTE_ADDED:
 					substitutionBadge.increase();
@@ -172,7 +174,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		});
 	}
 
-	public void decreaseSubsitutionBadgeCount() {
+	public void decreaseSubstitutionBadgeCount() {
 		this.substitutionBadge.decrease();
 	}
 
@@ -185,5 +187,46 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		super.onAttach(attachEvent);
 		ComponentUtil.setData(UI.getCurrent(), HolidayAppLayout.class, this);
 	}
+
+	private String getDescriptionFromMessageEventType(BroadcastEvent.Type type, String userIdentifier) {
+		String key;
+		switch (type) {
+			case APPROVER_ACCEPTED:
+				key = "notificationApproverAccepted";
+				break;
+			case APPROVER_DENIED:
+				key = "notificationApproverDenied";
+				break;
+			case SUBSTITUTE_ACCEPTED:
+				key = "notificationSubstituteAccepted";
+				break;
+			case SUBSTITUTE_DENIED:
+				key = "notificationSubstituteDenied";
+				break;
+			case SUBSTITUTE_CHANGED:
+				key = "notificationSubstituteChangedMessage";
+				break;
+			case APPROVE_CHANGED:
+				key = "notificationApproveChangedMessage";
+				break;
+			case SUBSTITUTE_DELETED:
+				key = "notificationSubstituteDeletedMessage" ;
+				break;
+			case APPROVE_DELETED:
+				key = "notificationApproveDeletedMessage";
+				break;
+			case SUBSTITUTE_ADDED:
+				key = "notificationSubstituteMessage";
+				break;
+			case APPROVE_ADDED:
+				key = "notificationApproveMessage";
+				break;
+			default:
+				key = "notImplementedMsg";
+
+		}
+		return String.format(MessageRetriever.get(key), userIdentifier);
+	}
+
 }
 
