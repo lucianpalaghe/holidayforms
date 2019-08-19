@@ -9,12 +9,12 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.function.SerializablePredicate;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
-import ro.pss.holidayforms.config.security.CustomUserPrincipal;
+import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.gui.MessageRetriever;
@@ -22,7 +22,6 @@ import ro.pss.holidayforms.gui.components.daterange.DateRange;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 import ro.pss.holidayforms.service.HolidayRequestService;
 
-import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -32,9 +31,7 @@ import static java.util.stream.Collectors.*;
 @SpringComponent
 @UIScope
 public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier {
-	@Autowired
-	private HolidayRequestService requestsService;
-
+	private final HolidayRequestService requestsService;
 	private final ComboBox<User> substitute = new ComboBox<>(MessageRetriever.get("substituteName"));
 	private final DateRangePicker dateRange = new DateRangePicker();
 	private final ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
@@ -45,7 +42,8 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private ChangeHandler changeHandler;
 
 	@Autowired
-	public HolidayRequestEditor() {
+	public HolidayRequestEditor(HolidayRequestService requestsService) {
+		this.requestsService = requestsService;
 		creationDate.setLocale(MessageRetriever.getLocale());
 		DatePicker.DatePickerI18n dp18n = new DatePicker.DatePickerI18n();
 		dp18n.setCalendar(MessageRetriever.get("calendarName"));
@@ -62,7 +60,11 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		dateRange.setForceNarrow(true);
 		type.setItems(HolidayRequest.Type.values());
 		type.setItemLabelGenerator(i -> MessageRetriever.get("holidayType_" + i.toString()));
+
+		substitute.setDataProvider(new ListDataProvider<>(requestsService.getAvailableSubstitutes()));
+		addValidations();
 		substitute.setWidthFull();
+
 		type.setWidthFull();
 		creationDate.setWidthFull();
 		creationDate.setLocale(new Locale("ro", "RO"));
@@ -82,23 +84,16 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
 		add(substitute, dateRange, type, creationDate, actions);
 		addKeyPressListener(Key.ENTER, e -> save());
-		addValidations();
+
 		setSpacing(true);
 		setVisible(false);
 	}
 
-	@PostConstruct
-	private void postConstruct() {
-		substitute.setItems(requestsService.getAvailableSubstitutes());
-	}
-
 	private void addValidations() {
-		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-
 		binder.forField(substitute).asRequired(MessageRetriever.get("validationSubstitute"))
 				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
-		List<HolidayRequest> allByRequesterEmail = requestsService.getHolidayRequests(user.getEmail());
+		List<HolidayRequest> allByRequesterEmail = requestsService.getHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
 
 		Binder.Binding<HolidayRequest, DateRange> holidayRequestDateRangeBinding = binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
 				.withValidator(DateRange::hasWorkingDays, MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
@@ -126,7 +121,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 	private SerializablePredicate<DateRange> hasEnoughHolidayDays(List<HolidayRequest> requests) {
 		return range -> {
-			User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+			User user = SecurityUtils.getLoggedInUser();
 			int sumDaysTaken = requests.stream()
 					.filter(HolidayRequest::isCO)
 					.mapToInt(HolidayRequest::getNumberOfDays)
@@ -146,7 +141,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 	private void save() {
 		if (binder.validate().isOk()) {
-			User requester = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+			User requester = SecurityUtils.getLoggedInUser();
 			holidayRequest.setRequester(requester);
 			requestsService.createRequest(holidayRequest);
 

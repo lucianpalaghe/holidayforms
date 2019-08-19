@@ -7,15 +7,22 @@ import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.notification.Notification;
+import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.domain.repo.NotificationRepository;
+import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class NotificationService {
 	@Autowired
 	private NotificationRepository notificationRepository;
+	@Autowired
+	private ApprovalRequestRepository approvalRepository;
+	@Autowired
+	private SubstitutionRequestRepository substitutionRepository;
 
 	public void requestCreated(HolidayRequest holidayRequest) {
 		notifySubstitutes(holidayRequest, BroadcastEvent.Type.SUBSTITUTE_ADDED);
@@ -68,6 +75,26 @@ public class NotificationService {
 		sendBroadcast(new BroadcastEvent(substitutionRequest.getRequest().getRequester().getEmail(),
 				BroadcastEvent.Type.SUBSTITUTE_DENIED,
 				SecurityUtils.getLoggedInUser().getName()));
+	}
+
+	public int getSubstitutionRequestsCount(String userEmail) {
+		return substitutionRepository.findAllBySubstituteEmailAndStatus(userEmail, SubstitutionRequest.Status.NEW).size();
+	}
+
+	public int getApprovalRequestsCount(String userEmail) {
+		return approvalRepository.findAllByApproverEmailAndStatus(userEmail, ApprovalRequest.Status.NEW).size();
+	}
+
+	public List<Notification> getNotifications(String userEmail) {
+		return notificationRepository.findAllByTargetUserEmailOrderByStatusAscCreationDateTimeDesc(SecurityUtils.getLoggedInUser().getEmail());
+	}
+
+	public Notification saveNotification(Notification notification) {
+		return notificationRepository.save(notification);
+	}
+
+	public void deleteNotification(Notification notification) {
+		notificationRepository.delete(notification);
 	}
 
 	private void sendBroadcast(BroadcastEvent event) {

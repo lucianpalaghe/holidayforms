@@ -20,24 +20,19 @@ import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.page.Viewport;
 import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
-import ro.pss.holidayforms.domain.ApprovalRequest;
-import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.notification.Notification;
-import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
-import ro.pss.holidayforms.domain.repo.NotificationRepository;
-import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
 import ro.pss.holidayforms.gui.dashboard.DashboardView;
 import ro.pss.holidayforms.gui.notification.Broadcaster;
+import ro.pss.holidayforms.gui.notification.NotificationService;
 import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
 import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 import ro.pss.holidayforms.gui.planning.HolidayPlanningView;
 import ro.pss.holidayforms.gui.request.HolidayRequestView;
 import ro.pss.holidayforms.gui.subtitution.SubstitutionRequestView;
 
-import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -50,15 +45,11 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	private final DefaultNotificationHolder notifications;
 	private final DefaultBadgeHolder substitutionBadge;
 	private final DefaultBadgeHolder approvalBadge;
+	private final NotificationService notificationService;
 
 	@Autowired
-	private NotificationRepository notificationRepository;
-	@Autowired
-	private ApprovalRequestRepository approvalRepository;
-	@Autowired
-	private SubstitutionRequestRepository substitutionRepository;
-
-	public HolidayAppLayout() {
+	public HolidayAppLayout(NotificationService notificationService) {
+		this.notificationService = notificationService;
 		ComponentUtil.setData(UI.getCurrent(), HolidayAppLayout.class, this);
 		this.notifications = new DefaultNotificationHolder();
 		this.substitutionBadge = new DefaultBadgeHolder();
@@ -72,6 +63,10 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuApprovals"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
 		substitutionBadge.bind(substitutionMenuEntry.getBadge());
 		approvalBadge.bind(approvalMenuEntry.getBadge());
+
+		approvalBadge.setCount(notificationService.getApprovalRequestsCount(user.getEmail()));
+		substitutionBadge.setCount(notificationService.getSubstitutionRequestsCount(user.getEmail()));
+		loadUserNotifications();
 
 		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.6"); // TODO: get version from somewhere
 		Broadcaster.register(new UserUITuple(user, UI.getCurrent()), this);
@@ -109,16 +104,8 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 				.build());
 	}
 
-	@PostConstruct
-	void postConstruct() {
-		User user = SecurityUtils.getLoggedInUser();
-		approvalBadge.setCount(approvalRepository.findAllByApproverEmailAndStatus(user.getEmail(), ApprovalRequest.Status.NEW).size());
-		substitutionBadge.setCount(substitutionRepository.findAllBySubstituteEmailAndStatus(user.getEmail(), SubstitutionRequest.Status.NEW).size());
-		loadUserNotifications();
-	}
-
 	private void loadUserNotifications() {
-		List<Notification> userNotifications = notificationRepository.findAllByTargetUserEmailOrderByStatusAscCreationDateTimeDesc(SecurityUtils.getLoggedInUser().getEmail());
+		List<Notification> userNotifications = notificationService.getNotifications(SecurityUtils.getLoggedInUser().getEmail());
 		for (Notification notification : userNotifications) {
 			String title = MessageRetriever.get("notificationTitle_" + notification.getType());
 			String description = String.format(MessageRetriever.get("notificationBody_" + notification.getType()), notification.getUserIdentifier());
@@ -134,19 +121,20 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		notifications.addNotificationsChangeListener(new NotificationsChangeListener<>() {
 			@Override
 			public void onNotificationRemoved(DefaultNotification notification) {
-				notificationRepository.delete(((HolidayNotification) notification).getNotification());
+				notificationService.deleteNotification(((HolidayNotification) notification).getNotification());
 			}
 		});
+
 		notifications.addClickListener(defaultNotification -> {
 			HolidayNotification holidayNotification = (HolidayNotification) defaultNotification;
-			Notification notification = notificationRepository.findById(holidayNotification.getNotification().getId()).orElseThrow();
-			if (notification.getStatus().equals(Notification.Status.READ)) {
+			Notification notification = holidayNotification.getNotification();
+			if (notification.getChangedDateTime() != null) {
 				return;
 			}
+
 			notification.setChangedDateTime(LocalDateTime.now());
 			notification.setStatus(Notification.Status.READ);
-			notificationRepository.save(notification);
-			defaultNotification.setRead(true);
+			notificationService.saveNotification(notification);
 		});
 	}
 

@@ -14,27 +14,18 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.spring.annotation.SpringComponent;
+import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
-import ro.pss.holidayforms.config.security.CustomUserPrincipal;
-import ro.pss.holidayforms.domain.HolidayPlanning;
-import ro.pss.holidayforms.domain.HolidayPlanningEntry;
-import ro.pss.holidayforms.domain.HolidayRequest;
-import ro.pss.holidayforms.domain.User;
+import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.gui.MessageRetriever;
-import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 import ro.pss.holidayforms.service.DashboardService;
 
-import javax.annotation.PostConstruct;
-import java.time.Month;
-import java.util.*;
-
-import static java.util.stream.Collectors.*;
-
 @Route(value = "", layout = HolidayAppLayout.class)
+@SpringComponent
+@UIScope
 public class DashboardView extends HorizontalLayout implements AfterNavigationObserver {
-	@Autowired
 	private DashboardService service;
 	private final H2 remainingDaysHeader = new H2();
 	private ChartJs holidaysChart;
@@ -43,12 +34,17 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 	private LineData chartLineData;
 	private LineOptions chartLineOptions;
 
-	public DashboardView() {
+	@Autowired
+	public DashboardView(DashboardService service) {
+		this.service = service;
 		VerticalLayout container = new VerticalLayout();
 		container.add(remainingDaysHeader);
 
 		Div chartContainer = new Div();
 		chartContainer.setWidthFull();
+
+		initializeChart();
+		refreshDashboardData();
 		chartContainer.add(holidaysChart);
 
 		container.add(chartContainer);
@@ -62,17 +58,13 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 		setHeightFull();
 	}
 
-	@PostConstruct
-	private void postConstruct() {
-		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeader"), service.getRemainingVacationDays(user.getEmail())));
+	private void refreshDashboardData() {
+		DashboardData dashboardData = service.getDashboardData(SecurityUtils.getLoggedInUser().getEmail());
+		remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeader"), dashboardData.getRemainingVacationDays()));
 
-		initializeChart();
-		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(user.getEmail());
-		List<HolidayPlanningEntry> entries = new ArrayList<>();
-		byEmployeeEmail.ifPresent(holidayPlanning -> entries.addAll(holidayPlanning.getEntries()));
-		holidaysChart = getUpdatedChart(requests, entries);
+		holidaysChart = getUpdatedChart(dashboardData.getChartVacationDays(), dashboardData.getChartPlannedDays());
 	}
+
 
 	private void initializeChart() {
 		chartPlannedDays = new LineDataset()
@@ -99,45 +91,14 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 				.setLegend(new Legend().setDisplay(true));
 	}
 
-	private ChartJs getUpdatedChart(List<HolidayRequest> requests, List<HolidayPlanningEntry> planningEntries) {
-		Map<Month, Integer> holidaysGroupedByMonth = requests.stream()
-				.collect(groupingBy(HolidayRequest::getStartingMonthOfHoliday,
-						summingInt(HolidayRequest::getNumberOfDays)));
-
-		Map<Month, Integer> emptyMonthsMap = DateUtils.getEmptyMonthsMap();
-		emptyMonthsMap.putAll(holidaysGroupedByMonth);
-
-		TreeMap<Month, Integer> monthIntegerTreeMap = new TreeMap<>(emptyMonthsMap);// treemap sorts contents by key
-
-		int[] daysArray = monthIntegerTreeMap.values().stream().mapToInt(i -> i).toArray();
-		chartHolidays.setData(daysArray);
-
-		Map<Month, Integer> planningsGroupedByMonth = planningEntries.stream()
-				.collect(groupingBy(HolidayPlanningEntry::getStartingMonthOfPlanning,
-						summingInt(HolidayPlanningEntry::getNumberOfDays)));
-
-		Map<Month, Integer> emptyMonthsMap2 = DateUtils.getEmptyMonthsMap();
-		emptyMonthsMap2.putAll(planningsGroupedByMonth);
-
-		TreeMap<Month, Integer> monthIntegerTreeMap2 = new TreeMap<>(emptyMonthsMap2);// treemap sorts contents by key
-
-		int[] daysArray2 = monthIntegerTreeMap2.values().stream().mapToInt(i -> i).toArray();
-		chartHolidays.setData(daysArray);
-
-		chartPlannedDays.setData(daysArray2);
-
+	private ChartJs getUpdatedChart(int[] vacationDays, int[] plannedDays) {
+		chartHolidays.setData(vacationDays);
+		chartPlannedDays.setData(plannedDays);
 		return new ChartJs(new LineChart(chartLineData, chartLineOptions).toJson());
 	}
 
 	@Override
 	public void afterNavigation(AfterNavigationEvent event) {
-		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(user.getEmail());
-		Optional<HolidayPlanning> byEmployeeEmail = planningRepository.findByEmployeeEmail(user.getEmail());
-		List<HolidayPlanningEntry> entries = new ArrayList<>();
-		byEmployeeEmail.ifPresent(holidayPlanning -> entries.addAll(holidayPlanning.getEntries()));
-
-		refreshHeader(user.getAvailableVacationDays(), requests);
-		holidaysChart = getUpdatedChart(requests, entries);
+		refreshDashboardData();
 	}
 }

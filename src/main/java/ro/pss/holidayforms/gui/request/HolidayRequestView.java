@@ -22,13 +22,11 @@ import com.vaadin.flow.spring.annotation.UIScope;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.vaadin.olli.FileDownloadWrapper;
-import ro.pss.holidayforms.config.security.CustomUserPrincipal;
+import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
-import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 import ro.pss.holidayforms.service.HolidayRequestService;
@@ -193,8 +191,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 	}
 
 	private void listHolidayRequests() {
-		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		List<HolidayRequest> requests = service.getHolidayRequests(user.getEmail());
+		List<HolidayRequest> requests = service.getHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
 		if (requests.isEmpty()) {
 			grid.setVisible(false);
 			heading.setText(MessageRetriever.get("noHolidayRequests"));

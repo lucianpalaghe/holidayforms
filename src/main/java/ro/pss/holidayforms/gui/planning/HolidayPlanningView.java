@@ -16,8 +16,7 @@ import com.vaadin.flow.router.*;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
-import ro.pss.holidayforms.config.security.CustomUserPrincipal;
+import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.HolidayPlanning;
 import ro.pss.holidayforms.domain.HolidayPlanningEntry;
 import ro.pss.holidayforms.domain.User;
@@ -67,7 +66,6 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		HorizontalLayout subContainer = new HorizontalLayout();
 		subContainer.setPadding(true);
 
-		refreshRemainingDaysHeader();
 		VerticalLayout remainingDays = new VerticalLayout(remainingDaysHeader, new Hr(), rangePicker);
 		remainingDays.setWidth("auto");
 		Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.LOCK.create(), event -> {
@@ -101,6 +99,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	@PostConstruct
 	private void postConstruct() {
 		listHolidayPlanningEntries();
+		refreshRemainingDaysHeader();
 	}
 
 	private void refreshRemainingDaysHeader() {
@@ -125,7 +124,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	}
 
 	private void listHolidayPlanningEntries() {
-		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
+		User user = SecurityUtils.getLoggedInUser();
 		Optional<HolidayPlanning> planning = planningService.getHolidayPlanning(user.getEmail());
 		this.holidayPlanning = planning.orElseGet(() -> new HolidayPlanning(user, new TreeSet<>()));
 		grid.setVisible(true);
@@ -149,8 +148,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	}
 
 	private boolean hasChanges() {
-		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		Optional<HolidayPlanning> original = planningService.getHolidayPlanning(user.getEmail());
+		Optional<HolidayPlanning> original = planningService.getHolidayPlanning(SecurityUtils.getLoggedInUser().getEmail());
 		if (original.isPresent()) {
 			HolidayPlanning holidayPlanning = original.get();
 			return !holidayPlanning.getEntries().equals(entries);
