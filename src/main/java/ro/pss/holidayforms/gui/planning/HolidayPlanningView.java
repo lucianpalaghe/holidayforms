@@ -15,11 +15,14 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import com.vaadin.server.StreamResource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.HolidayPlanning;
 import ro.pss.holidayforms.domain.HolidayPlanningEntry;
 import ro.pss.holidayforms.domain.User;
+import ro.pss.holidayforms.excel.ExcelExporter;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
@@ -27,6 +30,8 @@ import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 import ro.pss.holidayforms.service.HolidayPlanningService;
 
 import javax.annotation.PostConstruct;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -35,9 +40,13 @@ import java.util.TreeSet;
 @UIScope
 @Route(value = "planning", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-panels-beta.css")
+@Slf4j
 public class HolidayPlanningView extends HorizontalLayout implements AfterNavigationObserver, BeforeLeaveObserver {
 	@Autowired
 	private HolidayPlanningService planningService;
+
+	@Autowired
+	private ExcelExporter excelExporter;
 
 	private final DateRangePicker rangePicker;
 	private final Grid<HolidayPlanningEntry> grid;
@@ -65,8 +74,10 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 
 		HorizontalLayout subContainer = new HorizontalLayout();
 		subContainer.setPadding(true);
-
-		VerticalLayout remainingDays = new VerticalLayout(remainingDaysHeader, new Hr(), rangePicker);
+		Button exportToExcelBtn = new Button(MessageRetriever.get("btnExportToExcelLbl"), VaadinIcon.FILE_TABLE.create(),(event) -> {
+			excelExporter.doGetExcel();
+		});
+		VerticalLayout remainingDays = new VerticalLayout(remainingDaysHeader, new Hr(), rangePicker, new Hr(), exportToExcelBtn);
 		remainingDays.setWidth("auto");
 		Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.LOCK.create(), event -> {
 			holidayPlanning.getEntries().clear();
@@ -155,5 +166,15 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		} else {
 			return entries.size() > 0;
 		}
+	}
+
+	public StreamResource.StreamSource getStreamSource(byte[] toDownload) {
+		StreamResource.StreamSource source = new StreamResource.StreamSource() {
+			@Override
+			public InputStream getStream() {
+				return new ByteArrayInputStream(toDownload);
+			}
+		};
+		return source;
 	}
 }
