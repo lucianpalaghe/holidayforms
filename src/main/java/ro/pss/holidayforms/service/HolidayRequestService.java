@@ -33,7 +33,7 @@ public class HolidayRequestService {
 		return userRepository.findAll();
 	}
 
-	public void createRequest(HolidayRequest holidayRequest) {
+	public void saveRequest(HolidayRequest holidayRequest) {
 		if (holidayRequest.getApprovalRequests().size() > 0) { // if this request is edited, remove all previous approvals
 			holidayRequest.getApprovalRequests().clear();
 		}
@@ -56,5 +56,9 @@ public class HolidayRequestService {
 	public void remove(HolidayRequest holidayRequest) {
 		requestRepository.delete(holidayRequest);
 		notificationService.requestDeleted(holidayRequest);
+	}
+
+	public HolidayRequest findById(Long id) {
+		return requestRepository.findById(id).orElseThrow();
 	}
 }

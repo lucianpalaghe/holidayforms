@@ -7,6 +7,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -27,7 +28,7 @@ import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
 import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 import ro.pss.holidayforms.service.HolidaySubstitutionService;
 
-import javax.annotation.PostConstruct;
+import java.util.List;
 
 @SpringComponent
 @UIScope
@@ -38,7 +39,8 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	private HolidaySubstitutionService service;
 	private final Grid<SubstitutionRequest> grid;
 	private HolidayConfirmationDialog holidayConfDialog;
-
+	private final H2 heading;
+	
 	public SubstitutionRequestView() {
 		this.grid = new Grid<>();
 		grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
@@ -47,8 +49,11 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 
+		heading = new H2();
+		heading.setVisible(false);
+
 		VerticalLayout container = new VerticalLayout();
-		container.add(grid);
+		container.add(heading, grid);
 		container.setWidth("100%");
 		container.setMaxWidth("70em");
 		container.setHeightFull();
@@ -59,13 +64,17 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 		setHeightFull();
 	}
 
-	@PostConstruct
-	private void postConstruct() {
-		listSubstitutionRequests(SecurityUtils.getLoggedInUser().getEmail());
-	}
-
 	private void listSubstitutionRequests(String userEmail) {
-		grid.setItems(service.getSubstitutionRequests(userEmail));
+		List<SubstitutionRequest> substitutionRequests = service.getSubstitutionRequests(userEmail);
+		if (substitutionRequests.isEmpty()) {
+			grid.setVisible(false);
+			heading.setText(MessageRetriever.get("noSubstitutionRequests"));
+			heading.setVisible(true);
+		} else {
+			heading.setVisible(false);
+			grid.setVisible(true);
+			grid.setItems(substitutionRequests);
+		}
 	}
 
 	private HorizontalLayout getActionButtons(SubstitutionRequest request) {
