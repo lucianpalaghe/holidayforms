@@ -1,5 +1,7 @@
 package ro.pss.holidayforms.gui.request;
 
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -21,23 +23,36 @@ import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.olli.FileDownloadWrapper;
-import ro.pss.holidayforms.config.security.CustomUserPrincipal;
+import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
-import ro.pss.holidayforms.domain.User;
-import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
+import ro.pss.holidayforms.gui.notification.Broadcaster;
+import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
+import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
+import ro.pss.holidayforms.service.HolidayRequestService;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
+
+/**
+ * There is an Vaadin issue manifested in this view, related to the currently selected grid item and refreshes/broadcasts from other users.
+ * The problem causes a red pop-up notification to appear in the top-right corner of the page displaying the following error message:
+ * <b>(TypeError) : Cannot read property 'doSelection' of undefined</b>
+ * <br>You can find more info on the following threads:
+ *
+ * @see <a href="https://github.com/vaadin/flow/issues/4997">https://github.com/vaadin/flow/issues/4997</a>
+ * @see <a href="https://vaadin.com/forum/thread/17527564/typeerror-cannot-read-property-dodeselector-of-undefined-vaadin-10">https://vaadin.com/forum/thread/17527564/typeerror-cannot-read-property-dodeselector-of-undefined-vaadin-10</a>
+ */
 
 @SpringComponent
 @UIScope
@@ -45,20 +60,19 @@ import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 @Route(value = "requests", layout = HolidayAppLayout.class)
 @StyleSheet("step-progress-bar.css")
 @StyleSheet("responsive-buttons.css")
-public class HolidayRequestView extends HorizontalLayout implements AfterNavigationObserver {
+public class HolidayRequestView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
+	@Autowired
+	private HolidayRequestService service;
 	private final Grid<HolidayRequest> grid;
-	private final HolidayRequestRepository requestRepository;
 	private final HolidayRequestEditor editor;
 	private final Dialog dialog;
-	private final VerticalLayout container;
 	private final H2 heading;
 
-	public HolidayRequestView(HolidayRequestRepository repo, HolidayRequestEditor editor) {
-		this.requestRepository = repo;
+	public HolidayRequestView(HolidayRequestEditor editor) {
 		this.editor = editor;
 		this.editor.setChangeHandler(() -> {
 			this.editor.setVisible(false);
-			listHolidayRequests();
+			listHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
 			mountEditorInDialog(false);
 		});
 
@@ -84,7 +98,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		heading = new H2();
 		heading.setVisible(false);
 
-		container = new VerticalLayout();
+		VerticalLayout container = new VerticalLayout();
 		container.add(actions, heading, grid, this.editor);
 		container.setWidth("100%");
 		container.setMaxWidth("70em");
@@ -94,14 +108,15 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		setAlignItems(Alignment.CENTER);
 		add(container);
 		setHeightFull();
-
-		listHolidayRequests();
 	}
 
 	private ComponentRenderer<HorizontalLayout, HolidayRequest> getRequestStatusRenderer() {
 		return new ComponentRenderer<>(holidayRequest -> {
+			UnorderedList stepList = new UnorderedList();
+
 			ListItem initialStep = new ListItem(MessageRetriever.get("created"));
 			initialStep.addClassName("active");
+			stepList.add(initialStep);
 
 			ListItem substituteStep = new ListItem(holidayRequest.getSubstitutionRequest().getSubstitute().getName());
 			if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED) {
@@ -109,32 +124,9 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 			} else if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.DENIED) {
 				substituteStep.addClassName("denied");
 			}
+			stepList.add(substituteStep);
 
-			ApprovalRequest approvalRequest = holidayRequest.getApprovalRequests().get(0);
-			ListItem teamLeaderStep = new ListItem(approvalRequest.getApprover().getName());
-			if (approvalRequest.getStatus() == ApprovalRequest.Status.APPROVED) {
-				teamLeaderStep.addClassName("active");
-			} else if (approvalRequest.getStatus() == ApprovalRequest.Status.DENIED) {
-				teamLeaderStep.addClassName("denied");
-			}
-
-			ApprovalRequest approvalRequest2 = holidayRequest.getApprovalRequests().get(1);
-			ListItem projectManagerStep = new ListItem(approvalRequest2.getApprover().getName());
-			if (approvalRequest2.getStatus() == ApprovalRequest.Status.APPROVED) {
-				projectManagerStep.addClassName("active");
-			} else if (approvalRequest2.getStatus() == ApprovalRequest.Status.DENIED) {
-				projectManagerStep.addClassName("denied");
-			}
-
-			ApprovalRequest approvalRequest3 = holidayRequest.getApprovalRequests().get(2);
-			ListItem hrStep = new ListItem(approvalRequest3.getApprover().getName());
-			if (approvalRequest3.getStatus() == ApprovalRequest.Status.APPROVED) {
-				hrStep.addClassName("active");
-			} else if (approvalRequest3.getStatus() == ApprovalRequest.Status.DENIED) {
-				hrStep.addClassName("denied");
-			}
-
-			UnorderedList stepList = new UnorderedList(initialStep, substituteStep, teamLeaderStep, projectManagerStep, hrStep);
+			holidayRequest.getApprovalRequests().stream().forEach(addApprovalStatusSteps(stepList));
 			stepList.setWidthFull();
 			stepList.setClassName("progressbar");
 
@@ -146,12 +138,23 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		});
 	}
 
+	private Consumer<ApprovalRequest> addApprovalStatusSteps(UnorderedList stepList) {
+		return approvalRequest -> {
+			ListItem approvalStep = new ListItem(approvalRequest.getApprover().getName());
+			if (approvalRequest.getStatus() == ApprovalRequest.Status.APPROVED) {
+				approvalStep.addClassName("active");
+			} else if (approvalRequest.getStatus() == ApprovalRequest.Status.DENIED) {
+				approvalStep.addClassName("denied");
+			}
+			stepList.add(approvalStep);
+		};
+	}
+
 	private HorizontalLayout getActionButtons(HolidayRequest request) {
 		Button btnEdit = new Button(MessageRetriever.get("editHoliday"), VaadinIcon.EDIT.create(), e -> {
 			editor.editHolidayRequest(request);
 			mountEditorInDialog(true);
 		});
-		btnEdit.addClassName("responsive");
 		btnEdit.addClassName("responsive");
 		Button btnSave = new Button(MessageRetriever.get("saveHoliday"), VaadinIcon.PRINT.create(), event -> {
 		});
@@ -169,7 +172,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 	}
 
 	private FileDownloadWrapper getButtonWrapperWithPdfDocument(Button btn, HolidayRequest request) {
-		FileDownloadWrapper buttonWrapper = null;
+		FileDownloadWrapper buttonWrapper;
 		StreamResource res = null;
 		try {
 			PDDocument doc = fillHolidayRequest(request);
@@ -188,9 +191,8 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		return buttonWrapper;
 	}
 
-	private void listHolidayRequests() {
-		User user = ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
-		List<HolidayRequest> requests = requestRepository.findAllByRequesterEmail(user.getEmail());
+	private void listHolidayRequests(String userEmail) {
+		List<HolidayRequest> requests = service.getHolidayRequests(userEmail);
 		if (requests.isEmpty()) {
 			grid.setVisible(false);
 			heading.setText(MessageRetriever.get("noHolidayRequests"));
@@ -216,6 +218,29 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 
 	@Override
 	public void afterNavigation(AfterNavigationEvent event) {
-		listHolidayRequests();
+		listHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
+	}
+
+	@Override
+	protected void onAttach(AttachEvent attachEvent) {
+		Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
+	}
+
+	@Override
+	public void receiveBroadcast(UI ui, BroadcastEvent message) {
+		switch (message.getType()) {
+			case APPROVER_ACCEPTED:
+			case APPROVER_DENIED:
+			case SUBSTITUTE_ACCEPTED:
+			case SUBSTITUTE_DENIED:
+				ui.access(() -> {
+					if(dialog != null) {
+						if (dialog.isOpened()) {
+							dialog.close();
+						}
+					}
+					this.listHolidayRequests(message.getTargetUserId());});
+				break;
+		}
 	}
 }

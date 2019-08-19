@@ -3,9 +3,29 @@
       margin-inline-start: 0px;
   }
 
+    li:first-child:nth-last-child(2),
+    li:first-child:nth-last-child(2) ~ li {
+        width: 50%;
+    }
+    li:first-child:nth-last-child(3),
+    li:first-child:nth-last-child(3) ~ li {
+        width: 33.3333%;
+    }
+    li:first-child:nth-last-child(4),
+    li:first-child:nth-last-child(4) ~ li {
+        width: 25%;
+    }
+    li:first-child:nth-last-child(5),
+    li:first-child:nth-last-child(5) ~ li {
+        width: 20%;
+    }
+    li:first-child:nth-last-child(6),
+    li:first-child:nth-last-child(6) ~ li {
+        width: 16.6666%;
+    }
+
   .progressbar li {
       list-style-type: none;
-      width: 20%;
       float: left;
       font-size: 20px;
       position: relative;

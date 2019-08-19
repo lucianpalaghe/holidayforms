@@ -7,6 +7,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -19,30 +20,26 @@ import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.ApprovalRequest;
-import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 import ro.pss.holidayforms.gui.notification.Broadcaster;
-import ro.pss.holidayforms.gui.notification.NotificationService;
 import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
 import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
+import ro.pss.holidayforms.service.HolidayApprovalService;
 
-import javax.annotation.PostConstruct;
+import java.util.List;
 
 @SpringComponent
 @UIScope
 @Route(value = "approvals", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-buttons.css")
 public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
+	@Autowired
+	private HolidayApprovalService service;
 	private final Grid<ApprovalRequest> grid;
-	private final VerticalLayout container;
 	private HolidayConfirmationDialog holidayConfDialog;
-
-	@Autowired
-	private NotificationService notificationService;
-	@Autowired
-	private ApprovalRequestRepository approvalRepo;
+	private final H2 heading;
 
 	public HolidayApprovalView() {
 		this.grid = new Grid<>();
@@ -54,8 +51,11 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(3);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 
-		container = new VerticalLayout();
-		container.add(grid);
+		heading = new H2();
+		heading.setVisible(false);
+
+		VerticalLayout container = new VerticalLayout();
+		container.add(heading, grid);
 		container.setWidth("100%");
 		container.setMaxWidth("70em");
 		container.setHeightFull();
@@ -66,13 +66,17 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		setHeightFull();
 	}
 
-	@PostConstruct
-	private void postConstruct() {
-		listApprovalRequests(SecurityUtils.getLoggedInUser().getEmail());
-	}
-
 	private void listApprovalRequests(String userEmail) {
-		grid.setItems(approvalRepo.findAllByApproverEmail(userEmail));
+		List<ApprovalRequest> approvalRequests = service.getApprovalRequests(userEmail);
+		if (approvalRequests.isEmpty()) {
+			grid.setVisible(false);
+			heading.setText(MessageRetriever.get("noApprovalRequests"));
+			heading.setVisible(true);
+		} else {
+			heading.setVisible(false);
+			grid.setVisible(true);
+			grid.setItems(approvalRequests);
+		}
 	}
 
 	private HorizontalLayout getActionButtons(ApprovalRequest request) {
@@ -117,17 +121,13 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 	}
 
 	private void confirmHolidayApproval(ApprovalRequest request) {
-		request.approve();
-		approvalRepo.save(request);
-		notificationService.approvalAccepted(request);
+		service.approveRequest(request);
 		grid.getDataProvider().refreshItem(request);
 		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseApprovalBadgeCount();
 	}
 
 	private void rejectHolidayApproval(ApprovalRequest request) {
-		request.deny();
-		approvalRepo.save(request);
-		notificationService.approvalDenied(request);
+		service.denyRequest(request);
 		grid.getDataProvider().refreshItem(request);
 		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseApprovalBadgeCount();
 	}
@@ -147,7 +147,12 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		if (BroadcastEvent.Type.APPROVE_ADDED.equals(message.getType())
 				|| BroadcastEvent.Type.APPROVE_CHANGED.equals(message.getType())
 				|| BroadcastEvent.Type.APPROVE_DELETED.equals(message.getType())) {
-			ui.access(() -> this.listApprovalRequests(message.getTargetUserId()));
+			ui.access(() ->  {
+				if(holidayConfDialog != null) {
+					holidayConfDialog.close();
+				}
+				this.listApprovalRequests(message.getTargetUserId());
+			});
 		}
 	}
 }
