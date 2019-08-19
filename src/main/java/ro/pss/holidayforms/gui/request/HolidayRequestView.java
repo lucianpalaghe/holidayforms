@@ -238,8 +238,10 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 			case SUBSTITUTE_ACCEPTED:
 			case SUBSTITUTE_DENIED:
 				ui.access(() -> {
-					if(dialog.isOpened()) {
-						dialog.close();
+					if(dialog != null) {
+						if (dialog.isOpened()) {
+							dialog.close();
+						}
 					}
 					this.listHolidayRequests(message.getTargetUserId());});
 				break;

@@ -129,7 +129,11 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 		if (BroadcastEvent.Type.SUBSTITUTE_ADDED.equals(message.getType())
 				|| BroadcastEvent.Type.SUBSTITUTE_CHANGED.equals(message.getType())
 				|| BroadcastEvent.Type.SUBSTITUTE_DELETED.equals(message.getType())) {
-			ui.access(() -> this.listSubstitutionRequests(message.getTargetUserId()));
+			ui.access(() -> {
+			   if(holidayConfDialog != null) {
+			   		holidayConfDialog.close();
+			   }
+			   this.listSubstitutionRequests(message.getTargetUserId());});
 		}
 	}
 }

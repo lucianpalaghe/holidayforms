@@ -139,7 +139,12 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		if (BroadcastEvent.Type.APPROVE_ADDED.equals(message.getType())
 				|| BroadcastEvent.Type.APPROVE_CHANGED.equals(message.getType())
 				|| BroadcastEvent.Type.APPROVE_DELETED.equals(message.getType())) {
-			ui.access(() -> this.listApprovalRequests(message.getTargetUserId()));
+			ui.access(() ->  {
+				if(holidayConfDialog != null) {
+					holidayConfDialog.close();
+				}
+				this.listApprovalRequests(message.getTargetUserId());
+			});
 		}
 	}
 }
