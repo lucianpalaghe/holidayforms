@@ -23,7 +23,7 @@ public class HolidayRequestService {
 	@Autowired
 	private NotificationService notificationService;
 
-	private final List<String> approverIds = Arrays.asList("lucian.palaghe", "claudia.gican", "luminita.petre");
+	private final List<String> approverIds = Arrays.asList("lucian.palaghe", "luminita.petre");
 
 	public List<HolidayRequest> getHolidayRequests(String userEmail) {
 		return requestRepository.findAllByRequesterEmail(userEmail);

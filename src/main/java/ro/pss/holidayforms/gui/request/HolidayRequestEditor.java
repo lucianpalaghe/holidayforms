@@ -8,6 +8,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.function.SerializablePredicate;
@@ -35,6 +36,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	private final ComboBox<User> substitute = new ComboBox<>(MessageRetriever.get("substituteName"));
 	private final DateRangePicker dateRange = new DateRangePicker();
 	private final ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
+	private final TextArea comments = new TextArea();
 	private final DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
 	private final Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
 	private final Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
@@ -61,11 +63,15 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		type.setItems(HolidayRequest.Type.values());
 		type.setItemLabelGenerator(i -> MessageRetriever.get("holidayType_" + i.toString()));
 
+		comments.setPlaceholder(MessageRetriever.get("holidayCommentsPlaceholder"));
+		comments.setWidthFull();
+
 		substitute.setDataProvider(new ListDataProvider<>(requestsService.getAvailableSubstitutes()));
 		addValidations();
 		substitute.setWidthFull();
 
 		type.setWidthFull();
+
 		creationDate.setWidthFull();
 		creationDate.setLocale(new Locale("ro", "RO"));
 
@@ -82,7 +88,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		setJustifyContentMode(JustifyContentMode.CENTER);
 		setAlignItems(Alignment.CENTER);
 		HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
-		add(substitute, dateRange, type, creationDate, actions);
+		add(substitute, dateRange, type, comments, creationDate, actions);
 		addKeyPressListener(Key.ENTER, e -> save());
 
 		setSpacing(true);
@@ -103,6 +109,8 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 		binder.forField(type).asRequired(MessageRetriever.get("validationHolidayType"))
 				.bind(HolidayRequest::getType, HolidayRequest::setType);
+
+		binder.forField(comments).bind(HolidayRequest::getComments, HolidayRequest::setComments);
 
 		binder.forField(creationDate).asRequired(MessageRetriever.get("validationDate"))
 				.bind(HolidayRequest::getCreationDate, HolidayRequest::setCreationDate);

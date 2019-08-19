@@ -42,6 +42,10 @@ public class HolidayRequest {
 
 	@Getter
 	@Setter
+	private String comments;
+
+	@Getter
+	@Setter
 	private LocalDate creationDate;
 
 	@Transient
@@ -54,9 +58,6 @@ public class HolidayRequest {
 	@Getter
 	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
 	private final List<ApprovalRequest> approvalRequests = new ArrayList<>();
-
-	@Transient
-	private int numberOfDays;
 
 	public DateRange getRange() {
 		if (dateFrom != null && dateTo != null) {
@@ -110,6 +111,6 @@ public class HolidayRequest {
 	}
 
 	public enum Type {
-		CO, CM, CFP, CIC, CP, CR
+		CO, CM, CFP, CIC, CP, R
 	}
 }
