@@ -1,5 +1,7 @@
 package ro.pss.holidayforms.gui.request;
 
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -29,6 +31,9 @@ import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
+import ro.pss.holidayforms.gui.notification.Broadcaster;
+import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
+import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 import ro.pss.holidayforms.service.HolidayRequestService;
 
 import javax.annotation.PostConstruct;
@@ -45,7 +50,7 @@ import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 @Route(value = "requests", layout = HolidayAppLayout.class)
 @StyleSheet("step-progress-bar.css")
 @StyleSheet("responsive-buttons.css")
-public class HolidayRequestView extends HorizontalLayout implements AfterNavigationObserver {
+public class HolidayRequestView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
 	@Autowired
 	private HolidayRequestService service;
 	private final Grid<HolidayRequest> grid;
@@ -57,7 +62,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		this.editor = editor;
 		this.editor.setChangeHandler(() -> {
 			this.editor.setVisible(false);
-			listHolidayRequests();
+			listHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
 			mountEditorInDialog(false);
 		});
 
@@ -97,7 +102,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 
 	@PostConstruct
 	private void postConstruct() {
-		listHolidayRequests();
+		listHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
 	}
 
 	private ComponentRenderer<HorizontalLayout, HolidayRequest> getRequestStatusRenderer() {
@@ -190,8 +195,8 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		return buttonWrapper;
 	}
 
-	private void listHolidayRequests() {
-		List<HolidayRequest> requests = service.getHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
+	private void listHolidayRequests(String userEmail) {
+		List<HolidayRequest> requests = service.getHolidayRequests(userEmail);
 		if (requests.isEmpty()) {
 			grid.setVisible(false);
 			heading.setText(MessageRetriever.get("noHolidayRequests"));
@@ -217,6 +222,29 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 
 	@Override
 	public void afterNavigation(AfterNavigationEvent event) {
-		listHolidayRequests();
+		listHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
+	}
+
+	@Override
+	protected void onAttach(AttachEvent attachEvent) {
+		Broadcaster.register(new UserUITuple(SecurityUtils.getLoggedInUser(), UI.getCurrent()), this);
+	}
+
+	@Override
+	public void receiveBroadcast(UI ui, BroadcastEvent message) {
+		switch (message.getType()) {
+			case APPROVER_ACCEPTED:
+			case APPROVER_DENIED:
+			case SUBSTITUTE_ACCEPTED:
+			case SUBSTITUTE_DENIED:
+				ui.access(() -> {
+					if(dialog.isOpened()) {
+						dialog.close();
+					}
+					this.listHolidayRequests(message.getTargetUserId());});
+				break;
+			default:
+				return;
+		}
 	}
 }

@@ -103,13 +103,13 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	}
 
 	private void rejectHolidaySubstitution(SubstitutionRequest request) {
-		service.approveRequest(request);
+		service.denyRequest(request);
 		grid.getDataProvider().refreshItem(request);
 		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubstitutionBadgeCount();
 	}
 
 	private void confirmHolidaySubstitution(SubstitutionRequest request) {
-		service.denyRequest(request);
+		service.approveRequest(request);
 		grid.getDataProvider().refreshItem(request);
 		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubstitutionBadgeCount();
 	}
