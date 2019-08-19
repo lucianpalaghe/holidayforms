@@ -36,7 +36,6 @@ import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
 import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 import ro.pss.holidayforms.service.HolidayRequestService;
 
-import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -98,11 +97,6 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		setAlignItems(Alignment.CENTER);
 		add(container);
 		setHeightFull();
-	}
-
-	@PostConstruct
-	private void postConstruct() {
-		listHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
 	}
 
 	private ComponentRenderer<HorizontalLayout, HolidayRequest> getRequestStatusRenderer() {

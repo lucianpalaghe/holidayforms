@@ -93,12 +93,10 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		binder.forField(substitute).asRequired(MessageRetriever.get("validationSubstitute"))
 				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
 
-		List<HolidayRequest> allByRequesterEmail = requestsService.getHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
-
 		Binder.Binding<HolidayRequest, DateRange> holidayRequestDateRangeBinding = binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
 				.withValidator(DateRange::hasWorkingDays, MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
-				.withValidator(hasEnoughHolidayDays(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft"))
-				.withValidator(isPeriodNotOverlapping(allByRequesterEmail), MessageRetriever.get("validationHolidayPeriodOverlapping"))
+				.withValidator(hasEnoughHolidayDays(), MessageRetriever.get("validationHolidayPeriodNotEnoughDaysLeft"))
+				.withValidator(isPeriodNotOverlapping(), MessageRetriever.get("validationHolidayPeriodOverlapping"))
 				.bind(HolidayRequest::getRange, HolidayRequest::setRange);
 
 		type.addValueChangeListener(event -> holidayRequestDateRangeBinding.validate());
@@ -110,19 +108,22 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 				.bind(HolidayRequest::getCreationDate, HolidayRequest::setCreationDate);
 	}
 
-	private SerializablePredicate<? super DateRange> isPeriodNotOverlapping(List<HolidayRequest> requests) {
+	private SerializablePredicate<? super DateRange> isPeriodNotOverlapping() {
 		return range -> {
-			List<HolidayRequest> notOverlapping = requests.stream()
-					.filter(e -> !range.isOverlapping(e.getDateFrom(), e.getDateTo()))
+			List<HolidayRequest> allByRequesterEmail = requestsService.getHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
+			allByRequesterEmail.removeIf(r -> r.getId().equals(holidayRequest.getId()));
+			List<HolidayRequest> notOverlapping = allByRequesterEmail.stream()
+					.filter(r -> !range.isOverlapping(r.getDateFrom(), r.getDateTo()))
 					.collect(toList());
-			return requests.size() == notOverlapping.size();
+			return allByRequesterEmail.size() == notOverlapping.size();
 		};
 	}
 
-	private SerializablePredicate<DateRange> hasEnoughHolidayDays(List<HolidayRequest> requests) {
+	private SerializablePredicate<DateRange> hasEnoughHolidayDays() {
 		return range -> {
+			List<HolidayRequest> allByRequesterEmail = requestsService.getHolidayRequests(SecurityUtils.getLoggedInUser().getEmail());
 			User user = SecurityUtils.getLoggedInUser();
-			int sumDaysTaken = requests.stream()
+			int sumDaysTaken = allByRequesterEmail.stream()
 					.filter(HolidayRequest::isCO)
 					.mapToInt(HolidayRequest::getNumberOfDays)
 					.sum();
@@ -143,7 +144,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		if (binder.validate().isOk()) {
 			User requester = SecurityUtils.getLoggedInUser();
 			holidayRequest.setRequester(requester);
-			requestsService.createRequest(holidayRequest);
+			requestsService.saveRequest(holidayRequest);
 
 			changeHandler.onChange();
 		}
@@ -156,11 +157,10 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		}
 		final boolean persisted = request.getId() != null;
 		holidayRequest = request;
-//		if (persisted) { TODO: see if this is still required
-//			holidayRequest = requestsService.findById(request.getId()).orElseThrow();
-//		} else {
-//			holidayRequest = request;
-//		}
+		if (persisted) {  /*TODO: see if this is still required. From what i've seen, if the request data is not refreshed form database,
+						  Hibernate sometimes complains about missing session when trying to access child objects(LazyInitializationFailed)*/
+			holidayRequest = requestsService.findById(request.getId());
+		}
 
 		btnDelete.setVisible(persisted);
 		binder.setBean(holidayRequest);
@@ -171,8 +171,8 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		changeHandler.onChange();
 	}
 
-	void setChangeHandler(ChangeHandler h) {
-		changeHandler = h;
+	void setChangeHandler(ChangeHandler handler) {
+		changeHandler = handler;
 	}
 
 	public interface ChangeHandler {

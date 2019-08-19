@@ -7,6 +7,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -27,7 +28,7 @@ import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
 import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 import ro.pss.holidayforms.service.HolidayApprovalService;
 
-import javax.annotation.PostConstruct;
+import java.util.List;
 
 @SpringComponent
 @UIScope
@@ -36,9 +37,9 @@ import javax.annotation.PostConstruct;
 public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
 	@Autowired
 	private HolidayApprovalService service;
-
 	private final Grid<ApprovalRequest> grid;
 	private HolidayConfirmationDialog holidayConfDialog;
+	private final H2 heading;
 
 	public HolidayApprovalView() {
 		this.grid = new Grid<>();
@@ -50,8 +51,11 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(3);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 
+		heading = new H2();
+		heading.setVisible(false);
+
 		VerticalLayout container = new VerticalLayout();
-		container.add(grid);
+		container.add(heading, grid);
 		container.setWidth("100%");
 		container.setMaxWidth("70em");
 		container.setHeightFull();
@@ -62,13 +66,17 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		setHeightFull();
 	}
 
-	@PostConstruct
-	private void postConstruct() {
-		listApprovalRequests(SecurityUtils.getLoggedInUser().getEmail());
-	}
-
 	private void listApprovalRequests(String userEmail) {
-		grid.setItems(service.getApprovalRequests(userEmail));
+		List<ApprovalRequest> approvalRequests = service.getApprovalRequests(userEmail);
+		if (approvalRequests.isEmpty()) {
+			grid.setVisible(false);
+			heading.setText(MessageRetriever.get("noApprovalRequests"));
+			heading.setVisible(true);
+		} else {
+			heading.setVisible(false);
+			grid.setVisible(true);
+			grid.setItems(approvalRequests);
+		}
 	}
 
 	private HorizontalLayout getActionButtons(ApprovalRequest request) {

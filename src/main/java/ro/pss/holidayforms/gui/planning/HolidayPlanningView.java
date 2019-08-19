@@ -54,6 +54,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 
 	private HolidayPlanning holidayPlanning;
 	private final H3 remainingDaysHeader = new H3();
+	private final H3 heading;
 
 	public HolidayPlanningView() {
 		rangePicker = new DateRangePicker();
@@ -86,7 +87,11 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 			Notification.show(MessageRetriever.get("planningSaved"), 3000, Notification.Position.TOP_CENTER);
 		});
 		btnSave.getStyle().set("margin-left", "auto");
-		VerticalLayout saveLayout = new VerticalLayout(grid, btnSave);
+
+		heading = new H3();
+		heading.setVisible(false);
+
+		VerticalLayout saveLayout = new VerticalLayout(heading, grid, btnSave);
 		subContainer.add(remainingDays, saveLayout);
 		subContainer.setWidthFull();
 		container.add(subContainer);
@@ -96,9 +101,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 			planningEntry.setPlanning(holidayPlanning);
 			HolidayPlanningEntry.EntryValidityStatus status = holidayPlanning.addPlanningEntry(planningEntry);
 			if (status.equals(HolidayPlanningEntry.EntryValidityStatus.VALID)) {
-				entries.add(planningEntry);
-				grid.getDataProvider().refreshAll();
-				refreshRemainingDaysHeader();
+				addPlanningEntry(planningEntry);
 			} else {
 				Notification.show(MessageRetriever.get("planningValidity_" + status), 3000, Notification.Position.TOP_CENTER);
 			}
@@ -107,10 +110,29 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		add(container);
 	}
 
-	@PostConstruct
-	private void postConstruct() {
-		listHolidayPlanningEntries();
+	private void addPlanningEntry(HolidayPlanningEntry planningEntry) {
+		entries.add(planningEntry);
 		refreshRemainingDaysHeader();
+		refreshPlanningGrid();
+	}
+
+	private void removePlanningEntry(HolidayPlanningEntry request) {
+		holidayPlanning.removePlanningEntry(request);
+		entries.remove(request);
+		refreshRemainingDaysHeader();
+		refreshPlanningGrid();
+	}
+
+	private void refreshPlanningGrid() {
+		grid.getDataProvider().refreshAll();
+		if (entries.isEmpty()) {
+			grid.setVisible(false);
+			heading.setText(MessageRetriever.get("noPlanningEntries"));
+			heading.setVisible(true);
+		} else {
+			heading.setVisible(false);
+			grid.setVisible(true);
+		}
 	}
 
 	private void refreshRemainingDaysHeader() {
@@ -124,14 +146,9 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	}
 
 	private HorizontalLayout getActionButtons(HolidayPlanningEntry request) {
-		Button btnDeny = new Button(VaadinIcon.CLOSE_CIRCLE.create(), event -> {
-			holidayPlanning.removePlanningEntry(request);
-			entries.remove(request);
-			grid.getDataProvider().refreshAll();
-			refreshRemainingDaysHeader();
-		});
-		btnDeny.addThemeName("error");
-		return new HorizontalLayout(btnDeny);
+		Button btnRemove = new Button(VaadinIcon.CLOSE_CIRCLE.create(), event -> removePlanningEntry(request));
+		btnRemove.addThemeName("error");
+		return new HorizontalLayout(btnRemove);
 	}
 
 	private void listHolidayPlanningEntries() {
@@ -141,6 +158,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		grid.setVisible(true);
 		entries.clear();
 		entries.addAll(this.holidayPlanning.getEntries());
+		refreshPlanningGrid();
 	}
 
 	@Override
