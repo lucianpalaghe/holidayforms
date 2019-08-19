@@ -41,13 +41,13 @@ public class TempoService {
 		}
 	}
 
-	public String buildWorklogJson(HolidayRequest request, LocalDate worklogDate) {
+	private String buildWorklogJson(HolidayRequest request, LocalDate worklogDate) {
 		JSONObject holidayWorklog = new JSONObject();
 		holidayWorklog.put("issueKey", "HOLIDAY-2");
 		holidayWorklog.put("timeSpentSeconds", EIGHT_OURS);
 		holidayWorklog.put("startDate", worklogDate);
 		holidayWorklog.put("startTime", "09:00:00");
-		holidayWorklog.put("description", request.getType());
+		holidayWorklog.put("description", request.getType() + "\n" + request.getComments());
 		holidayWorklog.put("authorAccountId", request.getRequester().getJiraAccountId());
 		JSONArray array = new JSONArray();
 		JSONObject account = new JSONObject();

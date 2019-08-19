@@ -4,10 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
+import ro.pss.holidayforms.domain.SubstitutionRequest;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.HolidayRequestRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 import ro.pss.holidayforms.gui.notification.NotificationService;
+import ro.pss.holidayforms.integrations.tempo.TempoService;
 
 import java.util.Arrays;
 import java.util.List;
@@ -22,6 +24,8 @@ public class HolidayRequestService {
 	private UserRepository userRepository;
 	@Autowired
 	private NotificationService notificationService;
+	@Autowired
+	private TempoService tempoService;
 
 	private final List<String> approverIds = Arrays.asList("lucian.palaghe", "luminita.petre");
 
@@ -53,9 +57,18 @@ public class HolidayRequestService {
 		requestRepository.save(holidayRequest);
 	}
 
-	public void remove(HolidayRequest holidayRequest) {
+	public void removeRequest(HolidayRequest holidayRequest) {
 		requestRepository.delete(holidayRequest);
 		notificationService.requestDeleted(holidayRequest);
+	}
+
+	public void approvalsChanged(HolidayRequest holidayRequest) {
+		holidayRequest = findById(holidayRequest.getId()); // other approvals might have been committed to the database in the meantime, so get the latest request data
+		boolean substituteApproved = holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED;
+		boolean allOthersApproved = holidayRequest.getApprovalRequests().stream().allMatch(a -> a.getStatus() == ApprovalRequest.Status.APPROVED);
+		if (substituteApproved && allOthersApproved) {
+			tempoService.postHolidayWorklog(holidayRequest);
+		}
 	}
 
 	public HolidayRequest findById(Long id) {

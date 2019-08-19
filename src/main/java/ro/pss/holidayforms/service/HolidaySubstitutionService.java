@@ -14,6 +14,8 @@ public class HolidaySubstitutionService {
 	private NotificationService notificationService;
 	@Autowired
 	private SubstitutionRequestRepository substitutionRepo;
+	@Autowired
+	private HolidayRequestService requestService;
 
 	public List<SubstitutionRequest> getSubstitutionRequests(String userEmail) {
 		return substitutionRepo.findAllBySubstituteEmail(userEmail);
@@ -22,6 +24,7 @@ public class HolidaySubstitutionService {
 	public void approveRequest(SubstitutionRequest request) {
 		request.approve();
 		substitutionRepo.save(request);
+		requestService.approvalsChanged(request.getRequest());
 		notificationService.substitutionAccepted(request);
 	}
 
