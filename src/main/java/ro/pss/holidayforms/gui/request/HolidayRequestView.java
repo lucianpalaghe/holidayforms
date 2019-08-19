@@ -43,6 +43,16 @@ import java.util.List;
 
 import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 
+/**
+ * There is an Vaadin issue manifested in this view, related to the currently selected grid item and refreshes/broadcasts from other users.
+ * The problem causes a red pop-up notification to appear in the top-right corner of the page displaying the following error message:
+ * <b>(TypeError) : Cannot read property 'doSelection' of undefined</b>
+ * <br>You can find more info on the following threads:
+ *
+ * @see <a href="https://github.com/vaadin/flow/issues/4997">https://github.com/vaadin/flow/issues/4997</a>
+ * @see <a href="https://vaadin.com/forum/thread/17527564/typeerror-cannot-read-property-dodeselector-of-undefined-vaadin-10">https://vaadin.com/forum/thread/17527564/typeerror-cannot-read-property-dodeselector-of-undefined-vaadin-10</a>
+ */
+
 @SpringComponent
 @UIScope
 @Slf4j
@@ -153,7 +163,6 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 			mountEditorInDialog(true);
 		});
 		btnEdit.addClassName("responsive");
-		btnEdit.addClassName("responsive");
 		Button btnSave = new Button(MessageRetriever.get("saveHoliday"), VaadinIcon.PRINT.create(), event -> {
 		});
 		btnSave.addThemeName("success");
@@ -239,8 +248,6 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 					}
 					this.listHolidayRequests(message.getTargetUserId());});
 				break;
-			default:
-				return;
 		}
 	}
 }
