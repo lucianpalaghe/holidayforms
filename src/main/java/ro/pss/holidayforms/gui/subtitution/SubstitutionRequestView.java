@@ -17,6 +17,7 @@ import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
@@ -30,6 +31,7 @@ import ro.pss.holidayforms.service.HolidaySubstitutionService;
 
 import java.util.List;
 
+@Slf4j
 @SpringComponent
 @UIScope
 @Route(value = "substitutions", layout = HolidayAppLayout.class)
@@ -40,7 +42,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	private final Grid<SubstitutionRequest> grid;
 	private HolidayConfirmationDialog holidayConfDialog;
 	private final H2 heading;
-	
+
 	public SubstitutionRequestView() {
 		this.grid = new Grid<>();
 		grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
@@ -139,10 +141,12 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 				|| BroadcastEvent.Type.SUBSTITUTE_CHANGED.equals(message.getType())
 				|| BroadcastEvent.Type.SUBSTITUTE_DELETED.equals(message.getType())) {
 			ui.access(() -> {
-			   if(holidayConfDialog != null) {
-			   		holidayConfDialog.close();
-			   }
-			   this.listSubstitutionRequests(message.getTargetUserId());});
+				if (holidayConfDialog != null) {
+					holidayConfDialog.close();
+				}
+				log.warn("Refreshing grid");
+				this.listSubstitutionRequests(message.getTargetUserId());
+			});
 		}
 	}
 }

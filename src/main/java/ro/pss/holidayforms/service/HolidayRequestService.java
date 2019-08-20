@@ -48,13 +48,14 @@ public class HolidayRequestService {
 		}).collect(toList());
 		approvalRequests.forEach(holidayRequest::addApproval);
 
-		boolean isNewRequest = holidayRequest.getId() == null;
+		boolean isNewRequest = holidayRequest.getId() == null; // check if the entity has id BEFORE SAVING IT
+		requestRepository.save(holidayRequest);
+
 		if (isNewRequest) {
 			notificationService.requestCreated(holidayRequest);
 		} else {
 			notificationService.requestEdited(holidayRequest);
 		}
-		requestRepository.save(holidayRequest);
 	}
 
 	public void removeRequest(HolidayRequest holidayRequest) {
@@ -62,7 +63,7 @@ public class HolidayRequestService {
 		notificationService.requestDeleted(holidayRequest);
 	}
 
-	public void approvalsChanged(HolidayRequest holidayRequest) {
+	void approvalsChanged(HolidayRequest holidayRequest) {
 		holidayRequest = findById(holidayRequest.getId()); // other approvals might have been committed to the database in the meantime, so get the latest request data
 		boolean substituteApproved = holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED;
 		boolean allOthersApproved = holidayRequest.getApprovalRequests().stream().allMatch(a -> a.getStatus() == ApprovalRequest.Status.APPROVED);
