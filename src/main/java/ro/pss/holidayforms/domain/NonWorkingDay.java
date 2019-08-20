@@ -1,6 +1,7 @@
 package ro.pss.holidayforms.domain;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ro.pss.holidayforms.integrations.tempo.vo.TempoDay;
 
@@ -10,6 +11,7 @@ import javax.persistence.Id;
 import java.time.LocalDate;
 
 @Entity
+@NoArgsConstructor
 public class NonWorkingDay {
 	@Id
 	@GeneratedValue

@@ -72,6 +72,7 @@ public class TempoService {
 		});
 		List<TempoDay> tempoDays = response.getTempoDays().stream()
 				.filter(r -> !r.getType().equals("WORKING_DAY"))
+				.filter(r -> !r.getType().equals("NON_WORKING_DAY")) // keep only HOLIDAY and HOLIDAY_AND_NON_WORKING_DAY
 				.collect(toList());
 
 		List<NonWorkingDay> nonWorkingDayList = tempoDays.stream()
@@ -79,6 +80,10 @@ public class TempoService {
 				.collect(toList());
 
 		nonWorkingDayRepo.saveAll(nonWorkingDayList);
+	}
+
+	public List<NonWorkingDay> getNonWorkingDays() {
+		return nonWorkingDayRepo.findAll();
 	}
 
 	public void postHolidayWorklog(HolidayRequest request) {

@@ -13,6 +13,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class JiraUserDetailsService {
 	@Autowired
 	private UserRepository userRepo;
 
-	//	@PostConstruct
+	@PostConstruct
 	public void loadAllJiraUsers() throws IOException {
 		log.info(String.format("Preparing to load all JIRA users from: %s", jiraUsersApiUrl));
 		RestTemplate restTemplate = new RestTemplate();
