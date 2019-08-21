@@ -13,6 +13,7 @@ import ro.pss.holidayforms.integrations.tempo.TempoService;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.stream.Collectors.*;
 
@@ -66,9 +67,16 @@ public class HolidayRequestService {
 	void approvalsChanged(HolidayRequest holidayRequest) {
 		holidayRequest = findById(holidayRequest.getId()); // other approvals might have been committed to the database in the meantime, so get the latest request data
 		boolean substituteApproved = holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED;
-		boolean allOthersApproved = holidayRequest.getApprovalRequests().stream().allMatch(a -> a.getStatus() == ApprovalRequest.Status.APPROVED);
+		boolean allOthersApproved = holidayRequest.getApprovalRequests().stream().allMatch(ApprovalRequest::isApproved);
 		if (substituteApproved && allOthersApproved) {
-			tempoService.postHolidayWorklog(holidayRequest);
+			HolidayRequest finalHolidayRequest = holidayRequest;
+
+			CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+				tempoService.postHolidayWorklog(finalHolidayRequest);//TODO: add response to tempo service
+				return null;
+			});
+
+			future.thenAcceptAsync(aVoid -> notificationService.worklogsPosted(finalHolidayRequest));
 		}
 	}
 

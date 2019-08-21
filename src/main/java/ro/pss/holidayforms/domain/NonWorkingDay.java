@@ -3,7 +3,7 @@ package ro.pss.holidayforms.domain;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ro.pss.holidayforms.integrations.tempo.vo.TempoDay;
+import ro.pss.holidayforms.integrations.tempo.ScheduleResponse;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -30,7 +30,7 @@ public class NonWorkingDay {
 	@Setter
 	private String type;
 
-	public NonWorkingDay(TempoDay tempoDay) {
+	public NonWorkingDay(ScheduleResponse.TempoDay tempoDay) {
 		this.date = LocalDate.parse(tempoDay.getDate());
 		if (tempoDay.getHoliday() != null) {
 			this.name = tempoDay.getHoliday().getName();

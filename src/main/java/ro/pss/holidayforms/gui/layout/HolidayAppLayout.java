@@ -144,6 +144,10 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	@Override
 	public void receiveBroadcast(UI ui, BroadcastEvent event) {
 		ui.access(() -> {
+			if (event.getType() == BroadcastEvent.Type.WORKLOGS_POSTED) { //TODO: make this cleaner
+				com.vaadin.flow.component.notification.Notification.show(MessageRetriever.get("worklogsPosted"), 3000, com.vaadin.flow.component.notification.Notification.Position.TOP_CENTER);
+				return;
+			}
 			String title = MessageRetriever.get("notificationTitle_" + event.getType());
 			String description = String.format(MessageRetriever.get("notificationBody_" + event.getType()), event.getUserIdentifier());
 			HolidayNotification holidayNotification = new HolidayNotification(title, description, event.getNotification());

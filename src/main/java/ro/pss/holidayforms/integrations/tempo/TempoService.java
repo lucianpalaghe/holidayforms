@@ -15,8 +15,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.NonWorkingDay;
 import ro.pss.holidayforms.domain.repo.NonWorkingDayRepository;
-import ro.pss.holidayforms.integrations.tempo.vo.ScheduleResponse;
-import ro.pss.holidayforms.integrations.tempo.vo.TempoDay;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -36,7 +34,6 @@ public class TempoService {
 	private String tempoApiUrl;
 	@Autowired
 	private NonWorkingDayRepository nonWorkingDayRepo;
-	int EIGHT_OURS = 28800;
 
 	@PostConstruct
 	private void loadNonWorkingDays() throws IOException {
@@ -70,7 +67,7 @@ public class TempoService {
 
 		ScheduleResponse response = objectMapper.readValue(responseJson, new TypeReference<ScheduleResponse>() {
 		});
-		List<TempoDay> tempoDays = response.getTempoDays().stream()
+		List<ScheduleResponse.TempoDay> tempoDays = response.getTempoDays().stream()
 				.filter(r -> !r.getType().equals("WORKING_DAY"))
 				.filter(r -> !r.getType().equals("NON_WORKING_DAY")) // keep only HOLIDAY and HOLIDAY_AND_NON_WORKING_DAY
 				.collect(toList());
@@ -107,6 +104,7 @@ public class TempoService {
 	private String buildWorklogJson(HolidayRequest request, LocalDate worklogDate) {
 		JSONObject holidayWorklog = new JSONObject();
 		holidayWorklog.put("issueKey", "HOLIDAY-2");
+		int EIGHT_OURS = 28800;
 		holidayWorklog.put("timeSpentSeconds", EIGHT_OURS);
 		holidayWorklog.put("startDate", worklogDate);
 		holidayWorklog.put("startTime", "09:00:00");

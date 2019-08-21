@@ -42,4 +42,8 @@ public class ApprovalRequest {
 	public void deny() {
 		status = ApprovalRequest.Status.DENIED;
 	}
+
+	public boolean isApproved() {
+		return status == ApprovalRequest.Status.APPROVED;
+	}
 }
