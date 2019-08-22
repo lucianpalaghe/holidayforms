@@ -7,10 +7,12 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Emphasis;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
@@ -35,11 +37,11 @@ import java.util.List;
 @Route(value = "approvals", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-buttons.css")
 public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
+	private final Grid<ApprovalRequest> grid;
+	private final H2 heading;
 	@Autowired
 	private HolidayApprovalService service;
-	private final Grid<ApprovalRequest> grid;
 	private HolidayConfirmationDialog holidayConfDialog;
-	private final H2 heading;
 
 	public HolidayApprovalView() {
 		this.grid = new Grid<>();
@@ -50,6 +52,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart"));
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(3);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
+		grid.setItemDetailsRenderer(getRequestInfoRenderer());
 
 		heading = new H2();
 		heading.setVisible(false);
@@ -120,6 +123,28 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		}
 	}
 
+	private ComponentRenderer<HorizontalLayout, ApprovalRequest> getRequestInfoRenderer() {
+		return new ComponentRenderer<>(approvalRequest -> {
+			HorizontalLayout detailsContainer = new HorizontalLayout();
+			detailsContainer.setWidthFull();
+
+			String comments = approvalRequest.getRequest().getComments();
+			if (comments.isEmpty()) {
+				comments = MessageRetriever.get("msgNoAdditionalComments");
+				Emphasis em = new Emphasis();
+				em.setText(comments);
+				detailsContainer.add(em);
+				return detailsContainer;
+			}
+			TextArea areaComments = new TextArea();
+			areaComments.setValue(comments);
+			areaComments.setReadOnly(true);
+			areaComments.setWidthFull();
+			detailsContainer.add(areaComments);
+			return detailsContainer;
+		});
+	}
+
 	private void confirmHolidayApproval(ApprovalRequest request) {
 		service.approveRequest(request);
 		grid.getDataProvider().refreshItem(request);
@@ -147,8 +172,8 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		if (BroadcastEvent.Type.APPROVE_ADDED.equals(message.getType())
 				|| BroadcastEvent.Type.APPROVE_CHANGED.equals(message.getType())
 				|| BroadcastEvent.Type.APPROVE_DELETED.equals(message.getType())) {
-			ui.access(() ->  {
-				if(holidayConfDialog != null) {
+			ui.access(() -> {
+				if (holidayConfDialog != null) {
 					holidayConfDialog.close();
 				}
 				this.listApprovalRequests(message.getTargetUserId());

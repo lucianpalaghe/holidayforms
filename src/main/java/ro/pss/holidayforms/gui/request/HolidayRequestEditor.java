@@ -144,7 +144,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 	}
 
 	private void delete() {
-		requestsService.remove(holidayRequest);
+		requestsService.removeRequest(holidayRequest);
 		changeHandler.onChange();
 	}
 

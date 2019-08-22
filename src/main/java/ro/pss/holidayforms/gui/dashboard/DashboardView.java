@@ -62,11 +62,12 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 		DashboardData dashboardData = service.getDashboardData(SecurityUtils.getLoggedInUser().getEmail());
 		remainingDaysHeader.setText(String.format(MessageRetriever.get("remainingDaysHeader"), dashboardData.getRemainingVacationDays()));
 
-		holidaysChart = getUpdatedChart(dashboardData.getChartVacationDays(), dashboardData.getChartPlannedDays());
+		holidaysChart.updateChart(getUpdatedChartJson(dashboardData.getChartVacationDays(), dashboardData.getChartPlannedDays()));
 	}
 
 
 	private void initializeChart() {
+		holidaysChart = new ChartJs("");
 		chartPlannedDays = new LineDataset()
 				.setLabel(MessageRetriever.get("chartPlannedDaysLbl"))
 				.setBackgroundColor(Color.TRANSPARENT)
@@ -91,10 +92,10 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 				.setLegend(new Legend().setDisplay(true));
 	}
 
-	private ChartJs getUpdatedChart(int[] vacationDays, int[] plannedDays) {
+	private String getUpdatedChartJson(int[] vacationDays, int[] plannedDays) {
 		chartHolidays.setData(vacationDays);
 		chartPlannedDays.setData(plannedDays);
-		return new ChartJs(new LineChart(chartLineData, chartLineOptions).toJson());
+		return new LineChart(chartLineData, chartLineOptions).toJson();
 	}
 
 	@Override

@@ -42,4 +42,8 @@ public class SubstitutionRequest {
 	public void deny() {
 		status = Status.DENIED;
 	}
+
+	public boolean isApproved() {
+		return status == Status.APPROVED;
+	}
 }

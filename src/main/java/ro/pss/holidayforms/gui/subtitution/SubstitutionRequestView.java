@@ -7,16 +7,19 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Emphasis;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
@@ -30,17 +33,18 @@ import ro.pss.holidayforms.service.HolidaySubstitutionService;
 
 import java.util.List;
 
+@Slf4j
 @SpringComponent
 @UIScope
 @Route(value = "substitutions", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-buttons.css")
 public class SubstitutionRequestView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
+	private final Grid<SubstitutionRequest> grid;
+	private final H2 heading;
 	@Autowired
 	private HolidaySubstitutionService service;
-	private final Grid<SubstitutionRequest> grid;
 	private HolidayConfirmationDialog holidayConfDialog;
-	private final H2 heading;
-	
+
 	public SubstitutionRequestView() {
 		this.grid = new Grid<>();
 		grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho")).setFlexGrow(1);
@@ -48,7 +52,7 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 		grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart")).setFlexGrow(1);
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
-
+		grid.setItemDetailsRenderer(getRequestInfoRenderer());
 		heading = new H2();
 		heading.setVisible(false);
 
@@ -111,6 +115,28 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 		}
 	}
 
+	private ComponentRenderer<HorizontalLayout, SubstitutionRequest> getRequestInfoRenderer() {
+		return new ComponentRenderer<>(substitutionRequest -> {
+			HorizontalLayout detailsContainer = new HorizontalLayout();
+			detailsContainer.setWidthFull();
+
+			String comments = substitutionRequest.getRequest().getComments();
+			if (comments.isEmpty()) {
+				comments = MessageRetriever.get("msgNoAdditionalComments");
+				Emphasis em = new Emphasis();
+				em.setText(comments);
+				detailsContainer.add(em);
+				return detailsContainer;
+			}
+			TextArea areaComments = new TextArea();
+			areaComments.setValue(comments);
+			areaComments.setReadOnly(true);
+			areaComments.setWidthFull();
+			detailsContainer.add(areaComments);
+			return detailsContainer;
+		});
+	}
+
 	private void rejectHolidaySubstitution(SubstitutionRequest request) {
 		service.denyRequest(request);
 		grid.getDataProvider().refreshItem(request);
@@ -139,10 +165,12 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 				|| BroadcastEvent.Type.SUBSTITUTE_CHANGED.equals(message.getType())
 				|| BroadcastEvent.Type.SUBSTITUTE_DELETED.equals(message.getType())) {
 			ui.access(() -> {
-			   if(holidayConfDialog != null) {
-			   		holidayConfDialog.close();
-			   }
-			   this.listSubstitutionRequests(message.getTargetUserId());});
+				if (holidayConfDialog != null) {
+					holidayConfDialog.close();
+				}
+				log.warn("Refreshing grid");
+				this.listSubstitutionRequests(message.getTargetUserId());
+			});
 		}
 	}
 }

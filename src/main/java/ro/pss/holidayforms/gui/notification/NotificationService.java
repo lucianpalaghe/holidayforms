@@ -71,6 +71,12 @@ public class NotificationService {
 				SecurityUtils.getLoggedInUser().getName()));
 	}
 
+	public void worklogsPosted(HolidayRequest holidayRequest) {
+		sendLightBroadcast(new BroadcastEvent(holidayRequest.getRequester().getEmail(),
+				BroadcastEvent.Type.WORKLOGS_POSTED,
+				""));
+	}
+
 	public void substitutionDenied(SubstitutionRequest substitutionRequest) {
 		sendBroadcast(new BroadcastEvent(substitutionRequest.getRequest().getRequester().getEmail(),
 				BroadcastEvent.Type.SUBSTITUTE_DENIED,
@@ -101,6 +107,10 @@ public class NotificationService {
 		Notification savedNotification = notificationRepository.save(new Notification(LocalDateTime.now(), null, event.getType().name(),
 				event.getTargetUserId(), SecurityUtils.getLoggedInUser().getName(), event.getType(), Notification.Status.NEW, Notification.Priority.HIGH));
 		event.setNotification(savedNotification);
+		Broadcaster.broadcast(event);
+	}
+
+	private void sendLightBroadcast(BroadcastEvent event) { //TODO: think about what you've done
 		Broadcaster.broadcast(event);
 	}
 }

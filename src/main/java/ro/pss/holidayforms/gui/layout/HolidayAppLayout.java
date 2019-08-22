@@ -51,7 +51,8 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	@Autowired
 	public HolidayAppLayout(NotificationService notificationService) {
 		this.notificationService = notificationService;
-		ComponentUtil.setData(UI.getCurrent(), HolidayAppLayout.class, this);
+		UI currentUI = UI.getCurrent();
+		ComponentUtil.setData(currentUI, HolidayAppLayout.class, this);
 		this.notifications = new DefaultNotificationHolder();
 		this.substitutionBadge = new DefaultBadgeHolder();
 		this.approvalBadge = new DefaultBadgeHolder();
@@ -70,15 +71,19 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		substitutionBadge.setCount(notificationService.getSubstitutionRequestsCount(user.getEmail()));
 		loadUserNotifications();
 
-		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.6"); // TODO: get version from somewhere
-		Broadcaster.register(new UserUITuple(user, UI.getCurrent()), this);
-		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("menuPreferences"), VaadinIcon.COG.create(), clickEvent -> {
+		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.7"); // TODO: get version from somewhere
+		Broadcaster.register(new UserUITuple(user, currentUI), this);
+//		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("menuPreferences"), VaadinIcon.COG.create(), clickEvent -> {
+//		});
+		LeftClickableItem logoutMenuEntry = new LeftClickableItem(MessageRetriever.get("menuLogout"), VaadinIcon.EXIT.create(), clickEvent -> {
+			currentUI.getPage().executeJavaScript("window.location.href='logout'");
+			currentUI.getSession().close();
 		});
 
 		LeftClickableItem languageMenuEntry = new LeftClickableItem(MessageRetriever.get("changeLanguage"), VaadinIcon.FLAG.create(),
 				clickEvent -> {
 					MessageRetriever.switchLocale();
-					UI.getCurrent().getPage().reload();
+					currentUI.getPage().reload();
 				}
 		);
 
@@ -100,7 +105,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 						.add(planningMenuEntry)
 						.add(languageMenuEntry)
 						.add(infoMenuEntry)
-						.add(preferencesMenuEntry)
+						.add(logoutMenuEntry)
 						.withStickyFooter()
 						.addToSection(versionItem, FOOTER)
 						.build())
@@ -144,6 +149,10 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	@Override
 	public void receiveBroadcast(UI ui, BroadcastEvent event) {
 		ui.access(() -> {
+			if (event.getType() == BroadcastEvent.Type.WORKLOGS_POSTED) { //TODO: make this cleaner
+				com.vaadin.flow.component.notification.Notification.show(MessageRetriever.get("worklogsPosted"), 3000, com.vaadin.flow.component.notification.Notification.Position.TOP_CENTER);
+				return;
+			}
 			String title = MessageRetriever.get("notificationTitle_" + event.getType());
 			String description = String.format(MessageRetriever.get("notificationBody_" + event.getType()), event.getUserIdentifier());
 			HolidayNotification holidayNotification = new HolidayNotification(title, description, event.getNotification());

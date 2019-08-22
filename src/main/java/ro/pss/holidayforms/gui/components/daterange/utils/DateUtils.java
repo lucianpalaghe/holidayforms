@@ -1,41 +1,57 @@
 package ro.pss.holidayforms.gui.components.daterange.utils;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import ro.pss.holidayforms.domain.NonWorkingDay;
+import ro.pss.holidayforms.integrations.tempo.TempoService;
+
+import javax.annotation.PostConstruct;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
-import java.time.Year;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
+import java.util.TreeSet;
+import java.util.stream.*;
 
-import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.*;
 
+@Component
 public class DateUtils {
-	private static final Set<LocalDate> HOLIDAYS;
+	@Autowired
+	private TempoService tempoService;
+	private static Set<LocalDate> HOLIDAYS = new TreeSet<>();
 
-	static {
-		int currentYear = Year.now().getValue();
-		List<LocalDate> dates = Arrays.asList(
-				LocalDate.of(currentYear, 1, 1),
-				LocalDate.of(currentYear, 1, 2),
-				LocalDate.of(currentYear, 1, 24),
-				LocalDate.of(currentYear, 4, 26),
-				LocalDate.of(currentYear, 4, 28),
-				LocalDate.of(currentYear, 4, 29),
-				LocalDate.of(currentYear, 4, 4),
-				LocalDate.of(currentYear, 5, 1),
-				LocalDate.of(currentYear, 6, 1),
-				LocalDate.of(currentYear, 6, 16),
-				LocalDate.of(currentYear, 8, 15),
-				LocalDate.of(currentYear, 11, 30),
-				LocalDate.of(currentYear, 12, 1),
-				LocalDate.of(currentYear, 12, 25),
-				LocalDate.of(currentYear, 12, 26)
-		);
-		HOLIDAYS = Set.copyOf(dates);
+
+	@PostConstruct
+	public void setHolidays() { // TODO: is injecting static fields a good idea?
+		List<NonWorkingDay> all = tempoService.getNonWorkingDays();
+		all.stream()
+				.map(n -> n.getDate())
+				.forEach(n -> HOLIDAYS.add(n));
 	}
+//	static {
+//		int currentYear = Year.now().getValue();
+//		List<LocalDate> dates = Arrays.asList(
+//				LocalDate.of(currentYear, 1, 1),
+//				LocalDate.of(currentYear, 1, 2),
+//				LocalDate.of(currentYear, 1, 24),
+//				LocalDate.of(currentYear, 4, 26),
+//				LocalDate.of(currentYear, 4, 28),
+//				LocalDate.of(currentYear, 4, 29),
+//				LocalDate.of(currentYear, 4, 4),
+//				LocalDate.of(currentYear, 5, 1),
+//				LocalDate.of(currentYear, 6, 1),
+//				LocalDate.of(currentYear, 6, 17),
+//				LocalDate.of(currentYear, 8, 15),
+//				LocalDate.of(currentYear, 11, 30),
+//				LocalDate.of(currentYear, 12, 1),
+//				LocalDate.of(currentYear, 12, 25),
+//				LocalDate.of(currentYear, 12, 26)
+//		);
+//		HOLIDAYS = Set.copyOf(dates);
+//	}
 
 	public static int getWorkingDays(LocalDate startInclusive, LocalDate endExclusive) {
 		if (startInclusive.isAfter(endExclusive)) {

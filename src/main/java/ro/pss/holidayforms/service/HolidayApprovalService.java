@@ -14,6 +14,8 @@ public class HolidayApprovalService {
 	private NotificationService notificationService;
 	@Autowired
 	private ApprovalRequestRepository approvalRepo;
+	@Autowired
+	private HolidayRequestService requestService;
 
 	public List<ApprovalRequest> getApprovalRequests(String userEmail) {
 		return approvalRepo.findAllByApproverEmail(userEmail);
@@ -22,6 +24,7 @@ public class HolidayApprovalService {
 	public void approveRequest(ApprovalRequest request) {
 		request.approve();
 		approvalRepo.save(request);
+		requestService.approvalsChanged(request.getRequest());
 		notificationService.approvalAccepted(request);
 	}
 
