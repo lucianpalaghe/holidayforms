@@ -26,7 +26,14 @@ public class MessageRetriever {
 	}
 
 	public static Locale getLocale() {
-		return UI.getCurrent().getLocale();
+		Locale locale;
+		try {
+			locale = UI.getCurrent().getLocale();
+		}catch (Exception e) {
+			log.error("Cannot get locale from UI, set default", e);
+			locale = new Locale("ro");
+		}
+		return locale;
 	}
 
 	public static String get(String key) {

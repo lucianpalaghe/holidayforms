@@ -13,11 +13,12 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
+import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import com.vaadin.server.StreamResource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.vaadin.olli.FileDownloadWrapper;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.HolidayPlanning;
 import ro.pss.holidayforms.domain.HolidayPlanningEntry;
@@ -29,9 +30,10 @@ import ro.pss.holidayforms.gui.components.dialog.HolidayConfirmationDialog;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 import ro.pss.holidayforms.service.HolidayPlanningService;
 
-import javax.annotation.PostConstruct;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -75,10 +77,8 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 
 		HorizontalLayout subContainer = new HorizontalLayout();
 		subContainer.setPadding(true);
-		Button exportToExcelBtn = new Button(MessageRetriever.get("btnExportToExcelLbl"), VaadinIcon.FILE_TABLE.create(),(event) -> {
-			excelExporter.doGetExcel();
-		});
-		VerticalLayout remainingDays = new VerticalLayout(remainingDaysHeader, new Hr(), rangePicker, new Hr(), exportToExcelBtn);
+		Button exportToExcelBtn = new Button(MessageRetriever.get("btnExportToExcelLbl"), VaadinIcon.FILE_TABLE.create());
+		VerticalLayout remainingDays = new VerticalLayout(remainingDaysHeader, new Hr(), rangePicker, new Hr(), getButtonWrapperWithExcelDocument(exportToExcelBtn));
 		remainingDays.setWidth("auto");
 		Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.LOCK.create(), event -> {
 			holidayPlanning.getEntries().clear();
@@ -186,13 +186,14 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		}
 	}
 
-	public StreamResource.StreamSource getStreamSource(byte[] toDownload) {
-		StreamResource.StreamSource source = new StreamResource.StreamSource() {
-			@Override
-			public InputStream getStream() {
-				return new ByteArrayInputStream(toDownload);
-			}
-		};
-		return source;
+	private FileDownloadWrapper getButtonWrapperWithExcelDocument(Button btn) {
+		FileDownloadWrapper buttonWrapper;
+		String ldtFormatted = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmm"));
+		String filename = "Planificare_CO_Status_la_" + ldtFormatted + ".xlsx"; //TODO set dynamic name
+		com.vaadin.flow.server.StreamResource res = new com.vaadin.flow.server.StreamResource(filename,
+				(InputStreamFactory) () -> new BufferedInputStream(new ByteArrayInputStream(excelExporter.doGetExcelByteArray())));
+		buttonWrapper = (new FileDownloadWrapper(res));
+		buttonWrapper.wrapComponent(btn);
+		return buttonWrapper;
 	}
 }

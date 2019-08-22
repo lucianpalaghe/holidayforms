@@ -32,10 +32,9 @@ public class ExcelExporter {
     @Autowired
     private UserRepository userRepository;
 
-    public byte[] doGetExcel() {
+    public byte[] doGetExcelByteArray() {
         Workbook workbook = new XSSFWorkbook();
         populateWorkbookWithData(workbook);
-        writeFile(workbook, new File("src/main/resources/static/test.xlsx"));
         return getByteArrayFromWorkbook(workbook);
     }
 
