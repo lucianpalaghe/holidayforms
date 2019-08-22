@@ -30,7 +30,7 @@ public class MessageRetriever {
 		try {
 			locale = UI.getCurrent().getLocale();
 		}catch (Exception e) {
-			log.error("Cannot get locale from UI, set default", e);
+			//log.error("Cannot get locale from UI, set default");
 			locale = new Locale("ro");
 		}
 		return locale;
