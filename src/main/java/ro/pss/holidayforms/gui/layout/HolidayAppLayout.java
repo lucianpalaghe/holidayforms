@@ -31,6 +31,7 @@ import ro.pss.holidayforms.gui.notification.NotificationService;
 import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
 import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 import ro.pss.holidayforms.gui.planning.HolidayPlanningView;
+import ro.pss.holidayforms.gui.preferences.UserPreferencesView;
 import ro.pss.holidayforms.gui.request.HolidayRequestView;
 import ro.pss.holidayforms.gui.subtitution.SubstitutionRequestView;
 
@@ -64,6 +65,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		LeftNavigationItem planningMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPlanning"), VaadinIcon.EDIT.create(), HolidayPlanningView.class);
 		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuApprovals"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
 		LeftNavigationItem infoMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuInfo"), VaadinIcon.QUESTION_CIRCLE_O.create(), HolidayInformationView.class);
+		LeftNavigationItem preferencesMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPreferences"), VaadinIcon.COG.create(), UserPreferencesView.class);
 		substitutionBadge.bind(substitutionMenuEntry.getBadge());
 		approvalBadge.bind(approvalMenuEntry.getBadge());
 
@@ -105,6 +107,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 						.add(planningMenuEntry)
 						.add(languageMenuEntry)
 						.add(infoMenuEntry)
+						.add(preferencesMenuEntry)
 						.add(logoutMenuEntry)
 						.withStickyFooter()
 						.addToSection(versionItem, FOOTER)
