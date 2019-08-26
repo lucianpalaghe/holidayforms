@@ -31,14 +31,14 @@ public class TempoService {
 	private String apiKey;
 	@Value("${integrations.tempo.apiUrl}")
 	private String tempoApiUrl;
-	@Value("${skipPostConstructs}")
-	private boolean skipPostConstructs;
+	@Value("${skipIntegrationInit}")
+	private boolean skipIntegrationInit;
 	@Autowired
 	private NonWorkingDayRepository nonWorkingDayRepo;
 
 	//	@PostConstruct
 	private void loadNonWorkingDays() throws IOException {
-		if (skipPostConstructs) {
+		if (skipIntegrationInit) {
 			return;
 		}
 
