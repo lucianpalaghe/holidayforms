@@ -4,6 +4,7 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
@@ -18,7 +19,7 @@ import java.util.stream.*;
 @UIScope
 @Slf4j
 @Route(value = "guide", layout = HolidayAppLayout.class)
-public class HolidayInformationView extends HorizontalLayout {
+public class HolidayInformationView extends HorizontalLayout implements HasDynamicTitle {
 	private final H2 heading;
 
 	public HolidayInformationView() {
@@ -39,5 +40,10 @@ public class HolidayInformationView extends HorizontalLayout {
 		setAlignItems(Alignment.CENTER);
 		add(container);
 		setHeightFull();
+	}
+
+	@Override
+	public String getPageTitle() {
+		return MessageRetriever.get("titleInfo");
 	}
 }

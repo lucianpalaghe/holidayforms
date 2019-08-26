@@ -16,6 +16,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
@@ -36,7 +37,7 @@ import java.util.List;
 @UIScope
 @Route(value = "approvals", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-buttons.css")
-public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
+public class HolidayApprovalView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener, HasDynamicTitle {
 	private final Grid<ApprovalRequest> grid;
 	private final H2 heading;
 	@Autowired
@@ -179,5 +180,10 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 				this.listApprovalRequests(message.getTargetUserId());
 			});
 		}
+	}
+
+	@Override
+	public String getPageTitle() {
+		return MessageRetriever.get("titleApprovals");
 	}
 }

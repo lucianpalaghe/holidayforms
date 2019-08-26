@@ -13,7 +13,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.List;
 
@@ -24,18 +23,21 @@ import static java.util.stream.Collectors.*;
 public class JiraUserDetailsService {
 	@Value("${integrations.jira.apiKey}")
 	private String apiKey;
-
 	@Value("${integrations.jira.apiUsername}")
 	private String apiUsername;
-
 	@Value("${integrations.jira.apiUrl}")
 	private String jiraUsersApiUrl;
-
+	@Value("${skipIntegrationInit}")
+	private boolean skipIntegrationInit;
 	@Autowired
 	private UserRepository userRepo;
 
-	@PostConstruct
+	//	@PostConstruct
 	public void loadAllJiraUsers() throws IOException {
+		if (skipIntegrationInit) {
+			return;
+		}
+
 		log.info(String.format("Preparing to load all JIRA users from: %s", jiraUsersApiUrl));
 		RestTemplate restTemplate = new RestTemplate();
 		HttpHeaders httpHeaders = new HttpHeaders();

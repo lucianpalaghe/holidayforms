@@ -14,6 +14,7 @@ import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.InputStreamFactory;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,7 @@ import java.util.TreeSet;
 @Route(value = "planning", layout = HolidayAppLayout.class)
 @StyleSheet("responsive-panels-beta.css")
 @Slf4j
-public class HolidayPlanningView extends HorizontalLayout implements AfterNavigationObserver, BeforeLeaveObserver {
+public class HolidayPlanningView extends HorizontalLayout implements AfterNavigationObserver, BeforeLeaveObserver, HasDynamicTitle {
 	@Autowired
 	private HolidayPlanningService planningService;
 
@@ -190,10 +191,15 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		FileDownloadWrapper buttonWrapper;
 		String ldtFormatted = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmm"));
 		String filename = "Planificare_CO_Status_la_" + ldtFormatted + ".xlsx"; //TODO set dynamic name
-		com.vaadin.flow.server.StreamResource res = new com.vaadin.flow.server.StreamResource(filename,
+		StreamResource res = new StreamResource(filename,
 				(InputStreamFactory) () -> new BufferedInputStream(new ByteArrayInputStream(excelExporter.doGetExcelByteArray())));
 		buttonWrapper = (new FileDownloadWrapper(res));
 		buttonWrapper.wrapComponent(btn);
 		return buttonWrapper;
+	}
+
+	@Override
+	public String getPageTitle() {
+		return MessageRetriever.get("titlePlanning");
 	}
 }

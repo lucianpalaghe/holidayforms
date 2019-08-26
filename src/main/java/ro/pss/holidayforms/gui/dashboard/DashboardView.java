@@ -13,6 +13,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
@@ -25,7 +26,7 @@ import ro.pss.holidayforms.service.DashboardService;
 @Route(value = "", layout = HolidayAppLayout.class)
 @SpringComponent
 @UIScope
-public class DashboardView extends HorizontalLayout implements AfterNavigationObserver {
+public class DashboardView extends HorizontalLayout implements AfterNavigationObserver, HasDynamicTitle {
 	private DashboardService service;
 	private final H2 remainingDaysHeader = new H2();
 	private ChartJs holidaysChart;
@@ -101,5 +102,10 @@ public class DashboardView extends HorizontalLayout implements AfterNavigationOb
 	@Override
 	public void afterNavigation(AfterNavigationEvent event) {
 		refreshDashboardData();
+	}
+
+	@Override
+	public String getPageTitle() {
+		return MessageRetriever.get("titleDashboard");
 	}
 }

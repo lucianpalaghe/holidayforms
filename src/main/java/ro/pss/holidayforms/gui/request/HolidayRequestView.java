@@ -16,6 +16,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
@@ -60,7 +61,7 @@ import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 @Route(value = "requests", layout = HolidayAppLayout.class)
 @StyleSheet("step-progress-bar.css")
 @StyleSheet("responsive-buttons.css")
-public class HolidayRequestView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener {
+public class HolidayRequestView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener, HasDynamicTitle {
 	@Autowired
 	private HolidayRequestService service;
 	private final Grid<HolidayRequest> grid;
@@ -242,5 +243,10 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 					this.listHolidayRequests(message.getTargetUserId());});
 				break;
 		}
+	}
+
+	@Override
+	public String getPageTitle() {
+		return MessageRetriever.get("titleRequests");
 	}
 }

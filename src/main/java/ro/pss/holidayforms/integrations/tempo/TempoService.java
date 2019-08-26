@@ -16,7 +16,6 @@ import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.NonWorkingDay;
 import ro.pss.holidayforms.domain.repo.NonWorkingDayRepository;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -32,11 +31,17 @@ public class TempoService {
 	private String apiKey;
 	@Value("${integrations.tempo.apiUrl}")
 	private String tempoApiUrl;
+	@Value("${skipPostConstructs}")
+	private boolean skipPostConstructs;
 	@Autowired
 	private NonWorkingDayRepository nonWorkingDayRepo;
 
-	@PostConstruct
+	//	@PostConstruct
 	private void loadNonWorkingDays() throws IOException {
+		if (skipPostConstructs) {
+			return;
+		}
+
 		RestTemplate restTemplate = new RestTemplate();
 		HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
