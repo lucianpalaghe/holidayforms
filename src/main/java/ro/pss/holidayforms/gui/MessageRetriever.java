@@ -1,19 +1,40 @@
 package ro.pss.holidayforms.gui;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.spring.annotation.SpringComponent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import ro.pss.holidayforms.config.security.SecurityUtils;
+import ro.pss.holidayforms.domain.UserPreferences;
+import ro.pss.holidayforms.service.UserPreferenceService;
 
+import javax.annotation.PostConstruct;
 import java.util.Locale;
 import java.util.MissingResourceException;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 @Slf4j
+@SpringComponent
 public class MessageRetriever {
-	public static void switchLocale() {
-		if (getLocale().equals(new Locale("en", "US"))) {
-			changeLocaleToRo();
-		} else {
-			changeLocaleToEn();
+	private static UserPreferenceService userPreferenceService;
+
+	@Autowired
+	UserPreferenceService userPreferenceServiceAutowired;
+
+	@PostConstruct
+	private void init() {
+		userPreferenceService = this.userPreferenceServiceAutowired;
+	}
+
+	public static void switchLocale(UserPreferences.LocaleOption localeOption) {
+		switch(localeOption) {
+			case ROMANIAN:
+				changeLocaleToRo();
+				break;
+			case ENGLISH:
+				changeLocaleToEn();
+				break;
 		}
 	}
 
@@ -28,10 +49,23 @@ public class MessageRetriever {
 	public static Locale getLocale() {
 		Locale locale;
 		try {
-			locale = UI.getCurrent().getLocale();
+			Optional<UserPreferences> userPreferences = userPreferenceService.findByEmployeeEmail(SecurityUtils.getLoggedInUser().getEmail());
+			locale = userPreferences.isEmpty() ? UI.getCurrent().getLocale() : getLocaleFromLocaleOption(userPreferences.get().getLocaleOption());
 		}catch (Exception e) {
-			//log.error("Cannot get locale from UI, set default");
 			locale = new Locale("ro");
+		}
+		return locale;
+	}
+
+	private static Locale getLocaleFromLocaleOption(UserPreferences.LocaleOption localeOption) {
+		Locale locale = null;
+		switch (localeOption) {
+			case ROMANIAN:
+				locale = new Locale("ro");
+				break;
+			case ENGLISH:
+				locale = new Locale("en");
+				break;
 		}
 		return locale;
 	}

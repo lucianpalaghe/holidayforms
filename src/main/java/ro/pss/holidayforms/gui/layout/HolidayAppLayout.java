@@ -82,12 +82,12 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 			currentUI.getSession().close();
 		});
 
-		LeftClickableItem languageMenuEntry = new LeftClickableItem(MessageRetriever.get("changeLanguage"), VaadinIcon.FLAG.create(),
-				clickEvent -> {
-					MessageRetriever.switchLocale();
-					currentUI.getPage().reload();
-				}
-		);
+//		LeftClickableItem languageMenuEntry = new LeftClickableItem(MessageRetriever.get("changeLanguage"), VaadinIcon.FLAG.create(),
+//				clickEvent -> {
+//					MessageRetriever.switchLocale();
+//					currentUI.getPage().reload();
+//				}
+//		);
 
 		init(AppLayoutBuilder
 				.get(Behaviour.LEFT_RESPONSIVE)
@@ -105,7 +105,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 						.add(substitutionMenuEntry)
 						.add(approvalMenuEntry)
 						.add(planningMenuEntry)
-						.add(languageMenuEntry)
+						//.add(languageMenuEntry)
 						.add(infoMenuEntry)
 						.add(preferencesMenuEntry)
 						.add(logoutMenuEntry)

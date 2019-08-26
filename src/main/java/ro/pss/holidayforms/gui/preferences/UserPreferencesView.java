@@ -1,6 +1,8 @@
 package ro.pss.holidayforms.gui.preferences;
 
 import com.vaadin.flow.component.ItemLabelGenerator;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.checkbox.CheckboxGroupVariant;
@@ -8,6 +10,8 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
@@ -23,14 +27,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import ro.pss.holidayforms.config.security.SecurityUtils;
+import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.UserPreferences;
-import ro.pss.holidayforms.domain.repo.UserPreferencesRepository;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
+import ro.pss.holidayforms.service.UserPreferenceService;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @SpringComponent
@@ -38,15 +42,17 @@ import java.util.stream.Collectors;
 @Slf4j
 @Route(value = "preferences", layout = HolidayAppLayout.class)
 public class UserPreferencesView extends HorizontalLayout implements HasDynamicTitle {
-
     @Autowired
-    private UserPreferencesRepository userPreferencesRepository;
-    private UserPreferences.LocaleOption localeOption;
-    private boolean showNotifications = false;
-    private Set<UserPreferences.EmailOption> emailOptions;
+    UserPreferenceService userPreferenceService;
 
-    public UserPreferencesView() {
-        // TODO: init  values with db data
+    private UserPreferences userPreferences;
+
+    public UserPreferencesView(UserPreferenceService userPreferenceService) {
+        this.userPreferenceService = userPreferenceService;
+
+        User user = SecurityUtils.getLoggedInUser();
+        userPreferences = userPreferenceService.findByEmployeeEmail(user.getEmail())
+                .orElse(new UserPreferences(user, UserPreferences.LocaleOption.ROMANIAN, new HashSet<>(), true));
 
         // header
         H2 heading = new H2(MessageRetriever.get("prefHeader"));
@@ -75,15 +81,15 @@ public class UserPreferencesView extends HorizontalLayout implements HasDynamicT
             image.getStyle().set("marginTop", "2px");
             return image;
         }, LocaleCountryTuple::getLanguage));
-        localeGroup.setValue(ro); // TODO: change to what user has set
-        localeGroup.addValueChangeListener(event -> this.localeOption = event.getValue().getOption());
+        localeGroup.setValue(userPreferences.getLocaleOption().equals(UserPreferences.LocaleOption.ROMANIAN) ? ro : en);
+        localeGroup.addValueChangeListener(event -> this.userPreferences.setLocaleOption(event.getValue().getOption()));
         VerticalLayout localeGroupLayout = new VerticalLayout();
         localeGroupLayout.add(new H3(MessageRetriever.get("prefLang")));
         localeGroupLayout.add(localeGroup);
 
         // notifications
-        Checkbox notificationsCbo = new Checkbox(MessageRetriever.get("prefShowNotifications"));
-        notificationsCbo.addValueChangeListener(event -> this.showNotifications = event.getValue().booleanValue());
+        Checkbox notificationsCbo = new Checkbox(MessageRetriever.get("prefShowNotifications"), this.userPreferences.isShowNotifications());
+        notificationsCbo.addValueChangeListener(event -> this.userPreferences.setShowNotifications(event.getValue()));
         VerticalLayout notificationsLayout = new VerticalLayout();
         notificationsLayout.add(new H3(MessageRetriever.get("prefNotifications")));
         notificationsLayout.add(notificationsCbo);
@@ -97,21 +103,31 @@ public class UserPreferencesView extends HorizontalLayout implements HasDynamicT
             allEmailOptions.add(emailOptionsTuple);
         }
         emailGroup.setItems(allEmailOptions);
-        emailGroup.setItemLabelGenerator((ItemLabelGenerator<EmailOptionsTuple>) emailOptionsTuple -> emailOptionsTuple.getDescription());
+        emailGroup.setItemLabelGenerator((ItemLabelGenerator<EmailOptionsTuple>) EmailOptionsTuple::getDescription);
+        Set<EmailOptionsTuple> selectedEmailOptions = allEmailOptions.stream().filter(e -> userPreferences.getEmailOption().contains(e.getOption())).collect(Collectors.toSet());
+        emailGroup.select(selectedEmailOptions);
         emailGroup.addSelectionListener((MultiSelectionListener<CheckboxGroup<EmailOptionsTuple>, EmailOptionsTuple>) multiSelectionEvent -> {
-            emailOptions.clear();
-            emailOptions.addAll(multiSelectionEvent.getAllSelectedItems().stream().map(e -> e.getOption()).collect(Collectors.toSet()));
+            this.userPreferences.getEmailOption().clear();
+            this.userPreferences.setEmailOption(multiSelectionEvent.getAllSelectedItems().stream().map(EmailOptionsTuple::getOption).collect(Collectors.toSet()));
         });
         VerticalLayout emailOptionsLayout = new VerticalLayout();
         emailOptionsLayout.add(new H3(MessageRetriever.get("prefEmailOptions")));
         emailOptionsLayout.add(emailGroup);
 
+        // btn save
+        Button btnSave = new Button(MessageRetriever.get("btnSaveLbl"), VaadinIcon.LOCK.create(), event -> {
+            userPreferenceService.savePreferences(userPreferences);
+            MessageRetriever.switchLocale(userPreferences.getLocaleOption());
+            Notification.show(MessageRetriever.get("preferencesSaved"), 3000, Notification.Position.TOP_CENTER);
+            UI.getCurrent().getPage().reload();
+
+        });
         VerticalLayout container = new VerticalLayout();
         container.setPadding(true);
         container.setWidth("100%");
         container.setMaxWidth("70em");
         container.setHeightFull();
-        container.add(headingLayout, new Hr(), localeGroupLayout, new Hr(), notificationsLayout, new Hr(), emailOptionsLayout);
+        container.add(headingLayout, new Hr(), localeGroupLayout, new Hr(), notificationsLayout, new Hr(), emailOptionsLayout, btnSave);
         setJustifyContentMode(JustifyContentMode.CENTER);
         setAlignItems(Alignment.CENTER);
         add(container);
@@ -141,4 +157,17 @@ class LocaleCountryTuple {
 class EmailOptionsTuple {
     private UserPreferences.EmailOption option;
     private String description;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EmailOptionsTuple that = (EmailOptionsTuple) o;
+        return option == that.option;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(option);
+    }
 }

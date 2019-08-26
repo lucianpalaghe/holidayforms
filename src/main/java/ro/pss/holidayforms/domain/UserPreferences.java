@@ -10,6 +10,14 @@ import java.util.Set;
 @Entity
 @NoArgsConstructor
 public class UserPreferences {
+
+    public UserPreferences(User employee, LocaleOption localeOption, Set<EmailOption> emailOption, boolean showNotifications) {
+        this.employee = employee;
+        this.localeOption = localeOption;
+        this.emailOption = emailOption;
+        this.showNotifications = showNotifications;
+    }
+
     @GeneratedValue
     @Getter
     @Id
@@ -27,7 +35,7 @@ public class UserPreferences {
 
     @Getter
     @Setter
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     private Set<EmailOption> emailOption;
 
