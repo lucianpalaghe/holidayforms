@@ -18,6 +18,7 @@ import java.util.ResourceBundle;
 @SpringComponent
 public class MessageRetriever {
 	private static UserPreferenceService userPreferenceService;
+	private static Optional<UserPreferences> userPreferences;
 
 	@Autowired
 	UserPreferenceService userPreferenceServiceAutowired;
@@ -49,8 +50,7 @@ public class MessageRetriever {
 	public static Locale getLocale() {
 		Locale locale;
 		try {
-			Optional<UserPreferences> userPreferences = userPreferenceService.findByEmployeeEmail(SecurityUtils.getLoggedInUser().getEmail());
-			locale = userPreferences.isEmpty() ? UI.getCurrent().getLocale() : getLocaleFromLocaleOption(userPreferences.get().getLocaleOption());
+			locale = getUserPreferences().isEmpty() ? UI.getCurrent().getLocale() : getLocaleFromLocaleOption(userPreferences.get().getLocaleOption());
 		}catch (Exception e) {
 			locale = new Locale("ro");
 		}
@@ -77,5 +77,25 @@ public class MessageRetriever {
 			log.warn(String.format("%s is missing from the messages bundle!", key));
 			return "##_" + key;
 		}
+	}
+
+	public static String get(String key, UserPreferences.LocaleOption localeOption) {
+		try {
+			return ResourceBundle.getBundle("i18n/messages", getLocaleFromLocaleOption(localeOption)).getString(key);
+		} catch (MissingResourceException e) {
+			log.warn(String.format("%s is missing from the messages bundle!", key));
+			return "##_" + key;
+		}
+	}
+
+	private static Optional<UserPreferences> getUserPreferences() {
+		if(userPreferences == null || userPreferences.isEmpty()) {
+			userPreferences = userPreferenceService.findByEmployeeEmail(SecurityUtils.getLoggedInUser().getEmail());
+		}
+		return userPreferences;
+	}
+
+	public static void setUserPreferences(UserPreferences userPreferences) {
+		MessageRetriever.userPreferences = Optional.of(userPreferences);
 	}
 }

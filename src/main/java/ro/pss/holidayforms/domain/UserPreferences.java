@@ -48,6 +48,6 @@ public class UserPreferences {
     }
 
     public enum EmailOption {
-       ON_NEW_REQUEST, ON_FINAL_APPROVAL, ON_REPLACER_ACTION, ON_APPROVER_ACTION
+       ON_NEW_REQUEST, ON_REPLACER_ACTION, ON_APPROVER_ACTION, ON_REQUEST_CHANGED
     }
 }

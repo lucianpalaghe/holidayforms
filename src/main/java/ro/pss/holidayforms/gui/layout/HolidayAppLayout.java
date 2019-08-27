@@ -21,6 +21,7 @@ import com.vaadin.flow.component.page.Viewport;
 import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.User;
+import ro.pss.holidayforms.domain.UserPreferences;
 import ro.pss.holidayforms.domain.notification.Notification;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
@@ -34,9 +35,11 @@ import ro.pss.holidayforms.gui.planning.HolidayPlanningView;
 import ro.pss.holidayforms.gui.preferences.UserPreferencesView;
 import ro.pss.holidayforms.gui.request.HolidayRequestView;
 import ro.pss.holidayforms.gui.subtitution.SubstitutionRequestView;
+import ro.pss.holidayforms.service.UserPreferenceService;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static com.github.appreciated.app.layout.entity.Section.FOOTER;
 import static com.github.appreciated.app.layout.entity.Section.HEADER;
@@ -48,10 +51,12 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	private final DefaultBadgeHolder substitutionBadge;
 	private final DefaultBadgeHolder approvalBadge;
 	private final NotificationService notificationService;
+	private final UserPreferenceService userPreferenceService;
 
 	@Autowired
-	public HolidayAppLayout(NotificationService notificationService) {
+	public HolidayAppLayout(NotificationService notificationService, UserPreferenceService userPreferenceService) {
 		this.notificationService = notificationService;
+		this.userPreferenceService = userPreferenceService;
 		UI currentUI = UI.getCurrent();
 		ComponentUtil.setData(currentUI, HolidayAppLayout.class, this);
 		this.notifications = new DefaultNotificationHolder();
@@ -71,23 +76,19 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 
 		approvalBadge.setCount(notificationService.getApprovalRequestsCount(user.getEmail()));
 		substitutionBadge.setCount(notificationService.getSubstitutionRequestsCount(user.getEmail()));
-		loadUserNotifications();
+		Optional<UserPreferences> up = userPreferenceService.findByEmployeeEmail(user.getEmail());
+		if(up.isPresent()) {
+			if(up.get().isShowNotifications()) {
+				loadUserNotifications();
+			}
+		}
 
 		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.7"); // TODO: get version from somewhere
 		Broadcaster.register(new UserUITuple(user, currentUI), this);
-//		LeftClickableItem preferencesMenuEntry = new LeftClickableItem(MessageRetriever.get("menuPreferences"), VaadinIcon.COG.create(), clickEvent -> {
-//		});
 		LeftClickableItem logoutMenuEntry = new LeftClickableItem(MessageRetriever.get("menuLogout"), VaadinIcon.EXIT.create(), clickEvent -> {
 			currentUI.getPage().executeJavaScript("window.location.href='logout'");
 			currentUI.getSession().close();
 		});
-
-//		LeftClickableItem languageMenuEntry = new LeftClickableItem(MessageRetriever.get("changeLanguage"), VaadinIcon.FLAG.create(),
-//				clickEvent -> {
-//					MessageRetriever.switchLocale();
-//					currentUI.getPage().reload();
-//				}
-//		);
 
 		init(AppLayoutBuilder
 				.get(Behaviour.LEFT_RESPONSIVE)
@@ -105,7 +106,6 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 						.add(substitutionMenuEntry)
 						.add(approvalMenuEntry)
 						.add(planningMenuEntry)
-						//.add(languageMenuEntry)
 						.add(infoMenuEntry)
 						.add(preferencesMenuEntry)
 						.add(logoutMenuEntry)
@@ -151,16 +151,21 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 
 	@Override
 	public void receiveBroadcast(UI ui, BroadcastEvent event) {
+		Optional<UserPreferences> userPreferences = userPreferenceService.findByEmployeeEmail(event.getTargetUserId());
 		ui.access(() -> {
-			if (event.getType() == BroadcastEvent.Type.WORKLOGS_POSTED) { //TODO: make this cleaner
-				com.vaadin.flow.component.notification.Notification.show(MessageRetriever.get("worklogsPosted"), 3000, com.vaadin.flow.component.notification.Notification.Position.TOP_CENTER);
-				return;
+			// show notifications only if user has set his preferences and 'show notifications' is selected. By default, the notifications will not be shown
+			if(userPreferences.isPresent()) {
+				if(userPreferences.get().isShowNotifications()) {
+					if (event.getType() == BroadcastEvent.Type.WORKLOGS_POSTED) { //TODO: make this cleaner
+						com.vaadin.flow.component.notification.Notification.show(MessageRetriever.get("worklogsPosted"), 3000, com.vaadin.flow.component.notification.Notification.Position.TOP_CENTER);
+						return;
+					}
+					String title = MessageRetriever.get("notificationTitle_" + event.getType());
+					String description = String.format(MessageRetriever.get("notificationBody_" + event.getType()), event.getUserIdentifier());
+					HolidayNotification holidayNotification = new HolidayNotification(title, description, event.getNotification());
+					notifications.addNotification(holidayNotification);
+				}
 			}
-			String title = MessageRetriever.get("notificationTitle_" + event.getType());
-			String description = String.format(MessageRetriever.get("notificationBody_" + event.getType()), event.getUserIdentifier());
-			HolidayNotification holidayNotification = new HolidayNotification(title, description, event.getNotification());
-			notifications.addNotification(holidayNotification);
-
 			updateBadges(event);
 		});
 	}
