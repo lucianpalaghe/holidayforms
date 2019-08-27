@@ -39,13 +39,13 @@ public class ExcelExporter {
     private static int COLUMN_NAME_WIDTH_CHAR = 30;
     private static int COLUMNS_WIDTH_CHAR = 15;
 
-    public byte[] doGetExcelByteArray() {
+    public byte[] doGetExcelByteArray(int startMonth, int endMonth) {
         Workbook workbook = new XSSFWorkbook();
-        populateWorkbookWithData(workbook);
+        populateWorkbookWithData(workbook, startMonth, endMonth);
         return getByteArrayFromWorkbook(workbook);
     }
 
-    private void populateWorkbookWithData(Workbook workbook) {
+    private void populateWorkbookWithData(Workbook workbook, int startMonth, int endMonth) {
         try {
             Sheet sheet = workbook.createSheet(MessageRetriever.get("sheetName"));
             sheet.setDefaultColumnWidth(15); // characters
@@ -65,7 +65,7 @@ public class ExcelExporter {
 
             String[] monthsColNames = MessageRetriever.get("monthsNamesShort").split(",");
             int cnt = i;
-            for (int j = 0; j < monthsColNames.length; j++) {
+            for (int j = startMonth; j <= endMonth; j++) {
                 //planning
                 cell = row.createCell(cnt++);
                 cell.setCellValue(workbook.getCreationHelper().createRichTextString(monthsColNames[j]) + " " + MessageRetriever.get("sheetPlanning"));
@@ -101,7 +101,7 @@ public class ExcelExporter {
                 cell.setCellValue(workbook.getCreationHelper().createRichTextString(user.getAvailableVacationDays() + ""));
                 cell.setCellStyle(getCellStyleForContentUserNamesAndCO(workbook));
                 DashboardData data = dataService.getDashboardData(user.getEmail());
-                for (int m = 0; m < MessageRetriever.get("monthsNamesShort").split(",").length; m++) {
+                for (int m = startMonth; m <= endMonth; m++) {
                     cell = row.createCell(col++);
                     cell.setCellValue(workbook.getCreationHelper().createRichTextString(data.getChartPlannedDays()[m] == 0 ? "" : data.getChartPlannedDays()[m] + ""));
                     cell.setCellStyle(getCellStyleForContentMonths(col - 1, workbook));
