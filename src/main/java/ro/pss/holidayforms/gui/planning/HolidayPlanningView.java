@@ -88,11 +88,16 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		comboBoxStart.setItems(months);
 		comboBoxStart.setValue(months.get(cboStartMonthIndex));
 		comboBoxStart.setAllowCustomValue(false);
+		comboBoxStart.setPreventInvalidInput(true);
 		comboBoxStart.addValueChangeListener((HasValue.ValueChangeListener<AbstractField.ComponentValueChangeEvent<ComboBox<String>, String>>) comp -> {
 			cboStartMonthIndex = months.indexOf(comp.getValue());
 			if (cboStartMonthIndex < 0) {
 				Notification.show(MessageRetriever.get("invalidMonth"), 2000, Notification.Position.TOP_CENTER);
 				comboBoxStart.setValue(comp.getOldValue());
+			} else if(cboEndMonthIndex < cboStartMonthIndex) {
+				Notification.show(MessageRetriever.get("endMonthGreaterThanStart"), 2000, Notification.Position.TOP_CENTER);
+				comboBoxStart.setValue(comp.getOldValue());
+				cboStartMonthIndex = months.indexOf(comp.getOldValue());
 			}
 		});
 		ComboBox<String> comboBoxEnd = new ComboBox<>(MessageRetriever.get("endMonth"));
@@ -225,7 +230,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	private FileDownloadWrapper getButtonWrapperWithExcelDocument(Button btn) {
 		FileDownloadWrapper buttonWrapper;
 		String ldtFormatted = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmm"));
-		String filename = "Planificare_CO_Status_la_" + ldtFormatted + ".xlsx"; //TODO set dynamic name
+		String filename = String.format(MessageRetriever.get("excelFileName"), ldtFormatted) + ".xlsx";
 		StreamResource res = new StreamResource(filename,
 				(InputStreamFactory) () -> new BufferedInputStream(new ByteArrayInputStream(excelExporter.doGetExcelByteArray(cboStartMonthIndex, cboEndMonthIndex))));
 		buttonWrapper = (new FileDownloadWrapper(res));

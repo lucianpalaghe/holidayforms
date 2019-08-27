@@ -47,6 +47,7 @@ public class ExcelExporter {
 
     private void populateWorkbookWithData(Workbook workbook, int startMonth, int endMonth) {
         try {
+            log.info("Start creating excel file");
             Sheet sheet = workbook.createSheet(MessageRetriever.get("sheetName"));
             sheet.setDefaultColumnWidth(15); // characters
             int startRow = 1;
@@ -122,11 +123,11 @@ public class ExcelExporter {
                 cell.setCellStyle(getCellStyleForContentGrey(workbook));
             }
             autosizeAllColumns(sheet);
-            // sheet.setAutoFilter(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 30));
+            sheet.setAutoFilter(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 30));
             sheet.createFreezePane(3, 1, 3, 1);
-            log.info("excel file exported succesfully");
+            log.info("Excel file exported successfully");
         } catch (Exception e) {
-            log.error("error making excel", e);
+            log.error("Error making excel", e);
         }
     }
 
