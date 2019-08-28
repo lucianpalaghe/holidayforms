@@ -2,6 +2,7 @@ package ro.pss.holidayforms.gui.planning;
 
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.HasValue;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.StyleSheet;
@@ -61,6 +62,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	private final H3 heading;
 	private Integer cboStartMonthIndex = 0; // january
 	private Integer cboEndMonthIndex = 11; // december
+	private String browserOriginalLocation;
 
 
 	public HolidayPlanningView() {
@@ -104,6 +106,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 		comboBoxEnd.setItems(months);
 		comboBoxEnd.setValue(months.get(cboEndMonthIndex));
 		comboBoxEnd.setAllowCustomValue(false);
+		comboBoxEnd.setPreventInvalidInput(true);
 		comboBoxEnd.addValueChangeListener((HasValue.ValueChangeListener<AbstractField.ComponentValueChangeEvent<ComboBox<String>, String>>) comp -> {
 			cboEndMonthIndex = months.indexOf(comp.getValue());
 			if (cboEndMonthIndex < 0) {
@@ -204,6 +207,7 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 
 	@Override
 	public void afterNavigation(AfterNavigationEvent event) {
+		browserOriginalLocation = event.getLocation().getPathWithQueryParameters();
 		listHolidayPlanningEntries();
 		refreshRemainingDaysHeader();
 	}
@@ -212,7 +216,13 @@ public class HolidayPlanningView extends HorizontalLayout implements AfterNaviga
 	public void beforeLeave(BeforeLeaveEvent event) {
 		if (this.hasChanges()) {
 			BeforeLeaveEvent.ContinueNavigationAction action = event.postpone();
-			HolidayConfirmationDialog holidayConfirmationDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.DENIAL, action::proceed, MessageRetriever.get("unsavedChanges"), MessageRetriever.get("unsavedChangesMsg"), MessageRetriever.get("answerYes"), MessageRetriever.get("backTxt"));
+			UI.getCurrent().getPage().executeJavaScript("history.replaceState({},'','" + browserOriginalLocation + "');");
+			HolidayConfirmationDialog holidayConfirmationDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.DENIAL,
+					() -> {
+						action.proceed();
+						String destination = event.getLocation().getPathWithQueryParameters();
+						UI.getCurrent().getPage().executeJavaScript("history.replaceState({},'','" + destination + "');");
+					}, MessageRetriever.get("unsavedChanges"), MessageRetriever.get("unsavedChangesMsg"), MessageRetriever.get("answerYes"), MessageRetriever.get("backTxt"));
 			holidayConfirmationDialog.open();
 		}
 	}

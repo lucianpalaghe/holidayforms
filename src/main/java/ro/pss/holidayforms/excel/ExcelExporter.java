@@ -123,11 +123,11 @@ public class ExcelExporter {
                 cell.setCellStyle(getCellStyleForContentGrey(workbook));
             }
             autosizeAllColumns(sheet);
-            sheet.setAutoFilter(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 30));
+            sheet.setAutoFilter(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, sheet.getRow(0).getLastCellNum() - 1));
             sheet.createFreezePane(3, 1, 3, 1);
-            log.info("Excel file exported successfully");
+            log.info("Excel file created successfully");
         } catch (Exception e) {
-            log.error("Error making excel", e);
+            log.error("Error creating the excel file", e);
         }
     }
 
@@ -146,12 +146,12 @@ public class ExcelExporter {
         try {
             workbook.write(wbAttach);
         } catch (IOException e) {
-            log.error("Error creating export excel", e);
+            log.error("Error getting bytes from excel", e);
         } finally {
             try {
                 wbAttach.close();
             } catch (IOException e) {
-                log.error("Error creating export excel", e);
+                log.error("Error getting bytes from excel", e);
             }
         }
         return wbAttach.toByteArray();
@@ -261,13 +261,13 @@ public class ExcelExporter {
             fileOut = new FileOutputStream(file);
             workbook.write(fileOut);
         } catch (IOException e) {
-            log.error("Error writing file", e);
+            log.error("Error writing excel file", e);
         } finally {
             if (fileOut != null) {
                 try {
                     fileOut.close();
                 } catch (Exception e) {
-                    log.error("Error writing file", e);
+                    log.error("Error writing excel file", e);
                 }
             }
         }

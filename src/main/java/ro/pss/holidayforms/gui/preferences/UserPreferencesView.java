@@ -56,6 +56,7 @@ public class UserPreferencesView extends HorizontalLayout implements AfterNaviga
     private boolean defaultShowNotifications = false;
     private Set<UserPreferences.EmailOption> defaultEmailOption = new HashSet<>();
     private User user;
+    private String browserOriginalLocation;
 
     {
         user = SecurityUtils.getLoggedInUser();
@@ -154,10 +155,13 @@ public class UserPreferencesView extends HorizontalLayout implements AfterNaviga
         Optional<UserPreferences> dbOpt = userPreferenceService.findByEmployeeEmail(SecurityUtils.getLoggedInUser().getEmail());
         if (this.hasChanges(dbOpt)) {
             BeforeLeaveEvent.ContinueNavigationAction action = event.postpone();
+            UI.getCurrent().getPage().executeJavaScript("history.replaceState({},'','" + browserOriginalLocation + "');");
             HolidayConfirmationDialog holidayConfirmationDialog = new HolidayConfirmationDialog(HolidayConfirmationDialog.HolidayConfirmationType.DENIAL,
                     () -> {
                         this.userPreferences = dbOpt.get();
                         action.proceed();
+                        String destination = event.getLocation().getPathWithQueryParameters();
+                        UI.getCurrent().getPage().executeJavaScript("history.replaceState({},'','" + destination + "');");
                     }, MessageRetriever.get("unsavedChanges"), MessageRetriever.get("unsavedChangesMsg"), MessageRetriever.get("answerYes"), MessageRetriever.get("backTxt"));
             holidayConfirmationDialog.open();
         }
@@ -165,6 +169,7 @@ public class UserPreferencesView extends HorizontalLayout implements AfterNaviga
 
     @Override
     public void afterNavigation(AfterNavigationEvent afterNavigationEvent) {
+        browserOriginalLocation = afterNavigationEvent.getLocation().getPathWithQueryParameters();
         resetFieldsToOriginal();
     }
 
