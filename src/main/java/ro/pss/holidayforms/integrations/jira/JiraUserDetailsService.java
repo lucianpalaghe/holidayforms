@@ -10,13 +10,18 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import ro.pss.holidayforms.domain.Role;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.UserRepository;
+import ro.pss.holidayforms.domain.repo.UserRoleRepository;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
 
 @Service
 @Slf4j
@@ -29,10 +34,27 @@ public class JiraUserDetailsService {
 	private String jiraUsersApiUrl;
 	@Value("${skipIntegrationInit}")
 	private boolean skipIntegrationInit;
+	@Value("${usersWithHrRole}")
+	private String usersWithHrRole;
+	@Value("${usersWithAdminRole}")
+	private String usersWithAdminRole;
 	@Autowired
 	private UserRepository userRepo;
+	@Autowired
+	private UserRoleRepository userRoleRepository;
 
-	//	@PostConstruct
+	@PostConstruct
+	public void populateUserRoles() {
+		Set<Role> rolesToSave = new HashSet<>();
+		for(Role.RoleName role: Role.RoleName.values()) {
+			if(!userRoleRepository.findByName(role).isPresent()) {
+				rolesToSave.add(new Role(role));
+			}
+		}
+		userRoleRepository.saveAll(rolesToSave);
+	}
+
+	@PostConstruct
 	public void loadAllJiraUsers() throws IOException {
 		if (skipIntegrationInit) {
 			return;
@@ -75,11 +97,17 @@ public class JiraUserDetailsService {
 				.filter(u -> !u.getKey().startsWith("addon"))
 				.filter(u -> !u.getKey().startsWith("pss"))
 				.collect(toList());
-
+		Role defaultRole = userRoleRepository.findByName(Role.RoleName.USER).get();
 		List<User> userList = jiraUserList.stream()
 				.map(User::new)
 				.collect(toList());
-
+		userList.forEach(u -> u.getRoles().add(defaultRole));
+		for(String user:usersWithHrRole.split(",")) {
+			userList.stream().filter(u -> u.getEmail().equalsIgnoreCase(user)).findFirst().get().getRoles().add(userRoleRepository.findByName(Role.RoleName.HR).get());
+		}
+		for(String user:usersWithAdminRole.split(",")) {
+			userList.stream().filter(u -> u.getEmail().equalsIgnoreCase(user)).findFirst().get().getRoles().add(userRoleRepository.findByName(Role.RoleName.ADMIN).get());
+		}
 		userRepo.saveAll(userList);
 	}
 }
