@@ -97,7 +97,7 @@ public class JiraUserDetailsService {
 				.filter(u -> !u.getKey().startsWith("addon"))
 				.filter(u -> !u.getKey().startsWith("pss"))
 				.collect(toList());
-		Role defaultRole = userRoleRepository.findByName(Role.RoleName.USER).get();
+		Role defaultRole = userRoleRepository.findByName(Role.RoleName.USER).orElse(new Role(Role.RoleName.USER));
 		List<User> userList = jiraUserList.stream()
 				.map(User::new)
 				.collect(toList());

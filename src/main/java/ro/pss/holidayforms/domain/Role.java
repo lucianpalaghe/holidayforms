@@ -15,6 +15,7 @@ public class Role {
 
     @Column(length = 60)
     @Enumerated(EnumType.STRING)
+    @Getter
     private RoleName name;
 
     public enum RoleName {
