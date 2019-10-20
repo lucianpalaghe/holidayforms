@@ -15,9 +15,9 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import de.wathoserver.vaadin.MultiselectComboBox;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.vaadin.gatanaso.MultiselectComboBox;
 import ro.pss.holidayforms.domain.Role;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.repo.UserRepository;
@@ -42,6 +42,7 @@ public class EditUserView extends HorizontalLayout implements AfterNavigationObs
     private Set<Role> allRoles;
     private List<User> users;
     private final Grid<User> grid;
+    private TextField searchBox;
 
     @Autowired
     public EditUserView(UserRepository userRepository, UserRoleRepository userRoleRepository) {
@@ -50,23 +51,39 @@ public class EditUserView extends HorizontalLayout implements AfterNavigationObs
         this.allRoles = new LinkedHashSet<>(userRoleRepository.findAll());
         grid = new Grid<>();
         grid.addColumn(new ComponentRenderer<>(this::getNameRenderer)).setHeader(MessageRetriever.get("editUserGridColName")).setFlexGrow(2);
-        grid.addColumn(new ComponentRenderer<>(this::getRolesRenderer)).setHeader(MessageRetriever.get("editUserGridColRole")).setFlexGrow(5);
+        grid.addColumn(new ComponentRenderer<>(this::getRolesRenderer)).setHeader(MessageRetriever.get("editUserGridColRole")).setFlexGrow(2);
         grid.addColumn(new ComponentRenderer<>(this::getVacationDaysRenderer)).setHeader(MessageRetriever.get("editUserGridVacationDays")).setFlexGrow(1);
         grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
         grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.MATERIAL_COLUMN_DIVIDERS, GridVariant.LUMO_ROW_STRIPES);
         grid.setEnabled(true);
         populateGridWithData();
         VerticalLayout container = new VerticalLayout();
-        container.add(new H3(MessageRetriever.get("editUserHeader")), grid);
+        HorizontalLayout header = new HorizontalLayout();
+        header.setVerticalComponentAlignment(Alignment.BASELINE);
+        header.setDefaultVerticalComponentAlignment(Alignment.BASELINE);
+        header.add(new H3(MessageRetriever.get("editUserHeader")), getSearchBox());
+       // header.add(getSearchBox());
+        container.add(header, grid);
         container.setWidth("90%");
        // container.setMaxWidth("90em");
         //container.setHeightFull();
-        container.setHeight("85%");
+        container.setHeight("95%");
 
         setJustifyContentMode(JustifyContentMode.CENTER);
         setAlignItems(Alignment.CENTER);
         add(container);
         setHeightFull();
+    }
+
+    private TextField getSearchBox() {
+        if(searchBox == null) {
+            searchBox = new TextField();
+            searchBox.setPlaceholder(MessageRetriever.get("searchBoxPlaceholder"));
+            searchBox.addValueChangeListener(listener -> {
+                this.grid.setItems(users.stream().filter(u -> u.getName().toLowerCase().contains(listener.getValue().toLowerCase().trim())));
+            });
+        }
+        return searchBox;
     }
 
     private HorizontalLayout getVacationDaysRenderer(User user) {
@@ -88,7 +105,6 @@ public class EditUserView extends HorizontalLayout implements AfterNavigationObs
     }
     private MultiselectComboBox<String> getRolesRenderer(User user) {
         MultiselectComboBox<String> roles = new MultiselectComboBox<>();
-        //roles.setCompactMode(false);
         roles.setItems(this.allRoles.stream().map(r -> r.getName().toString()).collect(Collectors.toSet()));
         roles.setValue(user.getRoles().stream().map(r -> r.getName().toString()).collect(Collectors.toSet()));
         roles.addValueChangeListener(listener -> {
@@ -98,11 +114,14 @@ public class EditUserView extends HorizontalLayout implements AfterNavigationObs
             } else {
                 roles.setValue(listener.getValue());
             }
+            roles.setCompactMode(roles.getSelectedItems().size() > 1);
             Set<Role> newRoles = allRoles.stream().filter(role ->
                     roles.getValue().stream()
                             .anyMatch(s -> role.getName().toString().equalsIgnoreCase(s))).collect(Collectors.toSet());
             user.setRoles(newRoles);
         });
+        roles.setSizeFull();
+        roles.setCompactMode(roles.getSelectedItems().size() > 1);
         return roles;
     }
 
