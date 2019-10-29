@@ -21,6 +21,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
+        <spring-security-oauth.version>2.1.2.RELEASE</spring-security-oauth.version>
 	</properties>
 
 	<repositories>
@@ -70,16 +71,6 @@
 			<artifactId>chart</artifactId>
 			<version>2.5.0</version>
 		</dependency>
-		<!--		<dependency>-->
-		<!--			<groupId>org.webjars.bowergithub.notwaldorf</groupId>-->
-		<!--			<artifactId>emoji-selector</artifactId>-->
-		<!--			<version>1.1.1</version>-->
-		<!--		</dependency>-->
-		<!--		<dependency>-->
-		<!--			<groupId>org.webjars.bowergithub.notwaldorf</groupId>-->
-		<!--			<artifactId>emoji-rain</artifactId>-->
-		<!--			<version>2.0.0</version>-->
-		<!--		</dependency>-->
 		<dependency>
 			<groupId>org.webjars.bowergithub.roxus</groupId>
 			<artifactId>range-datepicker</artifactId>
@@ -95,7 +86,6 @@
 			<artifactId>file-download-wrapper</artifactId>
 			<version>1.1.0</version>
 		</dependency>
-
 		<!--		Spring boot core dependencies-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -110,11 +100,31 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
+        <!--		Spring Security dependencies-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
-		<dependency>
+        <dependency>
+            <groupId>org.springframework.security.oauth.boot</groupId>
+            <artifactId>spring-security-oauth2-autoconfigure</artifactId>
+            <version>${spring-security-oauth.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.microsoft.azure</groupId>
+            <artifactId>azure-active-directory-spring-boot-starter</artifactId>
+            <version>2.0.4</version>
+        </dependency>
+
+        <dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>

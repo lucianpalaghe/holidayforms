@@ -4,12 +4,17 @@ import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import ro.pss.holidayforms.domain.User;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
-public class CustomUserPrincipal implements UserDetails {
+public class CustomUserPrincipal implements UserDetails, OAuth2User, OidcUser {
 	@Getter
 	private User user;
 
@@ -20,6 +25,11 @@ public class CustomUserPrincipal implements UserDetails {
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+	}
+
+	@Override
+	public Map<String, Object> getAttributes() {
+		return null;
 	}
 
 	@Override
@@ -50,5 +60,25 @@ public class CustomUserPrincipal implements UserDetails {
 	@Override
 	public boolean isEnabled() {
 		return true;
+	}
+
+	@Override
+	public String getName() {
+		return null;
+	}
+
+	@Override
+	public Map<String, Object> getClaims() {
+		return null;
+	}
+
+	@Override
+	public OidcUserInfo getUserInfo() {
+		return null;
+	}
+
+	@Override
+	public OidcIdToken getIdToken() {
+		return null;
 	}
 }

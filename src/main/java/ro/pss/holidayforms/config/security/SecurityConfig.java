@@ -1,5 +1,6 @@
 package ro.pss.holidayforms.config.security;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,12 +11,12 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
+import ro.pss.holidayforms.config.security.azure.AzureOidcUserService;
 
 /**
  * Configures spring security, doing the following:
  * <li>Bypass security checks for static resources,</li>
  * <li>Restrict access to the application, allowing only logged in users,</li>
- * <li>Set up the login form</li>
  */
 @EnableWebSecurity
 @Configuration
@@ -24,6 +25,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private static final String LOGIN_FAILURE_URL = "/login";
 	private static final String LOGIN_URL = "/login";
 	private static final String LOGOUT_SUCCESS_URL = "/login";
+
+//	@Autowired
+//	private CustomOAuth2UserService customOAuth2UserService;
+
+	@Autowired
+	private AzureOidcUserService oidcUserService;
 
 	/**
 	 * Require login to access internal pages and configure login form.
@@ -38,34 +45,33 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				.requestCache().requestCache(new CustomRequestCache())
 
 				// Restrict access to our application.
-				.and().authorizeRequests()
+				.and()
+				.authorizeRequests()
 
 				// Allow all flow internal requests.
-				.requestMatchers(SecurityUtils::isFrameworkInternalRequest).permitAll()
+				.requestMatchers(SecurityUtils::isFrameworkInternalRequest)
+				.permitAll()
 
 				// Allow all requests by logged in users.
-				.anyRequest().authenticated()
-
-				// Configure the login page.
-				.and().formLogin().loginPage(LOGIN_URL).permitAll().loginProcessingUrl(LOGIN_PROCESSING_URL)
+				.anyRequest()
+				.authenticated()
+				.and()
+				.oauth2Login()
+				.redirectionEndpoint()
+//					.baseUri("/login/oauth/client/*")
+				.and()
+				.userInfoEndpoint()
+//					.oidcUserService(oidcUserService)
+				.oidcUserService(oidcUserService)
+				.and()
+				.defaultSuccessUrl("/")
 				.failureUrl(LOGIN_FAILURE_URL)
-
-				// Configure logout
-				.and().logout().logoutSuccessUrl(LOGOUT_SUCCESS_URL)
+				.and()
+				.logout()
+//					.logoutSuccessUrl("https://login.windows.net/common/oauth2/logout?post_logout_redirect_uri=http://localhost")
+				.logoutSuccessUrl("https://login.windows.net/common/oauth2/logout")
 				.and().sessionManagement().maximumSessions(1).sessionRegistry(sessionRegistry());
 	}
-
-//	@Bean
-//	@Override
-//	public UserDetailsService userDetailsService() {
-//		UserDetails user =
-//				User.withUsername("user")
-//						.password("{noop}password")
-//						.roles("USER")
-//						.build();
-//
-//		return new InMemoryUserDetailsManager(user);
-//	}
 
 	/**
 	 * Allows access to static resources, bypassing Spring security.
@@ -73,6 +79,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	@Override
 	public void configure(WebSecurity web) throws Exception {
 		web.ignoring().antMatchers(
+//				"/login/oauth/client/azure/**",
 				// Vaadin Flow static resources
 				"/VAADIN/**",
 
