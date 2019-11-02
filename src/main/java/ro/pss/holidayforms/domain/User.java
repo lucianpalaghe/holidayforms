@@ -41,6 +41,10 @@ public class User {
 	@Setter
 	private int availableVacationDays;
 
+	@Getter
+	@Setter
+	private String clockingCardId;
+
 	public User(String name) {
 		this.name = name;
 	}

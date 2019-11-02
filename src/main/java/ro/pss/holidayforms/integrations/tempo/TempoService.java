@@ -16,6 +16,7 @@ import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.NonWorkingDay;
 import ro.pss.holidayforms.domain.repo.NonWorkingDayRepository;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -36,7 +37,7 @@ public class TempoService {
 	@Autowired
 	private NonWorkingDayRepository nonWorkingDayRepo;
 
-	//	@PostConstruct
+	@PostConstruct
 	private void loadNonWorkingDays() throws IOException {
 		if (skipIntegrationInit) {
 			return;
