@@ -1,7 +1,8 @@
-package ro.pss.holidayforms.domain;
+package ro.pss.holidayforms.domain.clocking;
 
 import lombok.Getter;
 import lombok.Setter;
+import ro.pss.holidayforms.domain.User;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
