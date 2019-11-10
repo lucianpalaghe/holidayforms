@@ -15,20 +15,17 @@ import org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler;
 import org.springframework.integration.mqtt.support.DefaultPahoMessageConverter;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
-import ro.pss.holidayforms.domain.repo.ClockingRecordRepository;
-import ro.pss.holidayforms.domain.repo.UserRepository;
+import ro.pss.holidayforms.service.ClockingService;
 
 @Configuration
 public class ClockingMqttClient {
 	@Autowired
-	ClockingRecordRepository clockingRepo;
-	@Autowired
-	UserRepository userRepo;
+	ClockingService service;
 
 	private DefaultMqttPahoClientFactory factory;
 
 	@Bean
-	public MqttPahoClientFactory mqttClientFactory() {
+	private MqttPahoClientFactory mqttClientFactory() {
 		if (factory == null) {
 			factory = new DefaultMqttPahoClientFactory();
 			MqttConnectOptions options = new MqttConnectOptions();
@@ -54,10 +51,7 @@ public class ClockingMqttClient {
 	@Bean
 	@ServiceActivator(inputChannel = "mqttInputChannel")
 	public MessageHandler handler() {
-		return message -> {
-
-			System.out.println(message.getPayload());
-		};
+		return message -> service.addClocking(message.getPayload().toString(), message.getHeaders().getTimestamp());
 	}
 
 	@Bean
@@ -70,7 +64,7 @@ public class ClockingMqttClient {
 	}
 
 	@Bean
-	public MessageChannel mqttInputChannel() {
+	private MessageChannel mqttInputChannel() {
 		return new DirectChannel();
 	}
 

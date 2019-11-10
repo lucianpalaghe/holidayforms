@@ -10,7 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-public class ClockingDay {
+public class EmployeeClockingDay {
 	@Getter
 	private List<ClockingRecord> records;
 	private LocalDate clockingDate;
