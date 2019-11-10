@@ -25,6 +25,7 @@ import ro.pss.holidayforms.domain.UserPreferences;
 import ro.pss.holidayforms.domain.notification.Notification;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
+import ro.pss.holidayforms.gui.clocking.ClockingView;
 import ro.pss.holidayforms.gui.dashboard.DashboardView;
 import ro.pss.holidayforms.gui.info.HolidayInformationView;
 import ro.pss.holidayforms.gui.notification.Broadcaster;
@@ -69,6 +70,8 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuSubstitutions"), VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
 		LeftNavigationItem planningMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPlanning"), VaadinIcon.EDIT.create(), HolidayPlanningView.class);
 		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuApprovals"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
+		LeftNavigationItem clockingMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuClockings"),
+																	  VaadinIcon.USER_CLOCK.create(), ClockingView.class);
 		LeftNavigationItem infoMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuInfo"), VaadinIcon.QUESTION_CIRCLE_O.create(), HolidayInformationView.class);
 		LeftNavigationItem preferencesMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPreferences"), VaadinIcon.COG.create(), UserPreferencesView.class);
 		substitutionBadge.bind(substitutionMenuEntry.getBadge());
@@ -99,19 +102,19 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 						.add(new AppBarNotificationButton(VaadinIcon.BELL, notifications))
 						.build())
 				.withAppMenu(LeftAppMenuBuilder
-						.get()
-						.addToSection(userItem, HEADER)
-						.add(dashboardMenuEntry)
-						.add(holidayRequestsMenuEntry)
-						.add(substitutionMenuEntry)
-						.add(approvalMenuEntry)
-						.add(planningMenuEntry)
-						.add(infoMenuEntry)
-						.add(preferencesMenuEntry)
-						.add(logoutMenuEntry)
-						.withStickyFooter()
-						.addToSection(versionItem, FOOTER)
-						.build())
+									 .get()
+									 .addToSection(userItem, HEADER)
+									 .add(dashboardMenuEntry)
+									 .add(holidayRequestsMenuEntry)
+									 .add(substitutionMenuEntry)
+									 .add(approvalMenuEntry)
+									 .add(planningMenuEntry)
+									 .add(infoMenuEntry)
+									 .add(preferencesMenuEntry).add(clockingMenuEntry)
+									 .add(logoutMenuEntry)
+									 .withStickyFooter()
+									 .addToSection(versionItem, FOOTER)
+									 .build())
 				.build());
 	}
 

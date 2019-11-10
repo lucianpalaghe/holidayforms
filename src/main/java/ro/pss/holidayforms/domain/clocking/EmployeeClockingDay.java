@@ -3,6 +3,7 @@ package ro.pss.holidayforms.domain.clocking;
 import lombok.Getter;
 import ro.pss.holidayforms.domain.User;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -15,6 +16,12 @@ public class EmployeeClockingDay {
 	private List<ClockingRecord> records;
 	private LocalDate clockingDate;
 	private User employee;
+
+	public EmployeeClockingDay(User employee, LocalDate clockingDate, List<ClockingRecord> records) {
+		this.employee = employee;
+		this.clockingDate = clockingDate;
+		this.records = records;
+	}
 
 	public LocalDate getClockingDate() {
 		if (clockingDate == null) {
@@ -36,6 +43,9 @@ public class EmployeeClockingDay {
 	}
 
 	public Optional<LocalTime> getClockOutTime() {
+		if (records.size() <= 1) {
+			return Optional.empty();
+		}
 		Optional<ClockingRecord> optional = records.stream().max(Comparator.comparing(ClockingRecord::getDateTime));
 		return optional.map(clockingRecord -> clockingRecord.getDateTime().toLocalTime());
 	}
@@ -46,5 +56,14 @@ public class EmployeeClockingDay {
 		}
 
 		records.add(r);
+	}
+
+	public Optional<Duration> getDuration() {
+		if (getClockInTime().isEmpty() || getClockOutTime().isEmpty()) {
+			return Optional.empty();
+		}
+
+		Duration between = Duration.between(getClockInTime().get(), getClockOutTime().get());
+		return Optional.of(between);
 	}
 }

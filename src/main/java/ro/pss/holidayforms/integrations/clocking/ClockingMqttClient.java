@@ -25,7 +25,7 @@ public class ClockingMqttClient {
 	private DefaultMqttPahoClientFactory factory;
 
 	@Bean
-	private MqttPahoClientFactory mqttClientFactory() {
+	public MqttPahoClientFactory mqttClientFactory() {
 		if (factory == null) {
 			factory = new DefaultMqttPahoClientFactory();
 			MqttConnectOptions options = new MqttConnectOptions();
@@ -40,7 +40,8 @@ public class ClockingMqttClient {
 
 	@Bean
 	public MessageProducer inbound() {
-		MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter("springClient", mqttClientFactory(), "esp/test");
+		MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter("springClient", mqttClientFactory(),
+																							  "clocking");
 		adapter.setCompletionTimeout(5000);
 		adapter.setConverter(new DefaultPahoMessageConverter());
 		adapter.setQos(1);
@@ -59,12 +60,12 @@ public class ClockingMqttClient {
 	public MessageHandler mqttOutbound() {
 		MqttPahoMessageHandler messageHandler = new MqttPahoMessageHandler("springClient", mqttClientFactory());
 		messageHandler.setAsync(true);
-		messageHandler.setDefaultTopic("/config");
+		messageHandler.setDefaultTopic("config");
 		return messageHandler;
 	}
 
 	@Bean
-	private MessageChannel mqttInputChannel() {
+	public MessageChannel mqttInputChannel() {
 		return new DirectChannel();
 	}
 

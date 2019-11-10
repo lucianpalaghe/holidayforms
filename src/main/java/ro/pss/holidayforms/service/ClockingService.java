@@ -10,6 +10,7 @@ import ro.pss.holidayforms.domain.repo.ClockingRecordRepository;
 import ro.pss.holidayforms.domain.repo.UserRepository;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -28,9 +29,11 @@ public class ClockingService {
 
 	public void addClocking(String uid, Long timestamp) {
 		Optional<User> u = userRepo.findByClockingUid(uid);
-		Instant instant = Instant.ofEpochSecond(timestamp);
-		u.ifPresentOrElse(user -> saveClocking(user, LocalDateTime.ofInstant(instant, ZoneId.systemDefault())),
-				() -> log.warn(String.format("User not found for UID: %s", uid)));
+		Instant instant = Instant.ofEpochMilli(timestamp);
+		u.ifPresentOrElse(user -> {
+			log.info(String.format("Adding clocking for UID: %s", uid));
+			saveClocking(user, LocalDateTime.ofInstant(instant, ZoneId.systemDefault()));
+		}, () -> log.warn(String.format("User not found for UID: %s", uid)));
 	}
 
 	private void saveClocking(User user, LocalDateTime timestamp) {
@@ -40,27 +43,22 @@ public class ClockingService {
 		clockingRepo.save(r);
 	}
 
-	public List<EmployeeClockingDay> getClockingDays() { // TODO: replace with streams
+	public List<EmployeeClockingDay> getClockingDays() {
 		Iterable<ClockingRecord> all = clockingRepo.findAll();
 		List<ClockingRecord> records = new ArrayList<>();
 		all.forEach(records::add);
-		ArrayList<EmployeeClockingDay> days = new ArrayList<>();
-//		records.stream().collect(Collectors.groupingBy(ClockingRecord::getEmployee)).collect(Collectors.groupingBy(ClockingRecord::getDateTime));
-		Map<User, Map<LocalDateTime, List<ClockingRecord>>> collect = records.stream().collect(Collectors.groupingBy(ClockingRecord::getEmployee, Collectors.groupingBy(ClockingRecord::getDateTime)));
-
-
-		for (var i = 0; i < records.size(); i++) {
-			var clockingRecord = records.get(i);
-			var day = new EmployeeClockingDay();
-			days.add(day);
-			day.addRecord(clockingRecord);
-			for (var j = 0; j < records.size(); j++) {
-				var candidate = records.get(i + 1);
-				if (clockingRecord.getDateTime().toLocalDate().isEqual(candidate.getDateTime().toLocalDate())) {
-					day.addRecord(candidate);
-				}
+		Map<User, Map<LocalDate, List<ClockingRecord>>> collect =
+				records.stream().collect(Collectors.groupingBy(ClockingRecord::getEmployee,
+															   Collectors.groupingBy(clockingRecord -> clockingRecord.getDateTime().toLocalDate())));
+		List<EmployeeClockingDay> clockingDays = new ArrayList<>();
+		for (User u : collect.keySet()) {
+			Map<LocalDate, List<ClockingRecord>> localDateTimeListMap = collect.get(u);
+			for (LocalDate dt : localDateTimeListMap.keySet()) {
+				EmployeeClockingDay employeeClockingDay = new EmployeeClockingDay(u, dt, localDateTimeListMap.get(dt));
+				clockingDays.add(employeeClockingDay);
 			}
 		}
-		return days;
+
+		return clockingDays;
 	}
 }

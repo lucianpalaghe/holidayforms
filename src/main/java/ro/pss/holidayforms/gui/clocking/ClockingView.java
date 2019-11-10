@@ -3,6 +3,8 @@ package ro.pss.holidayforms.gui.clocking;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.ListItem;
+import com.vaadin.flow.component.html.UnorderedList;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
@@ -18,6 +20,8 @@ import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 import ro.pss.holidayforms.service.ClockingService;
 
+import java.time.Duration;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @SpringComponent
@@ -26,16 +30,38 @@ import java.util.List;
 public class ClockingView extends HorizontalLayout implements AfterNavigationObserver, HasDynamicTitle {
 	private final Grid<EmployeeClockingDay> grid;
 	private final H2 heading;
+	private final DateTimeFormatter formatter;
 
 	@Autowired
 	private ClockingService service;
 
 	public ClockingView() {
-		this.grid = new Grid<>();
+		formatter = DateTimeFormatter.ofPattern("HH:mm");
+		grid = new Grid<>();
 		grid.addColumn(r -> r.getEmployee().getName()).setHeader(MessageRetriever.get("clockingViewGridHeaderName"));
 		grid.addColumn(EmployeeClockingDay::getClockingDate).setHeader(MessageRetriever.get("clockingViewGridHeaderDate"));
-		grid.addColumn(EmployeeClockingDay::getClockInTime).setHeader(MessageRetriever.get("clockingViewGridHeaderClockInTime"));
-		grid.addColumn(EmployeeClockingDay::getClockOutTime).setHeader(MessageRetriever.get("clockingViewGridHeaderClockOutTime"));
+		grid.addColumn(e -> {
+			if (e.getClockInTime().isPresent()) {
+				return e.getClockInTime().get().format(formatter).toString();
+			} else {
+				return "-";
+			}
+		}).setHeader(MessageRetriever.get("clockingViewGridHeaderClockInTime"));
+		grid.addColumn(e -> {
+			if (e.getClockOutTime().isPresent()) {
+				return e.getClockOutTime().get().format(formatter).toString();
+			} else {
+				return "-";
+			}
+		}).setHeader(MessageRetriever.get("clockingViewGridHeaderClockOutTime"));
+		grid.addColumn(e -> {
+			if (e.getDuration().isPresent()) {
+				Duration duration = e.getDuration().get();
+				return duration.toHoursPart() + ":" + duration.toMinutesPart();
+			} else {
+				return "-";
+			}
+		}).setHeader(MessageRetriever.get("clockingViewGridHeaderDuration"));
 
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 		grid.setItemDetailsRenderer(getClockingRecordsDetails());
@@ -77,12 +103,11 @@ public class ClockingView extends HorizontalLayout implements AfterNavigationObs
 		return new ComponentRenderer<>(employeeClockingDay -> {
 			HorizontalLayout detailsContainer = new HorizontalLayout();
 			detailsContainer.setWidthFull();
-
+			UnorderedList ul = new UnorderedList();
+			detailsContainer.add(ul);
 			String clockingRecordMessage = MessageRetriever.get("clockingRecordDetail");
-			employeeClockingDay
-					.getRecords()
-					.forEach(clockingRecord ->
-							detailsContainer.add(String.format(clockingRecordMessage, clockingRecord.getDateTime())));
+			employeeClockingDay.getRecords().forEach(clockingRecord -> ul.add(new ListItem(String.format(clockingRecordMessage,
+																										 clockingRecord.getDateTime().toLocalTime().format(formatter)))));
 			return detailsContainer;
 		});
 	}

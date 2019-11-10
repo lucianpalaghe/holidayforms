@@ -43,7 +43,7 @@ public class User {
 
 	@Getter
 	@Setter
-	private String clockingCardId;
+	private String clockingUid;
 
 	public User(String name) {
 		this.name = name;
