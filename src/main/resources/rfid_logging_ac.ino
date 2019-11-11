@@ -21,13 +21,11 @@ const char* mqttPassword = "EAR5krLsBzGz";
 
 WiFiClient espClient;
 ESP8266WiFiMulti wifiMulti;
-MQTTClient mqttClient;
+MQTTClient mqttClient(1024);
 
 #define RST_PIN D2
 #define SS_PIN D8
 MFRC522 mfrc522(SS_PIN, RST_PIN);
-
-void callback(char* topic, byte* payload, unsigned int length);
 
 void setup() {
   Serial.begin(115200);
@@ -67,11 +65,29 @@ void connect() {
   }
   Serial.println("Connected to " + String(mqttServer) + ":" + String(mqttPort));
 
-  mqttClient.subscribe("/config");
+  mqttClient.subscribe("config");
 }
 
 void messageReceived(String &topic, String &payload) {
-  Serial.println("incoming: " + topic + " - " + payload);
+  Serial.println("Incoming config data: " + payload);
+
+  File uids = SPIFFS.open("/uids.conf", "w+");
+
+  if (!uids) {
+    Serial.println(F("Failed to open uids.conf"));
+  } else {
+    Serial.println(F("Writing uids..."));
+    char temp[payload.length()];
+    payload.toCharArray(temp, payload.length());
+    char* ptr = strtok(temp, ",");
+    while (ptr != NULL) {
+      Serial.println("UID: " + String(ptr));
+      uids.println(ptr);
+      ptr = strtok(NULL, ",");
+    }
+    uids.println(ptr);
+    uids.close();
+  }
 }
 
 void loop () {
@@ -101,7 +117,7 @@ void loop () {
 
 void publishClocking(char* hexCard) {
   Serial.println("Publishing to MQTT broker...");
-  boolean succ = mqttClient.publish("/clocking", hexCard, false, 1);
+  boolean succ = mqttClient.publish("clocking", hexCard, false, 1);
   if (succ) {
     Serial.println("Publish successful!");
   } else {
@@ -168,7 +184,21 @@ void cycleLeds() {
 }
 
 bool validCard(char* uid) {
-  return true;
+  File uidsFile = SPIFFS.open("/uids.conf", "r");
+  String line;
+  while (uidsFile.available()) {
+    line = uidsFile.readStringUntil('\n');
+    Serial.println(line.length());
+    Serial.println(sizeof(hexCard));
+    char temp[line.length()];
+    line.toCharArray(temp, line.length());
+    Serial.println(sizeof(temp));
+    if (strcmp(temp,hexCard) == 0) {
+      Serial.println(F("Found record"));
+      return true;
+    }
+  }
+  return false;
 }
 
 void setupLeds() {
