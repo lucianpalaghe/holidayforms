@@ -4,9 +4,10 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include <FS.h>
+#include <time.h>
 
-#define LED_ON HIGH
-#define LED_OFF LOW
+#define LED_ON LOW
+#define LED_OFF HIGH
 #define redLed D0
 #define greenLed D1
 #define blueLed D2
@@ -36,19 +37,28 @@ void setup() {
   wifiMulti.addAP("PSS_Brasov", "Ciccio123!");   // add Wi-Fi networks you want to connect to
   wifiMulti.addAP("AndroidAP44EF", "qjcm6009");
   wifiMulti.addAP("Etaj12", "jungle9998");
-
+  Serial.println();
   boolean result = SPIFFS.begin();
   if (result) {
-    Serial.println("File system mounted with success");
+    Serial.println(F("File system mounted with success"));
   } else {
-    Serial.println("Error mounting the file system");
+    Serial.println(F("Error mounting the file system"));
   }
 
-  Serial.println(F("Logger ready!"));
+  Serial.println(F("Logger starting..."));
+}
+
+void connectTime() {
+  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  Serial.println("\nWaiting for time");
+  while (!time(nullptr)) {
+    Serial.print(".");
+    delay(1000);
+  }
 }
 
 void connect() {
-  Serial.print("Connecting to WiFi...");
+  Serial.print(F("Connecting to WiFi..."));
   while (wifiMulti.run() != WL_CONNECTED) {
     delay(1000);
     Serial.print('.');
@@ -58,7 +68,7 @@ void connect() {
   mqttClient.begin(mqttServer, mqttPort, espClient);
   mqttClient.onMessage(messageReceived);
 
-  Serial.println("Connecting to MQTT...");
+  Serial.println(F("Connecting to MQTT..."));
   while (!mqttClient.connect("ESP8266Thing", mqttUser, mqttPassword, false)) {
     Serial.print(".");
     delay(1000);
@@ -77,15 +87,14 @@ void messageReceived(String &topic, String &payload) {
     Serial.println(F("Failed to open uids.conf"));
   } else {
     Serial.println(F("Writing uids..."));
-    char temp[payload.length()];
-    payload.toCharArray(temp, payload.length());
+    char temp[payload.length() + 1];
+    payload.toCharArray(temp, payload.length() + 1);
     char* ptr = strtok(temp, ",");
     while (ptr != NULL) {
-      Serial.println("UID: " + String(ptr));
+      Serial.println("Writing UID: " + String(ptr));
       uids.println(ptr);
       ptr = strtok(NULL, ",");
     }
-    uids.println(ptr);
     uids.close();
   }
 }
@@ -108,42 +117,59 @@ void loop () {
     publishClocking(hexCard);
     successLeds();
   } else {
-    Serial.println(F("You shall not pass"));
-    failureLeds();
+    Serial.println("Unknown UID: " + String(hexCard));
+    time_t now = time(nullptr);
+    Serial.println(ctime(&now));
+    struct tm * timeinfo;
+
+  time (&rawtime);
+  timeinfo = localtime (&rawtime);
+    failureLeds(3);
   }
 
   delay(500);
 }
 
 void publishClocking(char* hexCard) {
-  Serial.println("Publishing to MQTT broker...");
+  Serial.println(F("Publishing to MQTT broker..."));
   boolean succ = mqttClient.publish("clocking", hexCard, false, 1);
   if (succ) {
-    Serial.println("Publish successful!");
+    Serial.println(F("Publish successful!"));
   } else {
-    Serial.println("Publish failed!");
+    failureLeds(5);
+    Serial.println(F("Publish failed!"));
   }
 
 }
 
 void successLeds() {
-  digitalWrite(blueLed, LED_OFF);
-  digitalWrite(redLed, LED_OFF);
-  digitalWrite(greenLed, LED_ON);
-  delay(1500);
-  digitalWrite(blueLed, LED_ON);
-  digitalWrite(redLed, LED_OFF);
-  digitalWrite(greenLed, LED_OFF);
+  //  digitalWrite(blueLed, LED_OFF);
+  //  digitalWrite(redLed, LED_OFF);
+  //  digitalWrite(greenLed, LED_ON);
+  //  delay(1500);
+  //  digitalWrite(blueLed, LED_ON);
+  //  digitalWrite(redLed, LED_OFF);
+  //  digitalWrite(greenLed, LED_OFF);
+  //  Serial.println(F("Flashing builtin led"));
+  digitalWrite(LED_BUILTIN, LED_ON);
+  delay(800);
+  digitalWrite(LED_BUILTIN, LED_OFF);
 }
 
-void failureLeds() {
-  digitalWrite(greenLed, LED_OFF);
-  digitalWrite(blueLed, LED_OFF);
-  digitalWrite(redLed, LED_ON);
-  delay(1500);
-  digitalWrite(blueLed, LED_ON);
-  digitalWrite(redLed, LED_OFF);
-  digitalWrite(greenLed, LED_OFF);
+void failureLeds(int flashCount) {
+  //  digitalWrite(greenLed, LED_OFF);
+  //  digitalWrite(blueLed, LED_OFF);
+  //  digitalWrite(redLed, LED_ON);
+  //  delay(1500);
+  //  digitalWrite(blueLed, LED_ON);
+  //  digitalWrite(redLed, LED_OFF);
+  //  digitalWrite(greenLed, LED_OFF);
+  for (int i = 0; i < flashCount; i++) {
+    digitalWrite(LED_BUILTIN, LED_ON);
+    delay(150);
+    digitalWrite(LED_BUILTIN, LED_OFF);
+    delay(150);
+  }
 }
 
 
@@ -188,13 +214,10 @@ bool validCard(char* uid) {
   String line;
   while (uidsFile.available()) {
     line = uidsFile.readStringUntil('\n');
-    Serial.println(line.length());
-    Serial.println(sizeof(hexCard));
     char temp[line.length()];
     line.toCharArray(temp, line.length());
-    Serial.println(sizeof(temp));
-    if (strcmp(temp,hexCard) == 0) {
-      Serial.println(F("Found record"));
+    if (strcmp(temp, hexCard) == 0) {
+      Serial.println(F("UID found..."));
       return true;
     }
   }
