@@ -1,5 +1,6 @@
 package ro.pss.holidayforms.integrations.clocking;
 
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,7 @@ import org.springframework.messaging.MessageHandler;
 import ro.pss.holidayforms.service.ClockingService;
 
 @Configuration
+@Slf4j
 public class ClockingMqttClient {
 	@Autowired
 	ClockingService service;
@@ -52,7 +54,17 @@ public class ClockingMqttClient {
 	@Bean
 	@ServiceActivator(inputChannel = "mqttInputChannel")
 	public MessageHandler handler() {
-		return message -> service.addClocking(message.getPayload().toString(), message.getHeaders().getTimestamp());
+		return message -> {
+			try {
+				log.info(String.format("Receiving MQTT payload: %s", message.getPayload().toString()));
+				String[] payloadParts = message.getPayload().toString().split(";");
+				String uidPart = payloadParts[0];
+				Long timestampPart = Long.parseLong(payloadParts[1]);
+				service.addClocking(uidPart, timestampPart);
+			} catch (Exception e) {
+				log.error(String.format("Error interpreting MQTT payload: %s", message.getPayload().toString()));
+			}
+		};
 	}
 
 	@Bean

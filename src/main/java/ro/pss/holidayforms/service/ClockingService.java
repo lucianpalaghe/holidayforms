@@ -29,7 +29,7 @@ public class ClockingService {
 
 	public void addClocking(String uid, Long timestamp) {
 		Optional<User> u = userRepo.findByClockingUid(uid);
-		Instant instant = Instant.ofEpochMilli(timestamp);
+		Instant instant = Instant.ofEpochSecond(timestamp);
 		u.ifPresentOrElse(user -> {
 			log.info(String.format("Adding clocking for UID: %s", uid));
 			saveClocking(user, LocalDateTime.ofInstant(instant, ZoneId.systemDefault()));

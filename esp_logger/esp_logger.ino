@@ -20,9 +20,12 @@ const int mqttPort = 14024;
 const char* mqttUser = "asukbczm";
 const char* mqttPassword = "EAR5krLsBzGz";
 
+const int TIMEZONE = 2;
+struct timeval tv;
+
 WiFiClient espClient;
 ESP8266WiFiMulti wifiMulti;
-MQTTClient mqttClient(1024);
+MQTTClient mqttClient(2048);
 
 #define RST_PIN D2
 #define SS_PIN D8
@@ -31,6 +34,7 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 void setup() {
   Serial.begin(115200);
   setupLeds();
+
   SPI.begin();
   mfrc522.PCD_Init();
 
@@ -44,13 +48,13 @@ void setup() {
   } else {
     Serial.println(F("Error mounting the file system"));
   }
-
+  setupNTP();
   Serial.println(F("Logger starting..."));
 }
 
-void connectTime() {
-  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.println("\nWaiting for time");
+void setupNTP() {
+  configTime(TIMEZONE * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  Serial.println(F("Setting up NTP"));
   while (!time(nullptr)) {
     Serial.print(".");
     delay(1000);
@@ -58,7 +62,7 @@ void connectTime() {
 }
 
 void connect() {
-  Serial.print(F("Connecting to WiFi..."));
+  Serial.print(F("Connecting to WiFi"));
   while (wifiMulti.run() != WL_CONNECTED) {
     delay(1000);
     Serial.print('.');
@@ -68,7 +72,7 @@ void connect() {
   mqttClient.begin(mqttServer, mqttPort, espClient);
   mqttClient.onMessage(messageReceived);
 
-  Serial.println(F("Connecting to MQTT..."));
+  Serial.println(F("Connecting to MQTT"));
   while (!mqttClient.connect("ESP8266Thing", mqttUser, mqttPassword, false)) {
     Serial.print(".");
     delay(1000);
@@ -97,6 +101,7 @@ void messageReceived(String &topic, String &payload) {
     }
     uids.close();
   }
+  configLeds();
 }
 
 void loop () {
@@ -118,12 +123,6 @@ void loop () {
     successLeds();
   } else {
     Serial.println("Unknown UID: " + String(hexCard));
-    time_t now = time(nullptr);
-    Serial.println(ctime(&now));
-    struct tm * timeinfo;
-
-  time (&rawtime);
-  timeinfo = localtime (&rawtime);
     failureLeds(3);
   }
 
@@ -132,7 +131,16 @@ void loop () {
 
 void publishClocking(char* hexCard) {
   Serial.println(F("Publishing to MQTT broker..."));
-  boolean succ = mqttClient.publish("clocking", hexCard, false, 1);
+  gettimeofday(&tv, NULL);
+  char payload[30] = {0};
+  char* separator = ";";
+  strcat(payload, hexCard);
+  strcat(payload, separator);
+  char temp[10];
+  ltoa(tv.tv_sec, temp, 10);
+  strcat(payload, temp);
+  Serial.println(payload);
+  boolean succ = mqttClient.publish("clocking", payload, false, 1);
   if (succ) {
     Serial.println(F("Publish successful!"));
   } else {
@@ -169,6 +177,23 @@ void failureLeds(int flashCount) {
     delay(150);
     digitalWrite(LED_BUILTIN, LED_OFF);
     delay(150);
+  }
+}
+
+void configLeds() {
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(LED_BUILTIN, LED_ON);
+    delay(50);
+    digitalWrite(LED_BUILTIN, LED_OFF);
+    delay(100);
+    digitalWrite(LED_BUILTIN, LED_ON);
+    delay(50);
+    digitalWrite(LED_BUILTIN, LED_OFF);
+    delay(50);
+    digitalWrite(LED_BUILTIN, LED_ON);
+    delay(100);
+    digitalWrite(LED_BUILTIN, LED_OFF);
+    delay(1000);
   }
 }
 
