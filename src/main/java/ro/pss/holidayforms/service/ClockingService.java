@@ -13,11 +13,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.*;
+
+import static java.util.stream.Collectors.*;
 
 @Service
 @Slf4j
@@ -49,7 +48,7 @@ public class ClockingService {
 		all.forEach(records::add);
 		Map<User, Map<LocalDate, List<ClockingRecord>>> collect =
 				records.stream().collect(Collectors.groupingBy(ClockingRecord::getEmployee,
-															   Collectors.groupingBy(clockingRecord -> clockingRecord.getDateTime().toLocalDate())));
+						Collectors.groupingBy(clockingRecord -> clockingRecord.getDateTime().toLocalDate())));
 		List<EmployeeClockingDay> clockingDays = new ArrayList<>();
 		for (User u : collect.keySet()) {
 			Map<LocalDate, List<ClockingRecord>> localDateTimeListMap = collect.get(u);
@@ -59,6 +58,6 @@ public class ClockingService {
 			}
 		}
 
-		return clockingDays;
+		return clockingDays.stream().sorted(Comparator.comparing(EmployeeClockingDay::getClockingDate).thenComparing(e -> e.getEmployee().getName())).collect(toList());
 	}
 }
