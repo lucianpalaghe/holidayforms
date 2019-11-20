@@ -40,9 +40,11 @@ public class NotificationService {
 	}
 
 	private void notifySubstitutes(HolidayRequest holidayRequest, BroadcastEvent.Type substituteAdded) {
-		sendBroadcast(new BroadcastEvent(holidayRequest.getSubstitute().getEmail(),
-						substituteAdded,
-						holidayRequest.getRequester().getName()));
+		for (SubstitutionRequest subRequest : holidayRequest.getSubstitutionRequests()) {
+			sendBroadcast(new BroadcastEvent(subRequest.getSubstitute().getEmail(),
+					substituteAdded,
+					holidayRequest.getRequester().getName()));
+		}
 	}
 
 	private void notifyApprovers(HolidayRequest holidayRequest, BroadcastEvent.Type approveAdded) {

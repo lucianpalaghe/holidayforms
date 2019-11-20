@@ -32,6 +32,7 @@ import ro.pss.holidayforms.gui.notification.broadcast.UserUITuple;
 import ro.pss.holidayforms.service.HolidayApprovalService;
 
 import java.util.List;
+import java.util.stream.*;
 
 @SpringComponent
 @UIScope
@@ -48,7 +49,7 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		this.grid = new Grid<>();
 		grid.addColumn(r -> r.getRequest().getRequester()).setHeader(MessageRetriever.get("appViewGridHeaderWho"));
 		grid.addColumn(r -> r.getRequest().getNumberOfDays()).setHeader(MessageRetriever.get("appViewGridHeaderDays")).setFlexGrow(0);//.setWidth("auto");
-		grid.addColumn(r -> r.getRequest().getSubstitute()).setHeader(MessageRetriever.get("appViewGridHeaderSubstitute"));
+		grid.addColumn(HolidayApprovalView::getSubstituteList).setHeader(MessageRetriever.get("appViewGridHeaderSubstitute"));
 		grid.addColumn(r -> r.getRequest().getType()).setHeader(MessageRetriever.get("gridColType")).setFlexGrow(0);//.setWidth("auto");
 		grid.addColumn(r -> r.getRequest().getDateFrom()).setHeader(MessageRetriever.get("appViewGridHeaderStart"));
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(3);
@@ -68,6 +69,12 @@ public class HolidayApprovalView extends HorizontalLayout implements AfterNaviga
 		setAlignItems(Alignment.CENTER);
 		add(container);
 		setHeightFull();
+	}
+
+	private static String getSubstituteList(ApprovalRequest r) {
+		return r.getRequest().getSubstitutes().stream()
+				.map(u -> u.getName())
+				.collect(Collectors.joining(", "));
 	}
 
 	private void listApprovalRequests(String userEmail) {

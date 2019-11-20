@@ -2,6 +2,7 @@ package ro.pss.holidayforms.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.gui.notification.NotificationService;
@@ -17,8 +18,11 @@ public class HolidayApprovalService {
 	@Autowired
 	private HolidayRequestService requestService;
 
+	@Transactional
 	public List<ApprovalRequest> getApprovalRequests(String userEmail) {
-		return approvalRepo.findAllByApproverEmail(userEmail);
+		List<ApprovalRequest> allByApproverEmail = approvalRepo.findAllByApproverEmail(userEmail);
+		allByApproverEmail.stream().forEach(a -> a.getRequest().getSubstitutes()); // initialize lazy collection TODO: replace with some kind of query
+		return allByApproverEmail;
 	}
 
 	public void approveRequest(ApprovalRequest request) {

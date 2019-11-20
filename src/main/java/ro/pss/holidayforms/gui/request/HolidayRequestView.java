@@ -29,7 +29,7 @@ import org.vaadin.olli.FileDownloadWrapper;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
-import ro.pss.holidayforms.domain.SubstitutionRequest;
+import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.layout.HolidayAppLayout;
 import ro.pss.holidayforms.gui.notification.Broadcaster;
@@ -42,6 +42,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.*;
 
 import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 
@@ -62,12 +63,12 @@ import static ro.pss.holidayforms.pdf.PDFGenerator.fillHolidayRequest;
 @StyleSheet("step-progress-bar.css")
 @StyleSheet("responsive-buttons.css")
 public class HolidayRequestView extends HorizontalLayout implements AfterNavigationObserver, Broadcaster.BroadcastListener, HasDynamicTitle {
-	@Autowired
-	private HolidayRequestService service;
 	private final Grid<HolidayRequest> grid;
 	private final HolidayRequestEditor editor;
 	private final Dialog dialog;
 	private final H2 heading;
+	@Autowired
+	private HolidayRequestService service;
 
 	public HolidayRequestView(HolidayRequestEditor editor) {
 		this.editor = editor;
@@ -81,7 +82,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		grid.addColumn(HolidayRequest::getNumberOfDays).setHeader(MessageRetriever.get("gridColDaysHeader")).setWidth("min-content").setFlexGrow(1);
 		grid.addColumn(HolidayRequest::getType).setHeader(MessageRetriever.get("gridColType")).setFlexGrow(1);
 		grid.addColumn(HolidayRequest::getDateFrom).setHeader(MessageRetriever.get("gridColFromDate")).setFlexGrow(1);
-		grid.addColumn(HolidayRequest::getSubstitute).setHeader(MessageRetriever.get("gridColReplacer")).setFlexGrow(1);
+		grid.addColumn(HolidayRequestView::getSubstituteList).setHeader(MessageRetriever.get("gridColReplacer")).setFlexGrow(1);
 		grid.addColumn(new ComponentRenderer<>(this::getActionButtons)).setFlexGrow(2);
 		grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.LUMO_ROW_STRIPES);
 		grid.setItemDetailsRenderer(getRequestStatusRenderer());
@@ -95,6 +96,7 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		HorizontalLayout actions = new HorizontalLayout(btnAdd);
 		dialog = new Dialog(editor);
 		dialog.setCloseOnOutsideClick(false);
+		dialog.setWidth("25em");
 
 		heading = new H2();
 		heading.setVisible(false);
@@ -111,6 +113,12 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 		setHeightFull();
 	}
 
+	private static String getSubstituteList(HolidayRequest holidayRequest) {
+		return holidayRequest.getSubstitutes().stream()
+				.map(User::getName)
+				.collect(Collectors.joining(", "));
+	}
+
 	private ComponentRenderer<HorizontalLayout, HolidayRequest> getRequestStatusRenderer() {
 		return new ComponentRenderer<>(holidayRequest -> {
 			UnorderedList stepList = new UnorderedList();
@@ -119,13 +127,13 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 			initialStep.addClassName("active");
 			stepList.add(initialStep);
 
-			ListItem substituteStep = new ListItem(holidayRequest.getSubstitutionRequest().getSubstitute().getName());
-			if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED) {
-				substituteStep.addClassName("active");
-			} else if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.DENIED) {
-				substituteStep.addClassName("denied");
-			}
-			stepList.add(substituteStep);
+//			ListItem substituteStep = new ListItem(holidayRequest.getSubstitutionRequest().getSubstitute().getName());
+//			if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED) {
+//				substituteStep.addClassName("active");
+//			} else if (holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.DENIED) {
+//				substituteStep.addClassName("denied");
+//			}
+//			stepList.add(substituteStep);
 
 			holidayRequest.getApprovalRequests().stream().forEach(addApprovalStatusSteps(stepList));
 			stepList.setWidthFull();
@@ -235,12 +243,13 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 			case SUBSTITUTE_ACCEPTED:
 			case SUBSTITUTE_DENIED:
 				ui.access(() -> {
-					if(dialog != null) {
+					if (dialog != null) {
 						if (dialog.isOpened()) {
 							dialog.close();
 						}
 					}
-					this.listHolidayRequests(message.getTargetUserId());});
+					this.listHolidayRequests(message.getTargetUserId());
+				});
 				break;
 		}
 	}

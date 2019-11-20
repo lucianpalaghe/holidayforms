@@ -10,8 +10,12 @@ import ro.pss.holidayforms.gui.components.daterange.utils.DateUtils;
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.Month;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.*;
+
+import static java.util.Comparator.comparing;
 
 @Entity
 @NoArgsConstructor
@@ -52,12 +56,12 @@ public class HolidayRequest {
 	private DateRange range;
 
 	@Getter
-	@OneToOne(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-	private SubstitutionRequest substitutionRequest;
+	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
+	private Set<SubstitutionRequest> substitutionRequests = new TreeSet<>(comparing(s -> s.getSubstitute().getName()));
 
 	@Getter
-	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-	private final List<ApprovalRequest> approvalRequests = new ArrayList<>();
+	@OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
+	private Set<ApprovalRequest> approvalRequests = new TreeSet<>(comparing(s -> s.getApprover().getName()));
 
 	public DateRange getRange() {
 		if (dateFrom != null && dateTo != null) {
@@ -76,8 +80,8 @@ public class HolidayRequest {
 
 	public void addSubstitute(User substitute) {
 		if (substitute != null) {
-			substitutionRequest = new SubstitutionRequest(substitute, SubstitutionRequest.Status.NEW);
-			substitutionRequest.setRequest(this);
+			SubstitutionRequest s = new SubstitutionRequest(substitute, SubstitutionRequest.Status.NEW, this);
+			substitutionRequests.add(s);
 		}
 	}
 
@@ -92,22 +96,40 @@ public class HolidayRequest {
 		return DateUtils.getWorkingDays(dateFrom, dateTo);
 	}
 
-	public User getSubstitute() {
-		if (substitutionRequest == null) {
-			return null;
-		}
-		return substitutionRequest.getSubstitute();
+	public boolean isStillEditable() {
+		return substitutionRequests.stream().allMatch(SubstitutionRequest::isNew);
 	}
 
-	public boolean isStillEditable() {
-		return substitutionRequest.getStatus() == SubstitutionRequest.Status.NEW;
-	}
 	public boolean isCO() {
 		return type == HolidayRequest.Type.CO;
 	}
 
 	public Month getStartingMonthOfHoliday() {
 		return dateFrom.getMonth();
+	}
+
+	public Set<User> getSubstitutes() {
+		return substitutionRequests.stream().map(s -> s.getSubstitute()).collect(Collectors.toCollection(() -> new TreeSet<>(comparing(User::getName))));
+	}
+
+	public void setSubstitutes(Set<User> newSubstitutes) {
+		if (substitutionRequests.size() == 0) {
+			substitutionRequests.addAll(newSubstitutes.stream()
+					.map(user -> new SubstitutionRequest(user, SubstitutionRequest.Status.NEW, this))
+					.collect(Collectors.toSet()));
+		} else {
+			List<User> existingSubstitutes = substitutionRequests.stream().map(SubstitutionRequest::getSubstitute).collect(Collectors.toList());
+			for (User user : newSubstitutes) {
+				if (!existingSubstitutes.contains(user)) {
+					substitutionRequests.add(new SubstitutionRequest(user, SubstitutionRequest.Status.NEW, this));
+				}
+			}
+			for (User user : existingSubstitutes) {
+				if (!newSubstitutes.contains(user)) {
+					substitutionRequests.removeIf(r -> r.getSubstitute().getEmail().equalsIgnoreCase(user.getEmail()));
+				}
+			}
+		}
 	}
 
 	public enum Type {

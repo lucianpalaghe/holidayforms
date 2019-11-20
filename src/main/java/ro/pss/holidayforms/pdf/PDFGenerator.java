@@ -5,9 +5,15 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
 import ro.pss.holidayforms.domain.HolidayRequest;
+import ro.pss.holidayforms.domain.User;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.*;
+
+import static java.util.stream.Collectors.*;
 
 @Slf4j
 public class PDFGenerator {
@@ -39,13 +45,14 @@ public class PDFGenerator {
                 field = (PDTextField) acroForm.getField("DateFrom");
                 field.setValue(holidayRequest.getDateFrom().toString());
                 field = (PDTextField) acroForm.getField("Replacer");
-                field.setValue(holidayRequest.getSubstitute().getName());
+                field.setValue(holidayRequest.getSubstitutionRequests().stream().map(e -> e.getSubstitute().getName()).collect(Collectors.joining(", ")));
                 field = (PDTextField) acroForm.getField("Date");
                 field.setValue(holidayRequest.getCreationDate().toString());
                 field = (PDTextField) acroForm.getField("Approver1");
-                field.setValue(holidayRequest.getApprovalRequests().get(0).getApprover().getName());
+                List<User> approvers = new ArrayList<>(holidayRequest.getApprovalRequests().stream().map(a -> a.getApprover()).collect(toList()));
+                field.setValue(approvers.get(0).getName());
                 field = (PDTextField) acroForm.getField("Approver2");
-                field.setValue(holidayRequest.getApprovalRequests().get(1).getApprover().getName());
+                field.setValue(approvers.get(1).getName());
                 pdfDocument.getDocumentCatalog().getAcroForm().flatten();
             }
 

@@ -15,6 +15,7 @@ import com.vaadin.flow.function.SerializablePredicate;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.vaadin.gatanaso.MultiselectComboBox;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.User;
@@ -23,6 +24,7 @@ import ro.pss.holidayforms.gui.components.daterange.DateRange;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 import ro.pss.holidayforms.service.HolidayRequestService;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -33,20 +35,20 @@ import static java.util.stream.Collectors.*;
 @UIScope
 public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier {
 	private final HolidayRequestService requestsService;
-	private final ComboBox<User> substitute = new ComboBox<>(MessageRetriever.get("substituteName"));
 	private final DateRangePicker dateRange = new DateRangePicker();
-	private final ComboBox<HolidayRequest.Type> type = new ComboBox<>(MessageRetriever.get("holidayType"));
+	private final ComboBox<HolidayRequest.Type> type = new ComboBox<>();
 	private final TextArea comments = new TextArea();
-	private final DatePicker creationDate = new DatePicker(MessageRetriever.get("creationDate"));
+	private final DatePicker creationDate = new DatePicker();
 	private final Button btnDelete = new Button(MessageRetriever.get("btnDeleteLbl"), VaadinIcon.TRASH.create());
 	private final Binder<HolidayRequest> binder = new Binder<>(HolidayRequest.class);
+	private final MultiselectComboBox<User> substitutes = new MultiselectComboBox<>();
 	private HolidayRequest holidayRequest;
 	private ChangeHandler changeHandler;
 
 	@Autowired
 	public HolidayRequestEditor(HolidayRequestService requestsService) {
 		this.requestsService = requestsService;
-		creationDate.setLocale(MessageRetriever.getLocale());
+
 		DatePicker.DatePickerI18n dp18n = new DatePicker.DatePickerI18n();
 		dp18n.setCalendar(MessageRetriever.get("calendarName"));
 		dp18n.setFirstDayOfWeek(0);
@@ -57,23 +59,28 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		dp18n.setWeekdays(Arrays.asList(MessageRetriever.get("daysNamesLong").split(",")));
 		dp18n.setWeekdaysShort(Arrays.asList(MessageRetriever.get("daysNamesShort").split(",")));
 		dp18n.setMonthNames(Arrays.asList(MessageRetriever.get("monthsNamesLong").split(",")));
+		creationDate.setLocale(MessageRetriever.getLocale());
 		creationDate.setI18n(dp18n);
+		creationDate.setPlaceholder(MessageRetriever.get("creationDate"));
+		creationDate.setWidthFull();
+		creationDate.setLocale(new Locale("ro", "RO"));
+		creationDate.setValue(LocalDate.now()); // these should work, but don't for some reason
 
 		dateRange.setForceNarrow(true);
+
 		type.setItems(HolidayRequest.Type.values());
 		type.setItemLabelGenerator(i -> MessageRetriever.get("holidayType_" + i.toString()));
+		type.setPlaceholder(MessageRetriever.get("holidayType"));
+		type.setWidthFull();
+		type.setValue(HolidayRequest.Type.CO); // these should work, but don't for some reason
 
 		comments.setPlaceholder(MessageRetriever.get("holidayCommentsPlaceholder"));
 		comments.setWidthFull();
 
-		substitute.setDataProvider(new ListDataProvider<>(requestsService.getAvailableSubstitutes()));
+		substitutes.setDataProvider(new ListDataProvider<>(requestsService.getAvailableSubstitutes()));
+		substitutes.setPlaceholder(MessageRetriever.get("substituteName"));
+		substitutes.setWidthFull();
 		addValidations();
-		substitute.setWidthFull();
-
-		type.setWidthFull();
-
-		creationDate.setWidthFull();
-		creationDate.setLocale(new Locale("ro", "RO"));
 
 		binder.bindInstanceFields(this);
 
@@ -88,16 +95,15 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		setJustifyContentMode(JustifyContentMode.CENTER);
 		setAlignItems(Alignment.CENTER);
 		HorizontalLayout actions = new HorizontalLayout(btnSave, btnCancel, btnDelete);
-		add(substitute, dateRange, type, comments, creationDate, actions);
+		add(substitutes, dateRange, type, comments, creationDate, actions);
 		addKeyPressListener(Key.ENTER, e -> save());
-
 		setSpacing(true);
 		setVisible(false);
 	}
 
 	private void addValidations() {
-		binder.forField(substitute).asRequired(MessageRetriever.get("validationSubstitute"))
-				.bind(HolidayRequest::getSubstitute, HolidayRequest::addSubstitute);
+		binder.forField(substitutes).asRequired(MessageRetriever.get("validationSubstitute"))
+				.bind(HolidayRequest::getSubstitutes, HolidayRequest::setSubstitutes);
 
 		Binder.Binding<HolidayRequest, DateRange> holidayRequestDateRangeBinding = binder.forField(dateRange).asRequired(MessageRetriever.get("validationHolidayPeriod"))
 				.withValidator(DateRange::hasWorkingDays, MessageRetriever.get("validationHolidayPeriodNoWorkingDays"))
@@ -150,10 +156,7 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 
 	private void save() {
 		if (binder.validate().isOk()) {
-			User requester = SecurityUtils.getLoggedInUser();
-			holidayRequest.setRequester(requester);
 			requestsService.saveRequest(holidayRequest);
-
 			changeHandler.onChange();
 		}
 	}
@@ -165,11 +168,6 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		}
 		final boolean persisted = request.getId() != null;
 		holidayRequest = request;
-		if (persisted) {  /*TODO: see if this is still required. From what i've seen, if the request data is not refreshed form database,
-						  Hibernate sometimes complains about missing session when trying to access child objects(LazyInitializationFailed)*/
-			holidayRequest = requestsService.findById(request.getId());
-		}
-
 		btnDelete.setVisible(persisted);
 		binder.setBean(holidayRequest);
 		setVisible(true);

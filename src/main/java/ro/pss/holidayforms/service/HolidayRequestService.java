@@ -2,6 +2,8 @@ package ro.pss.holidayforms.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
@@ -38,7 +40,11 @@ public class HolidayRequestService {
 		return userRepository.findAll();
 	}
 
+	@Transactional
 	public void saveRequest(HolidayRequest holidayRequest) {
+		User requester = SecurityUtils.getLoggedInUser();
+		holidayRequest.setRequester(requester);
+
 		if (holidayRequest.getApprovalRequests().size() > 0) { // if this request is edited, remove all previous approvals
 			holidayRequest.getApprovalRequests().clear();
 		}
@@ -66,9 +72,9 @@ public class HolidayRequestService {
 
 	void approvalsChanged(HolidayRequest holidayRequest) {
 		holidayRequest = findById(holidayRequest.getId()); // other approvals might have been committed to the database in the meantime, so get the latest request data
-		boolean substituteApproved = holidayRequest.getSubstitutionRequest().getStatus() == SubstitutionRequest.Status.APPROVED;
+		boolean substitutesApproved = holidayRequest.getSubstitutionRequests().stream().allMatch(SubstitutionRequest::isNew);
 		boolean allOthersApproved = holidayRequest.getApprovalRequests().stream().allMatch(ApprovalRequest::isApproved);
-		if (substituteApproved && allOthersApproved) {
+		if (substitutesApproved && allOthersApproved) {
 			HolidayRequest finalHolidayRequest = holidayRequest;
 
 			CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
@@ -81,6 +87,7 @@ public class HolidayRequestService {
 	}
 
 	public HolidayRequest findById(Long id) {
-		return requestRepository.findById(id).orElseThrow();
+		HolidayRequest holidayRequest = requestRepository.findById(id).orElseThrow();
+		return holidayRequest;
 	}
 }
