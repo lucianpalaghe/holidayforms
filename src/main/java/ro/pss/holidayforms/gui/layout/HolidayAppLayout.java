@@ -13,6 +13,7 @@ import com.github.appreciated.app.layout.notification.component.AppBarNotificati
 import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.github.appreciated.app.layout.router.AppLayoutRouterLayout;
 import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -20,12 +21,14 @@ import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.page.Viewport;
 import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
+import ro.pss.holidayforms.domain.Role;
 import ro.pss.holidayforms.domain.User;
 import ro.pss.holidayforms.domain.UserPreferences;
 import ro.pss.holidayforms.domain.notification.Notification;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
 import ro.pss.holidayforms.gui.dashboard.DashboardView;
+import ro.pss.holidayforms.gui.edituser.EditUserView;
 import ro.pss.holidayforms.gui.info.HolidayInformationView;
 import ro.pss.holidayforms.gui.notification.Broadcaster;
 import ro.pss.holidayforms.gui.notification.NotificationService;
@@ -38,8 +41,10 @@ import ro.pss.holidayforms.gui.subtitution.SubstitutionRequestView;
 import ro.pss.holidayforms.service.UserPreferenceService;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.github.appreciated.app.layout.entity.Section.FOOTER;
 import static com.github.appreciated.app.layout.entity.Section.HEADER;
@@ -69,6 +74,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuSubstitutions"), VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
 		LeftNavigationItem planningMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPlanning"), VaadinIcon.EDIT.create(), HolidayPlanningView.class);
 		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuApprovals"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
+		LeftNavigationItem userEditEntry = new LeftNavigationItem(MessageRetriever.get("menuEditUser"), VaadinIcon.USER_CHECK.create(), EditUserView.class);
 		LeftNavigationItem infoMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuInfo"), VaadinIcon.QUESTION_CIRCLE_O.create(), HolidayInformationView.class);
 		LeftNavigationItem preferencesMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPreferences"), VaadinIcon.COG.create(), UserPreferencesView.class);
 		substitutionBadge.bind(substitutionMenuEntry.getBadge());
@@ -89,6 +95,20 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 			currentUI.getPage().executeJavaScript("window.location.href='logout'");
 			currentUI.getSession().close();
 		});
+		LeftAppMenuBuilder menuBuilder = LeftAppMenuBuilder.get();
+		menuBuilder.addToSection(userItem, HEADER);
+		Set<Component> menuEntries = new LinkedHashSet<>();
+		menuEntries.add(dashboardMenuEntry); menuEntries.add(holidayRequestsMenuEntry); menuEntries.add(substitutionMenuEntry); menuEntries.add(approvalMenuEntry);
+		menuEntries.add(planningMenuEntry);
+		// add entry for hr
+		if(SecurityUtils.hasLoggedUserProperRole(Role.RoleName.HR)) {
+			menuEntries.add(userEditEntry);
+		}
+		menuEntries.add(infoMenuEntry); menuEntries.add(preferencesMenuEntry); menuEntries.add(logoutMenuEntry);
+		for(Component entry : menuEntries) {
+			menuBuilder.add(entry);
+		}
+		menuBuilder.withStickyFooter().addToSection(versionItem, FOOTER);
 
 		init(AppLayoutBuilder
 				.get(Behaviour.LEFT_RESPONSIVE)
@@ -98,20 +118,21 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 						.get()
 						.add(new AppBarNotificationButton(VaadinIcon.BELL, notifications))
 						.build())
-				.withAppMenu(LeftAppMenuBuilder
-						.get()
-						.addToSection(userItem, HEADER)
-						.add(dashboardMenuEntry)
-						.add(holidayRequestsMenuEntry)
-						.add(substitutionMenuEntry)
-						.add(approvalMenuEntry)
-						.add(planningMenuEntry)
-						.add(infoMenuEntry)
-						.add(preferencesMenuEntry)
-						.add(logoutMenuEntry)
-						.withStickyFooter()
-						.addToSection(versionItem, FOOTER)
-						.build())
+				.withAppMenu(menuBuilder.build())
+//				.withAppMenu(LeftAppMenuBuilder
+//						.get()
+//						.addToSection(userItem, HEADER)
+//						.add(dashboardMenuEntry)
+//						.add(holidayRequestsMenuEntry)
+//						.add(substitutionMenuEntry)
+//						.add(approvalMenuEntry)
+//						.add(planningMenuEntry)
+//						.add(infoMenuEntry)
+//						.add(preferencesMenuEntry)
+//						.add(logoutMenuEntry)
+//						.withStickyFooter()
+//						.addToSection(versionItem, FOOTER)
+//						.build())
 				.build());
 	}
 
@@ -153,7 +174,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	public void receiveBroadcast(UI ui, BroadcastEvent event) {
 		Optional<UserPreferences> userPreferences = userPreferenceService.findByEmployeeEmail(event.getTargetUserId());
 		ui.access(() -> {
-			// show notifications only if user has set his preferences and 'show notifications' is selected. By default, the notifications will not be shown
+			// show notifications only if user has set his preferences and 'show notifications' is selected. By default, the notifications will be shown
 			if(userPreferences.isPresent()) {
 				if(userPreferences.get().isShowNotifications()) {
 					if (event.getType() == BroadcastEvent.Type.WORKLOGS_POSTED) { //TODO: make this cleaner

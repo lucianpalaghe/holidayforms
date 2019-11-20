@@ -6,6 +6,8 @@ import lombok.Setter;
 import ro.pss.holidayforms.integrations.jira.JiraUserDetails;
 
 import javax.persistence.*;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @NoArgsConstructor
@@ -23,10 +25,6 @@ public class User {
 
 	@Getter
 	@Setter
-	@Enumerated(EnumType.STRING)
-	private Role role;
-
-	@Getter
 	private String name;
 
 	@Getter
@@ -41,6 +39,14 @@ public class User {
 	@Setter
 	private int availableVacationDays;
 
+	@Getter
+	@Setter
+	@ManyToMany(fetch = FetchType.EAGER)
+	@JoinTable(name = "USER_ROLE",
+			joinColumns = @JoinColumn(name = "USER_ID"),
+			inverseJoinColumns = @JoinColumn(name = "ROLE_ID"))
+	private Set<Role> roles = new HashSet<>();
+
 	public User(String name) {
 		this.name = name;
 	}
@@ -54,7 +60,7 @@ public class User {
 	public User(JiraUserDetails jiraDetails) {
 		this.email = jiraDetails.getName().toLowerCase(); // TODO: replace with email after everyone sets their email addresses in JIRA
 		this.jiraAccountId = jiraDetails.getAccountId();
-		this.role = Role.USER;
+		this.roles = new HashSet();
 		this.name = jiraDetails.getDisplayName();
 		this.department = "IT"; // TODO: find out where to get this from
 		this.photo = jiraDetails.getAvatarUrls().getOrDefault("48x48", "");
@@ -66,7 +72,4 @@ public class User {
 		return name;
 	}
 
-	public enum Role {
-		USER, HR, TEAM_LEADER, MANAGER
-	}
 }

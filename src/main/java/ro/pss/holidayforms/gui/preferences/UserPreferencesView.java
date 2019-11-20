@@ -53,8 +53,8 @@ public class UserPreferencesView extends HorizontalLayout implements AfterNaviga
     private LocaleCountryTuple en = new LocaleCountryTuple(UserPreferences.LocaleOption.ENGLISH, MessageRetriever.get("prefLangEnglish"));
     private List<EmailOptionsTuple> allEmailOptions = new ArrayList<>();
     private UserPreferences.LocaleOption defaultLocaleOption = UserPreferences.LocaleOption.ROMANIAN;
-    private boolean defaultShowNotifications = false;
-    private Set<UserPreferences.EmailOption> defaultEmailOption = new HashSet<>();
+    private boolean defaultShowNotifications = true;
+    private Set<UserPreferences.EmailOption> defaultEmailOption = new HashSet<>(Arrays.asList(UserPreferences.EmailOption.values()));
     private User user;
     private String browserOriginalLocation;
 

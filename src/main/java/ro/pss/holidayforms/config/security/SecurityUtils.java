@@ -5,6 +5,7 @@ import com.vaadin.flow.shared.ApplicationConstants;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import ro.pss.holidayforms.domain.Role;
 import ro.pss.holidayforms.domain.User;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,4 +49,12 @@ public final class SecurityUtils {
 	public static User getLoggedInUser() {
 		return ((CustomUserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUser();
 	}
+
+	public static boolean hasUserProperRole(User user, Role.RoleName roleName) {
+		return user.getRoles().stream().filter(r -> r.getName().equals(roleName)).count() > 0;
+	}
+	public static boolean hasLoggedUserProperRole(Role.RoleName roleName) {
+		return getLoggedInUser().getRoles().stream().filter(r -> r.getName().equals(roleName)).count() > 0;
+	}
+
 }
