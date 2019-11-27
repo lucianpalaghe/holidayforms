@@ -66,11 +66,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				.and()
 				.defaultSuccessUrl("/")
 				.failureUrl(LOGIN_FAILURE_URL)
+				.and().oauth2Login().loginPage("/login").permitAll()
 				.and()
 				.logout()
 //					.logoutSuccessUrl("https://login.windows.net/common/oauth2/logout?post_logout_redirect_uri=http://localhost")
 				.logoutSuccessUrl("https://login.windows.net/common/oauth2/logout")
-				.and().sessionManagement().maximumSessions(1).sessionRegistry(sessionRegistry());
+				.and().sessionManagement().maximumSessions(1).sessionRegistry(sessionRegistry()).expiredUrl("/login?expire");
 	}
 
 	/**

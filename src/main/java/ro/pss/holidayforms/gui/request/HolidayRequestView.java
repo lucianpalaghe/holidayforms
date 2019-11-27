@@ -40,6 +40,7 @@ import ro.pss.holidayforms.service.HolidayRequestService;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.*;
@@ -89,7 +90,10 @@ public class HolidayRequestView extends HorizontalLayout implements AfterNavigat
 
 		Button btnAdd = new Button(MessageRetriever.get("addHolidayRequest"), VaadinIcon.PLUS.create());
 		btnAdd.addClickListener(e -> {
-			this.editor.editHolidayRequest(new HolidayRequest());
+			HolidayRequest request = new HolidayRequest();
+			request.setCreationDate(LocalDate.now());
+			request.setType(HolidayRequest.Type.CO);
+			this.editor.editHolidayRequest(request);
 			mountEditorInDialog(true);
 		});
 

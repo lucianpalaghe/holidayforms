@@ -41,11 +41,13 @@ public class User {
 
 	@Getter
 	@Setter
-	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "USER_ROLE",
-			joinColumns = @JoinColumn(name = "USER_ID"),
-			inverseJoinColumns = @JoinColumn(name = "ROLE_ID"))
+	@ElementCollection(fetch = FetchType.EAGER)
+	@Enumerated(EnumType.STRING)
 	private Set<Role> roles = new HashSet<>();
+
+	public enum Role {
+		USER, TEAM_LEADER, HR, PROJECT_MANGER, ADMIN
+	}
 
 	public User(String name) {
 		this.name = name;

@@ -2,6 +2,7 @@ package ro.pss.holidayforms.gui.request;
 
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.KeyNotifier;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -24,7 +25,6 @@ import ro.pss.holidayforms.gui.components.daterange.DateRange;
 import ro.pss.holidayforms.gui.components.daterange.DateRangePicker;
 import ro.pss.holidayforms.service.HolidayRequestService;
 
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -59,12 +59,12 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		dp18n.setWeekdays(Arrays.asList(MessageRetriever.get("daysNamesLong").split(",")));
 		dp18n.setWeekdaysShort(Arrays.asList(MessageRetriever.get("daysNamesShort").split(",")));
 		dp18n.setMonthNames(Arrays.asList(MessageRetriever.get("monthsNamesLong").split(",")));
-		creationDate.setLocale(MessageRetriever.getLocale());
+//		creationDate.setLocale(MessageRetriever.getLocale());
+		creationDate.setLocale(UI.getCurrent().getLocale());
 		creationDate.setI18n(dp18n);
 		creationDate.setPlaceholder(MessageRetriever.get("creationDate"));
 		creationDate.setWidthFull();
 		creationDate.setLocale(new Locale("ro", "RO"));
-		creationDate.setValue(LocalDate.now()); // these should work, but don't for some reason
 
 		dateRange.setForceNarrow(true);
 
@@ -72,7 +72,6 @@ public class HolidayRequestEditor extends VerticalLayout implements KeyNotifier 
 		type.setItemLabelGenerator(i -> MessageRetriever.get("holidayType_" + i.toString()));
 		type.setPlaceholder(MessageRetriever.get("holidayType"));
 		type.setWidthFull();
-		type.setValue(HolidayRequest.Type.CO); // these should work, but don't for some reason
 
 		comments.setPlaceholder(MessageRetriever.get("holidayCommentsPlaceholder"));
 		comments.setWidthFull();
