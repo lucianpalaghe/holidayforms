@@ -13,6 +13,7 @@ import com.github.appreciated.app.layout.notification.component.AppBarNotificati
 import com.github.appreciated.app.layout.notification.entitiy.DefaultNotification;
 import com.github.appreciated.app.layout.router.AppLayoutRouterLayout;
 import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -21,12 +22,12 @@ import com.vaadin.flow.component.page.Viewport;
 import org.springframework.beans.factory.annotation.Autowired;
 import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.User;
-import ro.pss.holidayforms.domain.UserPreferences;
 import ro.pss.holidayforms.domain.notification.Notification;
 import ro.pss.holidayforms.gui.MessageRetriever;
 import ro.pss.holidayforms.gui.approval.HolidayApprovalView;
 import ro.pss.holidayforms.gui.clocking.ClockingView;
 import ro.pss.holidayforms.gui.dashboard.DashboardView;
+import ro.pss.holidayforms.gui.edituser.UsersAdministrationView;
 import ro.pss.holidayforms.gui.info.HolidayInformationView;
 import ro.pss.holidayforms.gui.notification.Broadcaster;
 import ro.pss.holidayforms.gui.notification.NotificationService;
@@ -39,8 +40,9 @@ import ro.pss.holidayforms.gui.subtitution.SubstitutionRequestView;
 import ro.pss.holidayforms.service.UserPreferenceService;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 import static com.github.appreciated.app.layout.entity.Section.FOOTER;
 import static com.github.appreciated.app.layout.entity.Section.HEADER;
@@ -52,38 +54,29 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 	private final DefaultBadgeHolder substitutionBadge;
 	private final DefaultBadgeHolder approvalBadge;
 	private final NotificationService notificationService;
-	private final UserPreferenceService userPreferenceService;
 
 	@Autowired
 	public HolidayAppLayout(NotificationService notificationService, UserPreferenceService userPreferenceService) {
 		this.notificationService = notificationService;
-		this.userPreferenceService = userPreferenceService;
-		UI currentUI = UI.getCurrent();
-		ComponentUtil.setData(currentUI, HolidayAppLayout.class, this);
 		this.notifications = new DefaultNotificationHolder();
 		this.substitutionBadge = new DefaultBadgeHolder();
 		this.approvalBadge = new DefaultBadgeHolder();
+
+		UI currentUI = UI.getCurrent();
+		ComponentUtil.setData(currentUI, HolidayAppLayout.class, this);
 		User user = SecurityUtils.getLoggedInUser();
 		UserMenuItem userItem = new UserMenuItem(user.getName(), user.getEmail(), user.getPhoto());
 		LeftNavigationItem holidayRequestsMenuEntry = new LeftNavigationItem(MessageRetriever.get("myHolidayRequests"), VaadinIcon.AIRPLANE.create(), HolidayRequestView.class);
 		LeftNavigationItem dashboardMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuDashboard"), VaadinIcon.LINE_CHART.create(), DashboardView.class);
-		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuSubstitutions"), VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
 		LeftNavigationItem planningMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPlanning"), VaadinIcon.EDIT.create(), HolidayPlanningView.class);
 		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuApprovals"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
 		LeftNavigationItem clockingMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuClockings"),
 																	  VaadinIcon.USER_CLOCK.create(), ClockingView.class);
 		LeftNavigationItem infoMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuInfo"), VaadinIcon.QUESTION_CIRCLE_O.create(), HolidayInformationView.class);
 		LeftNavigationItem preferencesMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPreferences"), VaadinIcon.COG.create(), UserPreferencesView.class);
-		substitutionBadge.bind(substitutionMenuEntry.getBadge());
-		approvalBadge.bind(approvalMenuEntry.getBadge());
 
-		approvalBadge.setCount(notificationService.getApprovalRequestsCount(user.getEmail()));
-		substitutionBadge.setCount(notificationService.getSubstitutionRequestsCount(user.getEmail()));
-		Optional<UserPreferences> up = userPreferenceService.findByEmployeeEmail(user.getEmail());
-		if(up.isPresent()) {
-			if(up.get().isShowNotifications()) {
-				loadUserNotifications();
-			}
+		if (userPreferenceService.findByEmployeeEmail(user.getEmail()).isShowNotifications()) {
+			loadUserNotifications();
 		}
 
 		VersionMenuItem versionItem = new VersionMenuItem("ver_" + "0.0.7"); // TODO: get version from somewhere
@@ -92,6 +85,31 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 			currentUI.getPage().executeJavaScript("window.location.href='logout'");
 			currentUI.getSession().close();
 		});
+		LeftAppMenuBuilder menuBuilder = LeftAppMenuBuilder.get();
+		menuBuilder.addToSection(userItem, HEADER);
+		Set<Component> menuEntries = new LinkedHashSet<>();
+		menuEntries.add(dashboardMenuEntry);
+		menuEntries.add(holidayRequestsMenuEntry);
+		setupSubstitutionComponents(user, menuEntries);
+		menuEntries.add(planningMenuEntry);
+
+		if (SecurityUtils.loggedInUserHasRole(User.Role.PROJECT_MANGER) || SecurityUtils.loggedInUserHasRole(User.Role.ADMIN)) {
+			setupApprovalComponents(user, menuEntries);
+		}
+
+		if (SecurityUtils.loggedInUserHasRole(User.Role.HR) || SecurityUtils.loggedInUserHasRole(User.Role.ADMIN)) {
+			LeftNavigationItem userAdminEntry = new LeftNavigationItem(MessageRetriever.get("menuEditUser"), VaadinIcon.USERS.create(), UsersAdministrationView.class);
+			menuEntries.add(userAdminEntry);
+		}
+    
+    menuEntries.add(clockingMenuEntry);
+		menuEntries.add(infoMenuEntry);
+		menuEntries.add(preferencesMenuEntry);
+		menuEntries.add(logoutMenuEntry);
+		for (Component entry : menuEntries) {
+			menuBuilder.add(entry);
+		}
+		menuBuilder.withStickyFooter().addToSection(versionItem, FOOTER);
 
 		init(AppLayoutBuilder
 				.get(Behaviour.LEFT_RESPONSIVE)
@@ -101,21 +119,22 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 						.get()
 						.add(new AppBarNotificationButton(VaadinIcon.BELL, notifications))
 						.build())
-				.withAppMenu(LeftAppMenuBuilder
-									 .get()
-									 .addToSection(userItem, HEADER)
-									 .add(dashboardMenuEntry)
-									 .add(holidayRequestsMenuEntry)
-									 .add(substitutionMenuEntry)
-									 .add(approvalMenuEntry)
-									 .add(planningMenuEntry)
-									 .add(infoMenuEntry)
-									 .add(preferencesMenuEntry).add(clockingMenuEntry)
-									 .add(logoutMenuEntry)
-									 .withStickyFooter()
-									 .addToSection(versionItem, FOOTER)
-									 .build())
+				.withAppMenu(menuBuilder.build())
 				.build());
+	}
+
+	private void setupSubstitutionComponents(User user, Set<Component> menuEntries) {
+		LeftNavigationItem substitutionMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuSubstitutions"), VaadinIcon.OFFICE.create(), SubstitutionRequestView.class);
+		substitutionBadge.bind(substitutionMenuEntry.getBadge());
+		substitutionBadge.setCount(notificationService.getSubstitutionRequestsCount(user.getEmail()));
+		menuEntries.add(substitutionMenuEntry);
+	}
+
+	private void setupApprovalComponents(User user, Set<Component> menuEntries) {
+		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuApprovals"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
+		approvalBadge.bind(approvalMenuEntry.getBadge());
+		approvalBadge.setCount(notificationService.getApprovalRequestsCount(user.getEmail()));
+		menuEntries.add(approvalMenuEntry);
 	}
 
 	private void loadUserNotifications() {
@@ -139,73 +158,35 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 			}
 		});
 
-		notifications.addClickListener(defaultNotification -> {
-			HolidayNotification holidayNotification = (HolidayNotification) defaultNotification;
-			Notification notification = holidayNotification.getNotification();
-			if (notification.getChangedDateTime() != null) {
-				return;
-			}
-
-			notification.setChangedDateTime(LocalDateTime.now());
-			notification.setStatus(Notification.Status.READ);
-			notificationService.saveNotification(notification);
-		});
+		notifications.addClickListener(this::onNotificationClicked);
 	}
 
 	@Override
 	public void receiveBroadcast(UI ui, BroadcastEvent event) {
-		Optional<UserPreferences> userPreferences = userPreferenceService.findByEmployeeEmail(event.getTargetUserId());
 		ui.access(() -> {
-			// show notifications only if user has set his preferences and 'show notifications' is selected. By default, the notifications will not be shown
-			if(userPreferences.isPresent()) {
-				if(userPreferences.get().isShowNotifications()) {
-					if (event.getType() == BroadcastEvent.Type.WORKLOGS_POSTED) { //TODO: make this cleaner
-						com.vaadin.flow.component.notification.Notification.show(MessageRetriever.get("worklogsPosted"), 3000, com.vaadin.flow.component.notification.Notification.Position.TOP_CENTER);
-						return;
-					}
-					String title = MessageRetriever.get("notificationTitle_" + event.getType());
-					String description = String.format(MessageRetriever.get("notificationBody_" + event.getType()), event.getUserIdentifier());
-					HolidayNotification holidayNotification = new HolidayNotification(title, description, event.getNotification());
-					notifications.addNotification(holidayNotification);
-				}
+			BroadcastEvent.Type type = event.getType();
+			if (type == BroadcastEvent.Type.WORKLOGS_POSTED) { //TODO: make this cleaner
+				com.vaadin.flow.component.notification.Notification.show(MessageRetriever.get("worklogsPosted"), 3000, com.vaadin.flow.component.notification.Notification.Position.TOP_CENTER);
+			} else {
+				String title = MessageRetriever.get("notificationTitle_" + type);
+				String description = String.format(MessageRetriever.get("notificationBody_" + type), event.getUserIdentifier());
+				HolidayNotification holidayNotification = new HolidayNotification(title, description, event.getNotification());
+				notifications.addNotification(holidayNotification);
+				updateBadges(type);
 			}
-			updateBadges(event);
 		});
 	}
 
-	private void updateBadges(BroadcastEvent event) {
-		BroadcastEvent.Type type = event.getType();
-		switch (type) {
-			case SUBSTITUTE_ADDED:
-				substitutionBadge.increase();
-				break;
-			case SUBSTITUTE_DELETED:
-				substitutionBadge.decrease();
-				break;
-			case APPROVE_ADDED:
-				approvalBadge.increase();
-				break;
-			case APPROVE_DELETED:
-				approvalBadge.decrease();
-				break;
-			case SUBSTITUTE_ACCEPTED:
-			case SUBSTITUTE_DENIED:
-			case APPROVER_ACCEPTED:
-			case APPROVER_DENIED:
-			case SUBSTITUTE_CHANGED:
-			case APPROVE_CHANGED:
-				break;
-			default:
-				throw new IllegalArgumentException("Unknown BroadcastMessageType:" + type);
+	private void updateBadges(BroadcastEvent.Type type) {
+		if (type == BroadcastEvent.Type.SUBSTITUTE_ADDED) {
+			substitutionBadge.increase();
+		} else if (type == BroadcastEvent.Type.SUBSTITUTE_DELETED || type == BroadcastEvent.Type.SUBSTITUTE_ACCEPTED || type == BroadcastEvent.Type.SUBSTITUTE_DENIED) {
+			substitutionBadge.decrease();
+		} else if (type == BroadcastEvent.Type.APPROVE_ADDED) {
+			approvalBadge.increase();
+		} else if (type == BroadcastEvent.Type.APPROVE_DELETED || type == BroadcastEvent.Type.APPROVER_ACCEPTED || type == BroadcastEvent.Type.APPROVER_DENIED) {
+			approvalBadge.decrease();
 		}
-	}
-
-	public void decreaseSubstitutionBadgeCount() {
-		this.substitutionBadge.decrease();
-	}
-
-	public void decreaseApprovalBadgeCount() {
-		this.approvalBadge.decrease();
 	}
 
 	@Override
@@ -213,5 +194,15 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		super.onAttach(attachEvent);
 		ComponentUtil.setData(UI.getCurrent(), HolidayAppLayout.class, this);
 	}
-}
 
+	private void onNotificationClicked(DefaultNotification defaultNotification) {
+		Notification notification = ((HolidayNotification) defaultNotification).getNotification();
+		if (notification.getStatus() == Notification.Status.READ) {
+			return;
+		}
+
+		notification.setChangedDateTime(LocalDateTime.now());
+		notification.setStatus(Notification.Status.READ);
+		notificationService.saveNotification(notification);
+	}
+}

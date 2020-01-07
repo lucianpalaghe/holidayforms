@@ -30,6 +30,10 @@ public class JiraUserDetailsService {
 	private String jiraUsersApiUrl;
 	@Value("${skipIntegrationInit}")
 	private boolean skipIntegrationInit;
+	@Value("${usersWithHrRole}")
+	private String usersWithHrRole;
+	@Value("${usersWithAdminRole}")
+	private String usersWithAdminRole;
 	@Autowired
 	private UserRepository userRepo;
 
@@ -76,11 +80,26 @@ public class JiraUserDetailsService {
 				.filter(u -> !u.getKey().startsWith("addon"))
 				.filter(u -> !u.getKey().startsWith("pss"))
 				.collect(toList());
-
 		List<User> userList = jiraUserList.stream()
 				.map(User::new)
 				.collect(toList());
-
+		userList.forEach(u -> u.getRoles().add(User.Role.USER));
+		for(String user:usersWithHrRole.split(",")) {
+			userList.stream()
+					.filter(u -> u.getEmail().equalsIgnoreCase(user))
+					.findFirst().get()
+					.getRoles().add(User.Role.HR);
+		}
+		for(String user:usersWithAdminRole.split(",")) {
+			userList.stream()
+					.filter(u -> u.getEmail().equalsIgnoreCase(user))
+					.findFirst().get()
+					.getRoles().add(User.Role.ADMIN);
+		}
+		userList.stream()
+				.filter(u -> u.getEmail().equalsIgnoreCase("lucian.palaghe"))
+				.findFirst().get()
+				.getRoles().add(User.Role.PROJECT_MANGER);
 		userRepo.saveAll(userList);
 	}
 }

@@ -17,7 +17,7 @@ public class SubstitutionRequest {
 	@Getter
 	private User substitute;
 
-	@OneToOne
+	@ManyToOne
 	@Setter
 	@Getter
 	private HolidayRequest request;
@@ -26,13 +26,10 @@ public class SubstitutionRequest {
 	@Getter
 	private Status status;
 
-	public SubstitutionRequest(User substitute, Status status) {
+	public SubstitutionRequest(User substitute, Status status, HolidayRequest request) {
 		this.substitute = substitute;
 		this.status = status;
-	}
-
-	public enum Status {
-		NEW, APPROVED, DENIED
+		this.request = request;
 	}
 
 	public void approve() {
@@ -45,5 +42,13 @@ public class SubstitutionRequest {
 
 	public boolean isApproved() {
 		return status == Status.APPROVED;
+	}
+
+	public boolean isNew() {
+		return status == Status.NEW;
+	}
+
+	public enum Status {
+		NEW, APPROVED, DENIED
 	}
 }

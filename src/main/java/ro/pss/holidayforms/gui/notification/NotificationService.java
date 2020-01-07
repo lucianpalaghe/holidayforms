@@ -6,11 +6,13 @@ import ro.pss.holidayforms.config.security.SecurityUtils;
 import ro.pss.holidayforms.domain.ApprovalRequest;
 import ro.pss.holidayforms.domain.HolidayRequest;
 import ro.pss.holidayforms.domain.SubstitutionRequest;
+import ro.pss.holidayforms.domain.UserPreferences;
 import ro.pss.holidayforms.domain.notification.Notification;
 import ro.pss.holidayforms.domain.repo.ApprovalRequestRepository;
 import ro.pss.holidayforms.domain.repo.NotificationRepository;
 import ro.pss.holidayforms.domain.repo.SubstitutionRequestRepository;
 import ro.pss.holidayforms.gui.notification.broadcast.BroadcastEvent;
+import ro.pss.holidayforms.service.UserPreferenceService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,6 +25,8 @@ public class NotificationService {
 	private ApprovalRequestRepository approvalRepository;
 	@Autowired
 	private SubstitutionRequestRepository substitutionRepository;
+	@Autowired
+	private UserPreferenceService userPreferenceService;
 
 	public void requestCreated(HolidayRequest holidayRequest) {
 		notifySubstitutes(holidayRequest, BroadcastEvent.Type.SUBSTITUTE_ADDED);
@@ -40,16 +44,14 @@ public class NotificationService {
 	}
 
 	private void notifySubstitutes(HolidayRequest holidayRequest, BroadcastEvent.Type substituteAdded) {
-		sendBroadcast(new BroadcastEvent(holidayRequest.getSubstitute().getEmail(),
-						substituteAdded,
-						holidayRequest.getRequester().getName()));
+		for (SubstitutionRequest subRequest : holidayRequest.getSubstitutionRequests()) {
+			sendBroadcast(new BroadcastEvent(subRequest.getSubstitute().getEmail(), substituteAdded, holidayRequest.getRequester().getName()));
+		}
 	}
 
 	private void notifyApprovers(HolidayRequest holidayRequest, BroadcastEvent.Type approveAdded) {
 		for (ApprovalRequest approvalRequest : holidayRequest.getApprovalRequests()) {
-			sendBroadcast(new BroadcastEvent(approvalRequest.getApprover().getEmail(),
-							approveAdded,
-							holidayRequest.getRequester().getName()));
+			sendBroadcast(new BroadcastEvent(approvalRequest.getApprover().getEmail(), approveAdded, holidayRequest.getRequester().getName()));
 		}
 	}
 
@@ -72,9 +74,7 @@ public class NotificationService {
 	}
 
 	public void worklogsPosted(HolidayRequest holidayRequest) {
-		sendLightBroadcast(new BroadcastEvent(holidayRequest.getRequester().getEmail(),
-				BroadcastEvent.Type.WORKLOGS_POSTED,
-				""));
+		sendLightBroadcast(new BroadcastEvent(holidayRequest.getRequester().getEmail(), BroadcastEvent.Type.WORKLOGS_POSTED, ""));
 	}
 
 	public void substitutionDenied(SubstitutionRequest substitutionRequest) {
@@ -92,7 +92,7 @@ public class NotificationService {
 	}
 
 	public List<Notification> getNotifications(String userEmail) {
-		return notificationRepository.findAllByTargetUserEmailOrderByStatusAscCreationDateTimeDesc(SecurityUtils.getLoggedInUser().getEmail());
+		return notificationRepository.findAllByTargetUserEmailOrderByStatusAscCreationDateTimeDesc(userEmail);
 	}
 
 	public Notification saveNotification(Notification notification) {
@@ -104,10 +104,15 @@ public class NotificationService {
 	}
 
 	private void sendBroadcast(BroadcastEvent event) {
-		Notification savedNotification = notificationRepository.save(new Notification(LocalDateTime.now(), null, event.getType().name(),
-				event.getTargetUserId(), SecurityUtils.getLoggedInUser().getName(), event.getType(), Notification.Status.NEW, Notification.Priority.HIGH));
+		Notification newNotification = new Notification(LocalDateTime.now(), null, event.getType().name(),
+				event.getTargetUserId(), SecurityUtils.getLoggedInUser().getName(), event.getType(), Notification.Status.NEW, Notification.Priority.HIGH);
+		Notification savedNotification = notificationRepository.save(newNotification);
 		event.setNotification(savedNotification);
-		Broadcaster.broadcast(event);
+
+		UserPreferences userPreferences = userPreferenceService.findByEmployeeEmail(event.getTargetUserId());
+		if (userPreferences.isShowNotifications()) {
+			Broadcaster.broadcast(event);
+		}
 	}
 
 	private void sendLightBroadcast(BroadcastEvent event) { //TODO: think about what you've done

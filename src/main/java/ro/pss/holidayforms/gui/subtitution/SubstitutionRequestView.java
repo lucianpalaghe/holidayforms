@@ -1,7 +1,6 @@
 package ro.pss.holidayforms.gui.subtitution;
 
 import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.StyleSheet;
@@ -141,13 +140,11 @@ public class SubstitutionRequestView extends HorizontalLayout implements AfterNa
 	private void rejectHolidaySubstitution(SubstitutionRequest request) {
 		service.denyRequest(request);
 		grid.getDataProvider().refreshItem(request);
-		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubstitutionBadgeCount();
 	}
 
 	private void confirmHolidaySubstitution(SubstitutionRequest request) {
 		service.approveRequest(request);
 		grid.getDataProvider().refreshItem(request);
-		ComponentUtil.getData(UI.getCurrent(), HolidayAppLayout.class).decreaseSubstitutionBadgeCount();
 	}
 
 	@Override

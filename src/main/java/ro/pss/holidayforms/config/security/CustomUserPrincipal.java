@@ -11,8 +11,9 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import ro.pss.holidayforms.domain.User;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
+
+import static java.util.stream.Collectors.*;
 
 public class CustomUserPrincipal implements UserDetails, OAuth2User, OidcUser {
 	@Getter
@@ -24,7 +25,7 @@ public class CustomUserPrincipal implements UserDetails, OAuth2User, OidcUser {
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+		return user.getRoles().stream().map(r -> new SimpleGrantedAuthority(r.name())).collect(toList());
 	}
 
 	@Override
