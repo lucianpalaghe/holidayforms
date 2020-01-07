@@ -41,11 +41,12 @@ public class User {
 
 	@Getter
 	@Setter
-
 	private String clockingUid;
 
 	@ElementCollection(fetch = FetchType.EAGER)
 	@Enumerated(EnumType.STRING)
+	@Getter
+	@Setter
 	private Set<Role> roles = new HashSet<>();
 
 	public enum Role {

@@ -69,9 +69,7 @@ public class HolidayAppLayout extends AppLayoutRouterLayout implements Broadcast
 		LeftNavigationItem holidayRequestsMenuEntry = new LeftNavigationItem(MessageRetriever.get("myHolidayRequests"), VaadinIcon.AIRPLANE.create(), HolidayRequestView.class);
 		LeftNavigationItem dashboardMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuDashboard"), VaadinIcon.LINE_CHART.create(), DashboardView.class);
 		LeftNavigationItem planningMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPlanning"), VaadinIcon.EDIT.create(), HolidayPlanningView.class);
-		LeftNavigationItem approvalMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuApprovals"), VaadinIcon.USER_CHECK.create(), HolidayApprovalView.class);
-		LeftNavigationItem clockingMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuClockings"),
-																	  VaadinIcon.USER_CLOCK.create(), ClockingView.class);
+		LeftNavigationItem clockingMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuClockings"), VaadinIcon.USER_CLOCK.create(), ClockingView.class);
 		LeftNavigationItem infoMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuInfo"), VaadinIcon.QUESTION_CIRCLE_O.create(), HolidayInformationView.class);
 		LeftNavigationItem preferencesMenuEntry = new LeftNavigationItem(MessageRetriever.get("menuPreferences"), VaadinIcon.COG.create(), UserPreferencesView.class);
 
